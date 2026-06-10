@@ -57,6 +57,8 @@ function LojaPage() {
   const [codigoCupom, setCodigoCupom]     = useState("");
   const [cupomAplicado, setCupomAplicado] = useState<{ id: string; tipo: string; valor: number; codigo: string; usos_atual: number } | null>(null);
   const [cupomLoading, setCupomLoading]   = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [checkoutErro, setCheckoutErro]   = useState<string | null>(null);
   const [catAtiva, setCatAtiva]           = useState<string | null>(null);
   const [formaPagamento, setFormaPagamento] = useState("Dinheiro");
   const [pixModal, setPixModal]           = useState<{ payload: string; qrUrl: string; total: number; waLink: string; pedidoNum: number } | null>(null);
@@ -126,115 +128,124 @@ function LojaPage() {
 
   async function checkout(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (empresa.status !== "ativa" || (empresa as any).aberto === false) { toast.error("Esta loja está temporariamente fechada."); return; }
-    if (executeRecaptcha) { try { await executeRecaptcha("checkout"); } catch { /* sem chave configurada */ } }
-    const items = Object.values(cart);
-    if (items.length === 0) { toast.error("Carrinho vazio."); return; }
-    const pedidoMin = Number((empresa as any).pedido_minimo ?? 0);
-    if (pedidoMin > 0 && totalPrice < pedidoMin) {
-      toast.error(`Pedido mínimo de ${fmt(pedidoMin)} não atingido. Faltam ${fmt(pedidoMin - totalPrice)}.`);
+    setCheckoutErro(null);
+
+    if (empresa.status !== "ativa") {
+      setCheckoutErro("Esta loja está temporariamente indisponível.");
       return;
     }
-    const fd            = new FormData(e.currentTarget);
-    const subtotal      = totalPrice;
-    const taxa          = Number(empresa.taxa_entrega ?? 0);
-    const total         = Math.round(Math.max(0, subtotal - desconto + taxa) * 100) / 100;
+    if ((empresa as any).aberto === false) {
+      setCheckoutErro("Esta loja está fechada no momento.");
+      return;
+    }
+
+    const items = Object.values(cart);
+    if (items.length === 0) { setCheckoutErro("Carrinho vazio."); return; }
+
+    const pedidoMin = Number((empresa as any).pedido_minimo ?? 0);
+    if (pedidoMin > 0 && totalPrice < pedidoMin) {
+      setCheckoutErro(`Pedido mínimo de ${fmt(pedidoMin)}. Faltam ${fmt(pedidoMin - totalPrice)}.`);
+      return;
+    }
+
+    const fd               = new FormData(e.currentTarget);
     const cliente_nome     = String(fd.get("nome")).trim().slice(0, 120);
     const cliente_telefone = mesa ? "" : String(fd.get("telefone")).replace(/\D/g, "").slice(0, 15);
     const cliente_endereco = mesa ? `Mesa ${mesa}` : String(fd.get("endereco")).trim().slice(0, 255);
     const forma_pagamento  = String(fd.get("pagamento"));
     const observacao       = String(fd.get("observacao") || "").trim().slice(0, 500);
 
-    if (!cliente_nome || cliente_nome.length < 2) {
-      toast.error("Informe seu nome completo.");
-      return;
-    }
-    if (!mesa && (!cliente_telefone || cliente_telefone.length < 8)) {
-      toast.error("Informe um telefone válido.");
-      return;
-    }
-    if (!mesa && (!cliente_endereco || cliente_endereco.length < 5)) {
-      toast.error("Informe o endereço de entrega.");
-      return;
-    }
-    const PAGAMENTOS_VALIDOS = ["Dinheiro", "Cartão", "PIX"];
-    if (!PAGAMENTOS_VALIDOS.includes(forma_pagamento)) {
-      toast.error("Forma de pagamento inválida.");
-      return;
-    }
+    if (!cliente_nome || cliente_nome.length < 2) { setCheckoutErro("Informe seu nome completo."); return; }
+    if (!mesa && (!cliente_telefone || cliente_telefone.length < 8)) { setCheckoutErro("Informe um telefone válido."); return; }
+    if (!mesa && (!cliente_endereco || cliente_endereco.length < 5)) { setCheckoutErro("Informe o endereço de entrega."); return; }
+    if (!["Dinheiro", "Cartão", "PIX"].includes(forma_pagamento)) { setCheckoutErro("Selecione a forma de pagamento."); return; }
 
-    const itensRpc = items.map((i) => {
-      const prod = (produtos as any[]).find((p) => p.id === i.id);
-      return {
-        produto_id: i.id,
-        nome: i.nome,
-        quantidade: i.qty,
-        preco_unitario: i.preco,
-        subtotal: i.preco * i.qty,
-        observacao: i.opcoes?.length ? i.opcoes.map((o: any) => o.opcaoNome).join(", ") : null,
-        controlar_estoque: !!prod?.controlar_estoque,
-      };
-    });
+    setCheckoutLoading(true);
+    try {
+      if (executeRecaptcha) { try { await executeRecaptcha("checkout"); } catch { /* sem chave */ } }
 
-    const { data: pedidoJson, error } = await supabase.rpc("finalizar_pedido", {
-      p_empresa_id:       empresa.id,
-      p_cliente_nome:     cliente_nome,
-      p_cliente_telefone: mesa ? undefined : cliente_telefone || undefined,
-      p_cliente_endereco: cliente_endereco,
-      p_forma_pagamento:  forma_pagamento,
-      p_observacao:       observacao || undefined,
-      p_subtotal:         subtotal,
-      p_taxa_entrega:     taxa,
-      p_total:            total,
-      p_mesa:             mesa ? `Mesa ${mesa}` : undefined,
-      p_tipo:             "delivery",
-      p_status:           "novo",
-      p_cupom_id:         cupomAplicado?.id ?? undefined,
-      p_itens:            itensRpc,
-    });
-    if (error || !pedidoJson) { toast.error("Não foi possível registrar seu pedido. Tente novamente."); return; }
-    const pedido = pedidoJson as { id: string; numero: number };
+      const subtotal = totalPrice;
+      const taxa     = Number(empresa.taxa_entrega ?? 0);
+      const total    = Math.round(Math.max(0, subtotal - desconto + taxa) * 100) / 100;
 
-    const msg = encodeURIComponent(
-      `*Pedido #${pedido.numero}*\n\n` +
-      (mesa ? `📍 Mesa ${mesa}\nCliente: ${cliente_nome}\n` : `Cliente: ${cliente_nome}\nTelefone: ${cliente_telefone}\nEndereço: ${cliente_endereco}\n`) + `\n` +
-      `*Itens:*\n${items.map((i) => {
-        const opStr = i.opcoes?.length ? `\n   ↳ ${i.opcoes.map((o) => o.opcaoNome).join(", ")}` : "";
-        return `${i.qty}× ${i.nome} — ${fmt(i.preco * i.qty)}${opStr}`;
-      }).join("\n")}\n\n` +
-      `Subtotal: ${fmt(subtotal)}` +
-      (desconto > 0 ? `\nDesconto (${cupomAplicado?.codigo}): -${fmt(desconto)}` : "") +
-      `\nEntrega: ${fmt(taxa)}\n*Total: ${fmt(total)}*\n\n` +
-      `Pagamento: ${forma_pagamento}${observacao ? `\nObs: ${observacao}` : ""}`
-    );
+      const itensRpc = items.map((i) => {
+        const prod = (produtos as any[]).find((p) => p.id === i.id);
+        return {
+          produto_id: i.id,
+          nome: i.nome,
+          quantidade: i.qty,
+          preco_unitario: i.preco,
+          subtotal: i.preco * i.qty,
+          observacao: i.opcoes?.length ? i.opcoes.map((o: any) => o.opcaoNome).join(", ") : null,
+          controlar_estoque: !!prod?.controlar_estoque,
+        };
+      });
 
-    setCart({}); setCheckoutOpen(false); setCupomAplicado(null); setCodigoCupom("");
+      const { data: pedidoJson, error } = await supabase.rpc("finalizar_pedido", {
+        p_empresa_id:       empresa.id,
+        p_cliente_nome:     cliente_nome,
+        p_cliente_telefone: mesa ? undefined : cliente_telefone || undefined,
+        p_cliente_endereco: cliente_endereco,
+        p_forma_pagamento:  forma_pagamento,
+        p_observacao:       observacao || undefined,
+        p_subtotal:         subtotal,
+        p_taxa_entrega:     taxa,
+        p_total:            total,
+        p_mesa:             mesa ? `Mesa ${mesa}` : undefined,
+        p_tipo:             "delivery",
+        p_status:           "novo",
+        p_cupom_id:         cupomAplicado?.id ?? undefined,
+        p_itens:            itensRpc,
+      });
 
-    const waUrl = empresa.whatsapp ? `https://wa.me/${empresa.whatsapp.replace(/\D/g, "")}?text=${msg}` : null;
-
-    // PIX → busca dados bancários só após pedido criado (não ficam no bundle inicial da página)
-    if (forma_pagamento === "PIX") {
-      const { data: pixData } = await supabase
-        .from("empresas")
-        .select("chave_pix,nome_recebedor,cidade_recebedor")
-        .eq("id", empresa.id)
-        .single();
-      const chave = (pixData as any)?.chave_pix;
-      if (chave) {
-        const nomeRec = ((pixData as any)?.nome_recebedor || empresa.nome_fantasia || "Loja").normalize("NFD").replace(/[̀-ͯ]/g, "").substring(0, 25);
-        const cidadeRec = ((pixData as any)?.cidade_recebedor || "Brasil").normalize("NFD").replace(/[̀-ͯ]/g, "").substring(0, 15);
-        const payload = gerarPixPayload(chave, nomeRec, cidadeRec, total);
-        try {
-          const qrUrl = await QRCode.toDataURL(payload, { width: 240, margin: 2, color: { dark: "#18181b", light: "#ffffff" } });
-          setPixModal({ payload, qrUrl, total, waLink: waUrl ?? "", pedidoNum: pedido.numero });
-        } catch {
-          setPedidoFeito({ id: pedido.id, numero: pedido.numero, waUrl });
-        }
+      if (error || !pedidoJson) {
+        setCheckoutErro(`Erro ao registrar pedido: ${error?.message ?? "tente novamente."}`);
         return;
       }
-    }
 
-    setPedidoFeito({ id: pedido.id, numero: pedido.numero, waUrl });
+      const pedido = pedidoJson as { id: string; numero: number };
+      const msg = encodeURIComponent(
+        `*Pedido #${pedido.numero}*\n\n` +
+        (mesa ? `📍 Mesa ${mesa}\nCliente: ${cliente_nome}\n` : `Cliente: ${cliente_nome}\nTelefone: ${cliente_telefone}\nEndereço: ${cliente_endereco}\n`) + `\n` +
+        `*Itens:*\n${items.map((i) => {
+          const opStr = i.opcoes?.length ? `\n   ↳ ${i.opcoes.map((o) => o.opcaoNome).join(", ")}` : "";
+          return `${i.qty}× ${i.nome} — ${fmt(i.preco * i.qty)}${opStr}`;
+        }).join("\n")}\n\n` +
+        `Subtotal: ${fmt(subtotal)}` +
+        (desconto > 0 ? `\nDesconto (${cupomAplicado?.codigo}): -${fmt(desconto)}` : "") +
+        `\nEntrega: ${fmt(taxa)}\n*Total: ${fmt(total)}*\n\n` +
+        `Pagamento: ${forma_pagamento}${observacao ? `\nObs: ${observacao}` : ""}`
+      );
+
+      const waUrl = empresa.whatsapp ? `https://wa.me/${empresa.whatsapp.replace(/\D/g, "")}?text=${msg}` : null;
+
+      setCart({}); setCheckoutOpen(false); setCupomAplicado(null); setCodigoCupom("");
+
+      if (forma_pagamento === "PIX") {
+        const { data: pixData } = await supabase
+          .from("empresas")
+          .select("chave_pix,nome_recebedor,cidade_recebedor")
+          .eq("id", empresa.id)
+          .single();
+        const chave = (pixData as any)?.chave_pix;
+        if (chave) {
+          const nomeRec   = ((pixData as any)?.nome_recebedor  || empresa.nome_fantasia || "Loja").normalize("NFD").replace(/[̀-ͯ]/g, "").substring(0, 25);
+          const cidadeRec = ((pixData as any)?.cidade_recebedor || "Brasil").normalize("NFD").replace(/[̀-ͯ]/g, "").substring(0, 15);
+          const payload   = gerarPixPayload(chave, nomeRec, cidadeRec, total);
+          try {
+            const qrUrl = await QRCode.toDataURL(payload, { width: 240, margin: 2, color: { dark: "#18181b", light: "#ffffff" } });
+            setPixModal({ payload, qrUrl, total, waLink: waUrl ?? "", pedidoNum: pedido.numero });
+          } catch {
+            setPedidoFeito({ id: pedido.id, numero: pedido.numero, waUrl });
+          }
+          return;
+        }
+      }
+
+      setPedidoFeito({ id: pedido.id, numero: pedido.numero, waUrl });
+    } finally {
+      setCheckoutLoading(false);
+    }
   }
 
   async function buscarPedidosPorTel() {
@@ -880,9 +891,17 @@ function LojaPage() {
                   <Label>Observação (opcional)</Label>
                   <Textarea name="observacao" rows={2} className="rounded-xl resize-none" />
                 </div>
-                <Button type="submit"
-                  className="w-full b-btn h-12 rounded-xl gap-2 text-base font-semibold mt-2 text-white">
-                  <MessageCircle className="size-5" /> Finalizar via WhatsApp
+                {checkoutErro && (
+                  <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3 font-medium">
+                    ⚠️ {checkoutErro}
+                  </div>
+                )}
+                <Button type="submit" disabled={checkoutLoading}
+                  className="w-full b-btn h-14 rounded-xl gap-2 text-base font-bold mt-2 text-white disabled:opacity-60">
+                  {checkoutLoading
+                    ? <><span className="animate-spin">⏳</span> Registrando pedido...</>
+                    : <><MessageCircle className="size-5" /> Finalizar via WhatsApp</>
+                  }
                 </Button>
               </form>
             </div>
