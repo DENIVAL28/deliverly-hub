@@ -130,8 +130,8 @@ function LojaPage() {
     e.preventDefault();
     setCheckoutErro(null);
 
-    if (empresa.status !== "ativa") {
-      setCheckoutErro("Esta loja está temporariamente indisponível.");
+    if (empresa.status === "bloqueada") {
+      setCheckoutErro("Esta loja está bloqueada e não aceita pedidos no momento.");
       return;
     }
     if ((empresa as any).aberto === false) {
