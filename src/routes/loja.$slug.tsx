@@ -568,7 +568,7 @@ function LojaPage() {
 
       {/* Barra do carrinho */}
       {totalQty > 0 && !selectedProduct && !checkoutOpen && (
-        <div className="fixed bottom-0 left-0 right-0 z-30 px-4 pt-4" style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}>
+        <div className="fixed bottom-0 left-0 right-0 z-30 px-4 pt-6 bg-gradient-to-t from-zinc-100 via-zinc-100/95 to-transparent" style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}>
           <div className="max-w-2xl mx-auto">
             <button onClick={() => setCheckoutOpen(true)}
               className="w-full b-btn text-white rounded-2xl h-14 flex items-center justify-between px-5 font-semibold transition-colors shadow-xl">
@@ -576,7 +576,7 @@ function LojaPage() {
                 {totalQty}
               </span>
               <span className="flex items-center gap-2">
-                <ShoppingBag className="size-4" /> Ver carrinho
+                <ShoppingBag className="size-4" /> Fazer pedido
               </span>
               <span>{fmt(totalPrice)}</span>
             </button>
@@ -898,7 +898,7 @@ function ProductCard({ p, cart, onOpen, onAdd, onDec, fmt, last }: {
 
   return (
     <div
-      className={`flex items-start gap-3 px-4 py-4 transition-colors ${!last ? "border-b border-zinc-100" : ""} ${esgotado ? "opacity-60" : "cursor-pointer hover:bg-zinc-50"}`}
+      className={`flex items-start gap-3 px-4 py-4 transition-colors ${!last ? "border-b border-zinc-100" : ""} ${esgotado ? "opacity-60" : "cursor-pointer active:bg-zinc-50"}`}
       onClick={esgotado ? undefined : onOpen}
     >
       {/* Info esquerda */}
@@ -907,7 +907,7 @@ function ProductCard({ p, cart, onOpen, onAdd, onDec, fmt, last }: {
         {p.descricao && (
           <p className="text-xs text-zinc-500 mt-1 line-clamp-2 leading-relaxed">{p.descricao}</p>
         )}
-        <div className="mt-2.5 flex items-center gap-2">
+        <div className="mt-2.5 flex items-center gap-2 flex-wrap">
           <span className="font-bold text-zinc-900 text-sm">{fmt(preco)}</span>
           {p.preco_promocional && (
             <span className="text-xs text-zinc-400 line-through">{fmt(Number(p.preco))}</span>
@@ -921,48 +921,27 @@ function ProductCard({ p, cart, onOpen, onAdd, onDec, fmt, last }: {
         </div>
       </div>
 
-      {/* Foto + controles */}
-      <div className="relative shrink-0 mt-0.5" onClick={(e) => e.stopPropagation()}>
-        {p.foto_url ? (
-          <div className="relative">
-            <img src={p.foto_url} alt={p.nome} className="w-24 h-24 rounded-xl object-cover" />
-            {!esgotado && (qty === 0 ? (
-              <button onClick={onAdd}
-                className="absolute -bottom-3 -right-2 size-8 rounded-full b-btn text-white flex items-center justify-center shadow-lg transition-colors">
-                <Plus className="size-4" />
-              </button>
-            ) : (
-              <div className="absolute -bottom-3 -right-2 flex items-center gap-0.5 bg-white rounded-full shadow-lg border border-zinc-100 px-1 py-0.5">
-                <button onClick={onDec} className="size-6 flex items-center justify-center b-text rounded-full">
-                  <Minus className="size-3" />
-                </button>
-                <span className="text-xs font-bold b-text min-w-[16px] text-center">{qty}</span>
-                <button onClick={onAdd} className="size-6 flex items-center justify-center b-text rounded-full">
-                  <Plus className="size-3" />
-                </button>
-              </div>
-            ))}
-          </div>
-        ) : (
-          esgotado ? null : (
-            qty === 0 ? (
-              <button onClick={onAdd}
-                className="px-3 py-1.5 rounded-xl border-2 b-border b-text text-xs font-bold transition-colors">
-                + Adicionar
-              </button>
-            ) : (
-              <div className="flex items-center gap-1 border-2 b-border rounded-xl px-2 py-1">
-                <button onClick={onDec} className="size-5 flex items-center justify-center b-text">
-                  <Minus className="size-3" />
-                </button>
-                <span className="text-xs font-bold b-text min-w-[14px] text-center">{qty}</span>
-                <button onClick={onAdd} className="size-5 flex items-center justify-center b-text">
-                  <Plus className="size-3" />
-                </button>
-              </div>
-            )
-          )
+      {/* Foto + controles — coluna direita */}
+      <div className="shrink-0 flex flex-col items-end gap-2 mt-0.5" onClick={(e) => e.stopPropagation()}>
+        {p.foto_url && (
+          <img src={p.foto_url} alt={p.nome} className="w-24 h-24 rounded-xl object-cover" />
         )}
+        {!esgotado && (qty === 0 ? (
+          <button onClick={onAdd}
+            className="h-10 px-4 rounded-xl b-btn text-white text-sm font-semibold flex items-center gap-1.5 shadow-sm transition-colors active:opacity-80">
+            <Plus className="size-4" /> Adicionar
+          </button>
+        ) : (
+          <div className="flex items-center gap-1 bg-white rounded-xl shadow-md border border-zinc-100 px-1.5 py-1">
+            <button onClick={onDec} className="size-8 flex items-center justify-center b-text rounded-lg active:bg-zinc-100">
+              <Minus className="size-4" />
+            </button>
+            <span className="text-sm font-bold b-text min-w-[20px] text-center">{qty}</span>
+            <button onClick={onAdd} className="size-8 flex items-center justify-center b-text rounded-lg active:bg-zinc-100">
+              <Plus className="size-4" />
+            </button>
+          </div>
+        ))}
       </div>
     </div>
   );
