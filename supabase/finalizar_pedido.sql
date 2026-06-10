@@ -39,7 +39,7 @@ BEGIN
   ) VALUES (
     p_empresa_id, p_cliente_nome, p_cliente_telefone, p_cliente_endereco,
     p_forma_pagamento, p_observacao, p_subtotal, p_taxa_entrega, p_total,
-    p_mesa, p_tipo, p_status
+    p_mesa, p_tipo, p_status::pedido_status
   )
   RETURNING id, numero INTO v_pedido_id, v_numero;
 
