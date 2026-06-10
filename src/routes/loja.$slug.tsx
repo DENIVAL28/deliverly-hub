@@ -53,7 +53,7 @@ function LojaPage() {
   const [checkoutOpen, setCheckoutOpen]   = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [busca, setBusca]                 = useState("");
-  const [pedidoFeito, setPedidoFeito]     = useState<{ id: string; numero: number } | null>(null);
+  const [pedidoFeito, setPedidoFeito]     = useState<{ id: string; numero: number; waUrl: string | null } | null>(null);
   const [codigoCupom, setCodigoCupom]     = useState("");
   const [cupomAplicado, setCupomAplicado] = useState<{ id: string; tipo: string; valor: number; codigo: string; usos_atual: number } | null>(null);
   const [cupomLoading, setCupomLoading]   = useState(false);
@@ -122,11 +122,6 @@ function LojaPage() {
     setCatAtiva(catId);
     setBusca("");
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }
-
-  function abrirWhatsApp(url: string) {
-    const w = window.open(url, "_blank");
-    if (!w) window.location.href = url;
   }
 
   async function checkout(e: React.FormEvent<HTMLFormElement>) {
@@ -233,15 +228,13 @@ function LojaPage() {
           const qrUrl = await QRCode.toDataURL(payload, { width: 240, margin: 2, color: { dark: "#18181b", light: "#ffffff" } });
           setPixModal({ payload, qrUrl, total, waLink: waUrl ?? "", pedidoNum: pedido.numero });
         } catch {
-          if (waUrl) abrirWhatsApp(waUrl);
-          setPedidoFeito({ id: pedido.id, numero: pedido.numero });
+          setPedidoFeito({ id: pedido.id, numero: pedido.numero, waUrl });
         }
         return;
       }
     }
 
-    if (waUrl) abrirWhatsApp(waUrl);
-    setPedidoFeito({ id: pedido.id, numero: pedido.numero });
+    setPedidoFeito({ id: pedido.id, numero: pedido.numero, waUrl });
   }
 
   async function buscarPedidosPorTel() {
@@ -668,14 +661,23 @@ function LojaPage() {
             <div className="size-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
               <MessageCircle className="size-8 text-green-600" />
             </div>
-            <h3 className="text-lg font-bold text-zinc-900">Pedido #{pedidoFeito.numero} enviado!</h3>
-            <p className="text-sm text-zinc-500 mt-1 mb-5">Acompanhe o status em tempo real pelo link abaixo.</p>
+            <h3 className="text-lg font-bold text-zinc-900">Pedido #{pedidoFeito.numero} confirmado!</h3>
+            <p className="text-sm text-zinc-500 mt-1 mb-5">Toque no botão abaixo para enviar seu pedido pelo WhatsApp.</p>
+            {pedidoFeito.waUrl && (
+              <a
+                href={pedidoFeito.waUrl}
+                target="_blank" rel="noreferrer"
+                className="flex items-center justify-center gap-2 w-full bg-green-500 hover:bg-green-600 text-white rounded-2xl h-14 font-bold text-base transition-colors mb-3 shadow-lg"
+              >
+                <MessageCircle className="size-5" /> Enviar pedido pelo WhatsApp
+              </a>
+            )}
             <a
               href={`/pedido/${pedidoFeito.id}`}
               target="_blank" rel="noreferrer"
-              className="flex items-center justify-center gap-2 w-full bg-brand hover:bg-brand/90 text-white rounded-2xl h-12 font-semibold transition-colors mb-3"
+              className="flex items-center justify-center gap-2 w-full border border-zinc-200 text-zinc-600 rounded-2xl h-11 font-medium text-sm transition-colors mb-3 hover:bg-zinc-50"
             >
-              Acompanhar pedido →
+              Acompanhar status do pedido →
             </a>
             <button onClick={() => setPedidoFeito(null)}
               className="text-sm text-zinc-400 hover:text-zinc-600 transition-colors">
