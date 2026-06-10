@@ -51,8 +51,10 @@ function ProdutosPage() {
   });
 
   async function uploadFoto(file: File, path: string): Promise<string | null> {
+    if (!file.type.startsWith("image/")) { toast.error("Envie apenas imagens (JPG, PNG, WebP)."); return null; }
+    if (file.size > 5 * 1024 * 1024) { toast.error("A imagem deve ter no máximo 5 MB."); return null; }
     const { error } = await supabase.storage.from("produtos").upload(path, file, { upsert: true });
-    if (error) { toast.error("Erro no upload: " + error.message); return null; }
+    if (error) { toast.error("Erro no upload da imagem."); return null; }
     return supabase.storage.from("produtos").getPublicUrl(path).data.publicUrl;
   }
 
@@ -124,7 +126,7 @@ function ProdutosPage() {
 
   async function adjustEstoque(id: string, delta: number, atual: number) {
     const novo = Math.max(0, atual + delta);
-    await supabase.from("produtos").update({ estoque: novo } as any).eq("id", id);
+    await supabase.from("produtos").update({ estoque: novo }).eq("id", id);
     qc.invalidateQueries({ queryKey: ["produtos", empresaId] });
   }
 
@@ -386,12 +388,12 @@ function GruposOpcoes({ produtoId }: { produtoId: string }) {
   const { data: grupos = [] } = useQuery({
     queryKey: ["grupos-opcoes", produtoId],
     queryFn: async () =>
-      (await (supabase.from("grupos_opcoes" as any) as any).select("*, opcoes(*)").eq("produto_id", produtoId).order("ordem")).data ?? [],
+      (await (supabase.from("grupos_opcoes") as any).select("*, opcoes(*)").eq("produto_id", produtoId).order("ordem")).data ?? [],
   });
 
   async function addGrupo() {
     if (!novoGrupoNome.trim()) return;
-    const { error } = await (supabase.from("grupos_opcoes" as any) as any).insert({
+    const { error } = await (supabase.from("grupos_opcoes") as any).insert({
       produto_id: produtoId, nome: novoGrupoNome.trim(),
       obrigatorio: novoGrupoObrg, multiplo: novoGrupoMulti, max_escolhas: novoGrupoMax,
       ordem: grupos.length,
@@ -402,7 +404,7 @@ function GruposOpcoes({ produtoId }: { produtoId: string }) {
   }
 
   async function removeGrupo(id: string) {
-    await (supabase.from("grupos_opcoes" as any) as any).delete().eq("id", id);
+    await (supabase.from("grupos_opcoes") as any).delete().eq("id", id);
     qc.invalidateQueries({ queryKey: ["grupos-opcoes", produtoId] });
   }
 
@@ -479,7 +481,7 @@ function GruposOpcoes({ produtoId }: { produtoId: string }) {
 function OpcaoRow({ opcao, produtoId, grupoId }: { opcao: any; produtoId: string; grupoId: string }) {
   const qc = useQueryClient();
   async function remove() {
-    await (supabase.from("opcoes" as any) as any).delete().eq("id", opcao.id);
+    await (supabase.from("opcoes") as any).delete().eq("id", opcao.id);
     qc.invalidateQueries({ queryKey: ["grupos-opcoes", produtoId] });
   }
   const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -505,7 +507,7 @@ function NovaOpcaoForm({ grupoId, produtoId, ordem }: { grupoId: string; produto
 
   async function add() {
     if (!nome.trim()) return;
-    const { error } = await (supabase.from("opcoes" as any) as any).insert({
+    const { error } = await (supabase.from("opcoes") as any).insert({
       grupo_id: grupoId, nome: nome.trim(),
       preco_adicional: Number(preco) || 0,
     });

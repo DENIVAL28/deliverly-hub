@@ -94,8 +94,8 @@ function PdvPage() {
       return (await supabase.from("pedidos")
         .select("id,numero,total,subtotal,forma_pagamento,cliente_nome,created_at,pedido_itens(nome,quantidade,preco_unitario,subtotal)")
         .eq("empresa_id", empresaId!)
-        .eq("tipo", "pdv" as any)
-        .eq("status", "finalizado" as any)
+        .eq("tipo", "pdv")
+        .eq("status", "finalizado")
         .gte("created_at", hoje.toISOString())
         .order("created_at", { ascending: false })
       ).data ?? [];
@@ -127,7 +127,7 @@ function PdvPage() {
         .from("pedidos")
         .select("id, numero, mesa, status, total, created_at, cliente_nome, pedido_itens(nome, quantidade, subtotal)")
         .eq("empresa_id", empresaId!)
-        .not("mesa" as any, "is", null)
+        .not("mesa", "is", null)
         .not("status", "in", '("finalizado","cancelado")')
         .order("created_at", { ascending: true });
       return data ?? [];
@@ -165,7 +165,7 @@ function PdvPage() {
     enabled: produtoIds.length > 0,
     staleTime: 5 * 60 * 1000,
     queryFn: async () =>
-      (await (supabase.from("grupos_opcoes" as any) as any).select("produto_id").in("produto_id", produtoIds)).data ?? [],
+      (await (supabase.from("grupos_opcoes") as any).select("produto_id").in("produto_id", produtoIds)).data ?? [],
   });
   const produtosComGrupos = useMemo(() => {
     const set = new Set<string>();
@@ -181,7 +181,7 @@ function PdvPage() {
     () => calcularDesconto(subtotal, descontoValor, descontoPct),
     [subtotal, descontoValor, descontoPct]
   );
-  const totalFinal = Math.max(0, subtotal - descontoCalculado);
+  const totalFinal = Math.round(Math.max(0, subtotal - descontoCalculado) * 100) / 100;
   const troco = useMemo(
     () => calcularTroco(totalFinal, pagamento, valorCliente),
     [pagamento, valorCliente, totalFinal]
@@ -281,26 +281,35 @@ function PdvPage() {
     setFinishing(true);
 
     const nomeCliente = identificacao.trim() || "Balcão";
-    const { data: pedido, error } = await supabase.from("pedidos").insert({
-      empresa_id: empresaId!, cliente_nome: nomeCliente, cliente_telefone: null, cliente_endereco: null,
-      forma_pagamento: pagamento, observacao: obs || null, subtotal, taxa_entrega: 0, total: totalFinal,
-      tipo: "pdv", status: "finalizado",
-    } as any).select("id,numero").single();
 
-    if (error || !pedido) { toast.error(error?.message ?? "Erro ao finalizar"); setFinishing(false); return; }
+    const itensRpc = items.map((i) => {
+      const prod = (produtos as any[]).find((p: any) => p.id === i.id);
+      return {
+        produto_id: i.id,
+        nome: i.nome,
+        quantidade: i.qty,
+        preco_unitario: i.preco,
+        subtotal: i.preco * i.qty,
+        observacao: i.opcoes?.length ? i.opcoes.map((o: any) => o.opcaoNome).join(", ") : null,
+        controlar_estoque: !!prod?.controlar_estoque,
+      };
+    });
 
-    await supabase.from("pedido_itens").insert(
-      items.map((i) => ({
-        pedido_id: pedido.id, nome: i.nome, quantidade: i.qty, preco_unitario: i.preco, subtotal: i.preco * i.qty, produto_id: i.id,
-        observacao: i.opcoes?.length ? i.opcoes.map((o) => o.opcaoNome).join(", ") : undefined,
-      }))
-    );
+    const { data: pedidoJson, error } = await supabase.rpc("finalizar_pedido", {
+      p_empresa_id:      empresaId!,
+      p_cliente_nome:    nomeCliente,
+      p_forma_pagamento: pagamento,
+      p_observacao:      obs || undefined,
+      p_subtotal:        subtotal,
+      p_taxa_entrega:    0,
+      p_total:           totalFinal,
+      p_tipo:            "pdv",
+      p_status:          "finalizado",
+      p_itens:           itensRpc,
+    });
 
-    const comEstoque = (produtos as any[]).filter((p) => p.controlar_estoque && items.some((i) => i.id === p.id));
-    await Promise.all(comEstoque.map((p: any) => {
-      const item = items.find((i) => i.id === p.id);
-      return supabase.from("produtos").update({ estoque: Math.max(0, (p.estoque ?? 0) - (item?.qty ?? 1)) } as any).eq("id", p.id);
-    }));
+    if (error || !pedidoJson) { toast.error("Erro ao finalizar venda. Tente novamente."); setFinishing(false); return; }
+    const pedido = pedidoJson as { id: string; numero: number };
 
     setComprovante({ numero: pedido.numero, identificacao: nomeCliente, itens: items, subtotal, desconto: descontoCalculado, total: totalFinal, pagamento, troco, obs, horario: new Date() });
 
@@ -1013,7 +1022,7 @@ function OptionsModal({ product: p, fmt, onClose, onAdd }: {
   const { data: grupos = [] } = useQuery({
     queryKey: ["grupos-opcoes", p.id],
     queryFn: async () =>
-      (await (supabase.from("grupos_opcoes" as any) as any).select("*, opcoes(*)").eq("produto_id", p.id).order("ordem")).data ?? [],
+      (await (supabase.from("grupos_opcoes") as any).select("*, opcoes(*)").eq("produto_id", p.id).order("ordem")).data ?? [],
   });
 
   const precoBase = Number(p.preco_promocional ?? p.preco);

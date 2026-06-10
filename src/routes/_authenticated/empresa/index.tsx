@@ -105,7 +105,7 @@ function EmpresaDashboard() {
     if (!empresaId || toggling) return;
     const novoStatus = !lojaAberta;
     setToggling(true);
-    const { error } = await supabase.from("empresas").update({ aberto: novoStatus } as any).eq("id", empresaId);
+    const { error } = await supabase.from("empresas").update({ aberto: novoStatus }).eq("id", empresaId);
     setToggling(false);
     if (error) { toast.error("Erro ao atualizar status da loja."); return; }
     setLojaAberta(novoStatus);
@@ -248,7 +248,7 @@ function EmpresaDashboard() {
   async function advance(pedido: any) {
     const next = NEXT[pedido.status];
     if (!next) return;
-    await supabase.from("pedidos").update({ status: next as any }).eq("id", pedido.id);
+    await supabase.from("pedidos").update({ status: next as "novo" | "aceito" | "preparo" | "entrega" | "finalizado" | "cancelado" }).eq("id", pedido.id);
     qc.invalidateQueries({ queryKey: ["dashboard-ativos", empresaId] });
     qc.invalidateQueries({ queryKey: ["dashboard-stats", empresaId] });
 

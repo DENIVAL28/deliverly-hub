@@ -88,14 +88,15 @@ function OnboardingPage() {
     if (!user) return;
     setSalvando(true);
     try {
-      const { data, error } = await supabase.rpc("criar_empresa_onboarding" as any, {
+      const { data, error } = await supabase.rpc("criar_empresa_onboarding", {
         p_nome_fantasia: nome.trim(),
         p_slug:          slug.trim(),
         p_cor_primaria:  corPrimaria,
-        p_cidade:        cidade.trim() || null,
-        p_whatsapp:      whatsapp.trim() || null,
-        p_cnpj:          cnpj.replace(/\D/g, "").length === 14 ? cnpj.trim() : null,
-      } as any);
+        p_cidade:        cidade.trim() || undefined,
+        p_whatsapp:      whatsapp.trim() || undefined,
+        p_cnpj:          cnpj.replace(/\D/g, "").length === 14 ? cnpj.trim() : undefined,
+        p_segmento:      segmento || undefined,
+      });
 
       if (error) {
         const msg = error.message.includes("SLUG_OCUPADO")

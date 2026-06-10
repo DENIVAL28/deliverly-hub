@@ -31,7 +31,7 @@ function AvaliacoesPage() {
     queryKey: ["avaliacoes", empresaId],
     enabled: !!empresaId,
     queryFn: async () =>
-      (await supabase.from("avaliacoes" as any).select("*").eq("empresa_id", empresaId!).order("created_at", { ascending: false })).data ?? [],
+      (await supabase.from("avaliacoes").select("*").eq("empresa_id", empresaId!).order("created_at", { ascending: false })).data ?? [],
   });
 
   const media = avaliacoes.length

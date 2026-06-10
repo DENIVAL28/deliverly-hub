@@ -1,6 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useGoogleReCaptcha } from "react-google-recaptcha-v3";
 import { supabase } from "@/integrations/supabase/client";
+import { traduzirErro } from "@/lib/erros";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,7 +29,11 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
+  const { executeRecaptcha } = useGoogleReCaptcha();
   const [loading, setLoading] = useState(false);
+  const [esqueceu, setEsqueceu] = useState(false);
+  const [emailReset, setEmailReset] = useState("");
+  const [enviado, setEnviado] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -35,24 +41,43 @@ function AuthPage() {
     });
   }, [navigate]);
 
+  async function getRecaptchaToken(action: string): Promise<string | null> {
+    if (!executeRecaptcha) return null;
+    try { return await executeRecaptcha(action); } catch { return null; }
+  }
+
   async function handleLogin(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     setLoading(true);
+    await getRecaptchaToken("login");
     const { error } = await supabase.auth.signInWithPassword({
       email: String(fd.get("email")),
       password: String(fd.get("password")),
     });
     setLoading(false);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(traduzirErro(error.message)); return; }
     toast.success("Bem-vindo de volta!");
     navigate({ to: "/app" });
+  }
+
+  async function handleResetPassword(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setLoading(true);
+    await getRecaptchaToken("reset_password");
+    const { error } = await supabase.auth.resetPasswordForEmail(emailReset, {
+      redirectTo: `${window.location.origin}/nova-senha`,
+    });
+    setLoading(false);
+    if (error) { toast.error(traduzirErro(error.message)); return; }
+    setEnviado(true);
   }
 
   async function handleSignup(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     setLoading(true);
+    await getRecaptchaToken("signup");
     const { error } = await supabase.auth.signUp({
       email: String(fd.get("email")),
       password: String(fd.get("password")),
@@ -62,7 +87,7 @@ function AuthPage() {
       },
     });
     setLoading(false);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(traduzirErro(error.message)); return; }
     toast.success("Conta criada! Verifique seu e-mail para confirmar.");
   }
 
@@ -150,13 +175,49 @@ function AuthPage() {
             </TabsList>
 
             <TabsContent value="login">
-              <form onSubmit={handleLogin} className="space-y-4">
-                <Field name="email" label="E-mail" type="email" />
-                <Field name="password" label="Senha" type="password" />
-                <Button type="submit" disabled={loading} className="w-full bg-orange-500 hover:bg-orange-400 h-11 text-base font-bold rounded-xl">
-                  {loading ? "Entrando…" : "Entrar"}
-                </Button>
-              </form>
+              {esqueceu ? (
+                enviado ? (
+                  <div className="text-center py-6 space-y-3">
+                    <div className="text-4xl">📧</div>
+                    <p className="font-semibold text-zinc-900">E-mail enviado!</p>
+                    <p className="text-sm text-zinc-500">Verifique sua caixa de entrada e clique no link para redefinir sua senha.</p>
+                    <button onClick={() => { setEsqueceu(false); setEnviado(false); setEmailReset(""); }}
+                      className="text-sm text-orange-500 hover:underline">
+                      Voltar ao login
+                    </button>
+                  </div>
+                ) : (
+                  <form onSubmit={handleResetPassword} className="space-y-4">
+                    <p className="text-sm text-zinc-500">Digite seu e-mail e enviaremos um link para redefinir sua senha.</p>
+                    <div className="space-y-2">
+                      <Label htmlFor="email-reset">E-mail</Label>
+                      <Input id="email-reset" type="email" required value={emailReset}
+                        onChange={(e) => setEmailReset(e.target.value)} placeholder="seu@email.com" />
+                    </div>
+                    <Button type="submit" disabled={loading} className="w-full bg-orange-500 hover:bg-orange-400 h-11 font-bold rounded-xl">
+                      {loading ? "Enviando…" : "Enviar link de redefinição"}
+                    </Button>
+                    <button type="button" onClick={() => setEsqueceu(false)}
+                      className="w-full text-sm text-zinc-400 hover:text-zinc-600 transition-colors">
+                      ← Voltar ao login
+                    </button>
+                  </form>
+                )
+              ) : (
+                <form onSubmit={handleLogin} className="space-y-4">
+                  <Field name="email" label="E-mail" type="email" />
+                  <Field name="password" label="Senha" type="password" />
+                  <div className="text-right -mt-2">
+                    <button type="button" onClick={() => setEsqueceu(true)}
+                      className="text-xs text-zinc-400 hover:text-orange-500 transition-colors">
+                      Esqueceu a senha?
+                    </button>
+                  </div>
+                  <Button type="submit" disabled={loading} className="w-full bg-orange-500 hover:bg-orange-400 h-11 text-base font-bold rounded-xl">
+                    {loading ? "Entrando…" : "Entrar"}
+                  </Button>
+                </form>
+              )}
             </TabsContent>
 
             <TabsContent value="signup">

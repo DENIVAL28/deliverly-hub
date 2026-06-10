@@ -48,7 +48,9 @@ export function makeComanda(): Comanda {
 }
 
 export function cartSubtotal(cart: Record<string, CartItem>): number {
-  return Object.values(cart).reduce((s, i) => s + i.preco * i.qty, 0);
+  // Somar em centavos (inteiros) para evitar imprecisão de ponto flutuante
+  const cents = Object.values(cart).reduce((s, i) => s + Math.round(i.preco * 100) * i.qty, 0);
+  return cents / 100;
 }
 
 export function cartCount(cart: Record<string, CartItem>): number {
@@ -64,7 +66,8 @@ export function calcularDesconto(
     return Math.min(subtotal, Math.max(0, Number(descontoValor) || 0));
   }
   if (descontoPct) {
-    return (subtotal * Math.min(100, Math.max(0, Number(descontoPct) || 0))) / 100;
+    const pct = Math.min(100, Math.max(0, Number(descontoPct) || 0));
+    return Math.round((subtotal * pct) / 100 * 100) / 100;
   }
   return 0;
 }

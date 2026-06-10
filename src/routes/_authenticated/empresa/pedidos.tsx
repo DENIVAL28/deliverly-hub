@@ -9,6 +9,7 @@ import { Bell, BellOff, Printer, Bike, MessageCircle, ChevronLeft, ChevronRight,
 import { gerarCSV, baixarCSV, COLUNAS_PEDIDOS } from "@/lib/exportar";
 import { toast } from "sonner";
 import { LimiteBanner } from "@/components/UpgradeGuard";
+import { traduzirErro } from "@/lib/erros";
 import { PLANO_LIMITS } from "@/lib/plano";
 
 const STATUS: { value: string; label: string; tone: string }[] = [
@@ -199,7 +200,7 @@ function PedidosPage() {
     queryFn: async () =>
       (await supabase.from("pedidos").select("*, pedido_itens(*)")
         .eq("empresa_id", empresaId!)
-        .in("status" as any, ATIVOS)
+        .in("status", ATIVOS as any)
         .order("created_at", { ascending: false })).data ?? [],
   });
 
@@ -224,7 +225,7 @@ function PedidosPage() {
     queryKey: ["entregadores", empresaId],
     enabled: !!empresaId,
     queryFn: async () =>
-      (await supabase.from("entregadores").select("id,nome").eq("empresa_id", empresaId!).eq("ativo" as any, true).order("nome")).data ?? [],
+      (await supabase.from("entregadores").select("id,nome").eq("empresa_id", empresaId!).eq("ativo", true).order("nome")).data ?? [],
   });
 
   const filtered    = tab === "ativos" ? pedidosAtivos : (pedidosPag?.items ?? []);
@@ -243,20 +244,20 @@ function PedidosPage() {
       update.entregador_nome = ent?.nome ?? null;
     }
     const { error } = await supabase.from("pedidos").update(update).eq("id", p.id);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(traduzirErro(error.message)); return; }
     qc.invalidateQueries({ queryKey: ["pedidos", empresaId] });
   }
 
   async function cancel(id: string) {
-    const { error } = await supabase.from("pedidos").update({ status: "cancelado" as any }).eq("id", id);
-    if (error) { toast.error(error.message); return; }
+    const { error } = await supabase.from("pedidos").update({ status: "cancelado" }).eq("id", id);
+    if (error) { toast.error(traduzirErro(error.message)); return; }
     toast.success("Pedido cancelado");
     qc.invalidateQueries({ queryKey: ["pedidos", empresaId] });
   }
 
   async function excluir(id: string) {
     const { error } = await supabase.from("pedidos").delete().eq("id", id);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(traduzirErro(error.message)); return; }
     toast.success("Pedido excluído");
     qc.invalidateQueries({ queryKey: ["pedidos", empresaId] });
   }

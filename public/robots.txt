@@ -1,2 +1,9 @@
 User-agent: *
 Allow: /
+Disallow: /empresa/
+Disallow: /master/
+Disallow: /app
+Disallow: /onboarding
+Disallow: /nova-senha
+
+Sitemap: https://deliverly.sossistemas.com.br/sitemap.xml

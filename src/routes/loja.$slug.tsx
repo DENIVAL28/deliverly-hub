@@ -1,6 +1,7 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { useRef, useMemo, useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useGoogleReCaptcha } from "react-google-recaptcha-v3";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,14 +17,14 @@ export const Route = createFileRoute("/loja/$slug")({
   loader: async ({ params }) => {
     const { data: empresa } = await supabase
       .from("empresas")
-      .select("id,nome_fantasia,slug,whatsapp,cor_primaria,taxa_entrega,status,aberto,logo_url,banner_url,tempo_entrega,pedido_minimo,horario_abertura,horario_fechamento,dias_semana,chave_pix,nome_recebedor,cidade_recebedor")
+      .select("id,nome_fantasia,slug,whatsapp,cor_primaria,taxa_entrega,status,aberto,logo_url,banner_url,tempo_entrega,pedido_minimo,horario_abertura,horario_fechamento,dias_semana")
       .eq("slug", params.slug)
       .maybeSingle();
     if (!empresa) throw notFound();
     const [{ data: categorias }, { data: produtos }, { data: avs }] = await Promise.all([
       supabase.from("categorias").select("*").eq("empresa_id", empresa.id).eq("ativo", true).order("ordem"),
       supabase.from("produtos").select("*").eq("empresa_id", empresa.id).eq("ativo", true),
-      supabase.from("avaliacoes" as any).select("nota").eq("empresa_id", empresa.id),
+      supabase.from("avaliacoes").select("nota").eq("empresa_id", empresa.id),
     ]);
     const notas = (avs ?? []) as any[];
     const mediaAval = notas.length ? notas.reduce((s: number, a: any) => s + a.nota, 0) / notas.length : null;
@@ -42,6 +43,7 @@ interface CartItem { id: string; nome: string; preco: number; qty: number; opcoe
 
 function LojaPage() {
   const { empresa, categorias, produtos, mediaAval, totalAval } = Route.useLoaderData();
+  const { executeRecaptcha } = useGoogleReCaptcha();
   // Lê mesa da URL: /loja/slug?mesa=3
   const mesa = useMemo(() => {
     if (typeof window === "undefined") return null;
@@ -65,7 +67,10 @@ function LojaPage() {
   const catRefs = useRef<Record<string, HTMLElement | null>>({});
 
   const totalQty   = useMemo(() => Object.values(cart).reduce((s, i) => s + i.qty, 0), [cart]);
-  const totalPrice = useMemo(() => Object.values(cart).reduce((s, i) => s + i.preco * i.qty, 0), [cart]);
+  const totalPrice = useMemo(
+    () => Object.values(cart).reduce((s, i) => s + Math.round(i.preco * 100) * i.qty, 0) / 100,
+    [cart]
+  );
   const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
   const desconto = useMemo(() => {
@@ -86,7 +91,7 @@ function LojaPage() {
     if (!data) { toast.error("Cupom não encontrado."); return; }
     if (!data.ativo) { toast.error("Este cupom está inativo."); return; }
     if (data.validade && new Date(data.validade) < new Date()) { toast.error("Este cupom expirou."); return; }
-    if (data.usos_max && data.usos_atual >= data.usos_max) { toast.error("Este cupom atingiu o limite de usos."); return; }
+    if (data.usos_max && (data.usos_atual ?? 0) >= data.usos_max) { toast.error("Este cupom atingiu o limite de usos."); return; }
     setCupomAplicado({ id: data.id, tipo: data.tipo, valor: Number(data.valor), codigo: codigoCupom.trim().toUpperCase(), usos_atual: data.usos_atual ?? 0 });
     toast.success(`Cupom ${codigoCupom.toUpperCase()} aplicado!`);
   }
@@ -122,6 +127,7 @@ function LojaPage() {
   async function checkout(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (empresa.status !== "ativa" || (empresa as any).aberto === false) { toast.error("Esta loja está temporariamente fechada."); return; }
+    if (executeRecaptcha) { try { await executeRecaptcha("checkout"); } catch { /* sem chave configurada */ } }
     const items = Object.values(cart);
     if (items.length === 0) { toast.error("Carrinho vazio."); return; }
     const pedidoMin = Number((empresa as any).pedido_minimo ?? 0);
@@ -132,35 +138,62 @@ function LojaPage() {
     const fd            = new FormData(e.currentTarget);
     const subtotal      = totalPrice;
     const taxa          = Number(empresa.taxa_entrega ?? 0);
-    const total         = Math.max(0, subtotal - desconto + taxa);
-    const cliente_nome     = String(fd.get("nome"));
-    const cliente_telefone = mesa ? "" : String(fd.get("telefone"));
-    const cliente_endereco = mesa ? `Mesa ${mesa}` : String(fd.get("endereco"));
+    const total         = Math.round(Math.max(0, subtotal - desconto + taxa) * 100) / 100;
+    const cliente_nome     = String(fd.get("nome")).trim().slice(0, 120);
+    const cliente_telefone = mesa ? "" : String(fd.get("telefone")).replace(/\D/g, "").slice(0, 15);
+    const cliente_endereco = mesa ? `Mesa ${mesa}` : String(fd.get("endereco")).trim().slice(0, 255);
     const forma_pagamento  = String(fd.get("pagamento"));
-    const observacao       = String(fd.get("observacao") || "");
+    const observacao       = String(fd.get("observacao") || "").trim().slice(0, 500);
 
-    const { data: pedido, error } = await supabase.from("pedidos").insert({
-      empresa_id: empresa.id, cliente_nome, cliente_telefone, cliente_endereco,
-      forma_pagamento, observacao, subtotal, taxa_entrega: taxa, total,
-      mesa: mesa ? `Mesa ${mesa}` : null,
-    } as any).select("id,numero").single();
-    if (error || !pedido) { toast.error(error?.message ?? "Falha ao enviar pedido"); return; }
+    if (!cliente_nome || cliente_nome.length < 2) {
+      toast.error("Informe seu nome completo.");
+      return;
+    }
+    if (!mesa && (!cliente_telefone || cliente_telefone.length < 8)) {
+      toast.error("Informe um telefone válido.");
+      return;
+    }
+    if (!mesa && (!cliente_endereco || cliente_endereco.length < 5)) {
+      toast.error("Informe o endereço de entrega.");
+      return;
+    }
+    const PAGAMENTOS_VALIDOS = ["Dinheiro", "Cartão", "PIX"];
+    if (!PAGAMENTOS_VALIDOS.includes(forma_pagamento)) {
+      toast.error("Forma de pagamento inválida.");
+      return;
+    }
 
-    await supabase.from("pedido_itens").insert(
-      items.map((i) => ({
-        pedido_id: pedido.id, nome: i.nome, quantidade: i.qty,
-        preco_unitario: i.preco, subtotal: i.preco * i.qty, produto_id: i.id,
-        observacao: i.opcoes?.length ? i.opcoes.map((o) => o.opcaoNome).join(", ") : undefined,
-      }))
-    );
+    const itensRpc = items.map((i) => {
+      const prod = (produtos as any[]).find((p) => p.id === i.id);
+      return {
+        produto_id: i.id,
+        nome: i.nome,
+        quantidade: i.qty,
+        preco_unitario: i.preco,
+        subtotal: i.preco * i.qty,
+        observacao: i.opcoes?.length ? i.opcoes.map((o: any) => o.opcaoNome).join(", ") : null,
+        controlar_estoque: !!prod?.controlar_estoque,
+      };
+    });
 
-    // Decrementa estoque dos produtos que controlam
-    const produtosComEstoque = produtos.filter((p: any) => p.controlar_estoque && items.some((i) => i.id === p.id));
-    await Promise.all(produtosComEstoque.map((p: any) => {
-      const pedidoItem = items.find((i) => i.id === p.id);
-      const novoEstoque = Math.max(0, (p.estoque ?? 0) - (pedidoItem?.qty ?? 1));
-      return supabase.from("produtos").update({ estoque: novoEstoque } as any).eq("id", p.id);
-    }));
+    const { data: pedidoJson, error } = await supabase.rpc("finalizar_pedido", {
+      p_empresa_id:       empresa.id,
+      p_cliente_nome:     cliente_nome,
+      p_cliente_telefone: mesa ? undefined : cliente_telefone || undefined,
+      p_cliente_endereco: cliente_endereco,
+      p_forma_pagamento:  forma_pagamento,
+      p_observacao:       observacao || undefined,
+      p_subtotal:         subtotal,
+      p_taxa_entrega:     taxa,
+      p_total:            total,
+      p_mesa:             mesa ? `Mesa ${mesa}` : undefined,
+      p_tipo:             "delivery",
+      p_status:           "novo",
+      p_cupom_id:         cupomAplicado?.id ?? undefined,
+      p_itens:            itensRpc,
+    });
+    if (error || !pedidoJson) { toast.error("Não foi possível registrar seu pedido. Tente novamente."); return; }
+    const pedido = pedidoJson as { id: string; numero: number };
 
     const msg = encodeURIComponent(
       `*Pedido #${pedido.numero}*\n\n` +
@@ -175,29 +208,31 @@ function LojaPage() {
       `Pagamento: ${forma_pagamento}${observacao ? `\nObs: ${observacao}` : ""}`
     );
 
-    // Registra uso do cupom
-    if (cupomAplicado) {
-      await supabase.from("cupons").update({ usos_atual: cupomAplicado.usos_atual + 1 } as any).eq("id", cupomAplicado.id);
-    }
-
     setCart({}); setCheckoutOpen(false); setCupomAplicado(null); setCodigoCupom("");
 
     const waUrl = empresa.whatsapp ? `https://wa.me/${empresa.whatsapp.replace(/\D/g, "")}?text=${msg}` : null;
 
-    // PIX → gera QR code e mostra modal antes do WhatsApp
-    const chave = (empresa as any).chave_pix;
-    if (forma_pagamento === "PIX" && chave) {
-      const nomeRec = ((empresa as any).nome_recebedor || empresa.nome_fantasia || "Loja").normalize("NFD").replace(/[̀-ͯ]/g, "").substring(0, 25);
-      const cidadeRec = ((empresa as any).cidade_recebedor || "Brasil").normalize("NFD").replace(/[̀-ͯ]/g, "").substring(0, 15);
-      const payload = gerarPixPayload(chave, nomeRec, cidadeRec, total);
-      try {
-        const qrUrl = await QRCode.toDataURL(payload, { width: 240, margin: 2, color: { dark: "#18181b", light: "#ffffff" } });
-        setPixModal({ payload, qrUrl, total, waLink: waUrl ?? "", pedidoNum: pedido.numero });
-      } catch {
-        if (waUrl) window.open(waUrl, "_blank");
-        setPedidoFeito({ id: pedido.id, numero: pedido.numero });
+    // PIX → busca dados bancários só após pedido criado (não ficam no bundle inicial da página)
+    if (forma_pagamento === "PIX") {
+      const { data: pixData } = await supabase
+        .from("empresas")
+        .select("chave_pix,nome_recebedor,cidade_recebedor")
+        .eq("id", empresa.id)
+        .single();
+      const chave = (pixData as any)?.chave_pix;
+      if (chave) {
+        const nomeRec = ((pixData as any)?.nome_recebedor || empresa.nome_fantasia || "Loja").normalize("NFD").replace(/[̀-ͯ]/g, "").substring(0, 25);
+        const cidadeRec = ((pixData as any)?.cidade_recebedor || "Brasil").normalize("NFD").replace(/[̀-ͯ]/g, "").substring(0, 15);
+        const payload = gerarPixPayload(chave, nomeRec, cidadeRec, total);
+        try {
+          const qrUrl = await QRCode.toDataURL(payload, { width: 240, margin: 2, color: { dark: "#18181b", light: "#ffffff" } });
+          setPixModal({ payload, qrUrl, total, waLink: waUrl ?? "", pedidoNum: pedido.numero });
+        } catch {
+          if (waUrl) window.open(waUrl, "_blank");
+          setPedidoFeito({ id: pedido.id, numero: pedido.numero });
+        }
+        return;
       }
-      return;
     }
 
     if (waUrl) window.open(waUrl, "_blank");
@@ -944,7 +979,7 @@ function ProductModal({ product: p, cartQty, fmt, onClose, onAdd }: {
   const { data: grupos = [] } = useQuery({
     queryKey: ["grupos-opcoes", p.id],
     queryFn: async () =>
-      (await (supabase.from("grupos_opcoes" as any) as any).select("*, opcoes(*)").eq("produto_id", p.id).order("ordem")).data ?? [],
+      (await (supabase.from("grupos_opcoes") as any).select("*, opcoes(*)").eq("produto_id", p.id).order("ordem")).data ?? [],
   });
 
   // Preço total com adicionais

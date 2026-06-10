@@ -65,7 +65,7 @@ function PedidoTracking() {
   async function enviarAvaliacao() {
     if (!notaSel) return;
     setAvaliando(true);
-    await supabase.from("avaliacoes" as any).insert({
+    await supabase.from("avaliacoes").insert({
       pedido_id: pedido.id,
       empresa_id: pedido.empresa_id,
       nota: notaSel,

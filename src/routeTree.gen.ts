@@ -10,6 +10,8 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as NovaSenhaRouteImport } from './routes/nova-senha'
+import { Route as LojasRouteImport } from './routes/lojas'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
@@ -28,6 +30,7 @@ import { Route as AuthenticatedMasterMensalidadesRouteImport } from './routes/_a
 import { Route as AuthenticatedMasterEmpresasRouteImport } from './routes/_authenticated/master/empresas'
 import { Route as AuthenticatedEmpresaRelatoriosRouteImport } from './routes/_authenticated/empresa/relatorios'
 import { Route as AuthenticatedEmpresaProdutosRouteImport } from './routes/_authenticated/empresa/produtos'
+import { Route as AuthenticatedEmpresaPlanosRouteImport } from './routes/_authenticated/empresa/planos'
 import { Route as AuthenticatedEmpresaPedidosRouteImport } from './routes/_authenticated/empresa/pedidos'
 import { Route as AuthenticatedEmpresaPdvRouteImport } from './routes/_authenticated/empresa/pdv'
 import { Route as AuthenticatedEmpresaEntregadoresRouteImport } from './routes/_authenticated/empresa/entregadores'
@@ -40,6 +43,16 @@ import { Route as AuthenticatedEmpresaAvaliacoesRouteImport } from './routes/_au
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NovaSenhaRoute = NovaSenhaRouteImport.update({
+  id: '/nova-senha',
+  path: '/nova-senha',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LojasRoute = LojasRouteImport.update({
+  id: '/lojas',
+  path: '/lojas',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -141,6 +154,12 @@ const AuthenticatedEmpresaProdutosRoute =
     path: '/produtos',
     getParentRoute: () => AuthenticatedEmpresaRouteRoute,
   } as any)
+const AuthenticatedEmpresaPlanosRoute =
+  AuthenticatedEmpresaPlanosRouteImport.update({
+    id: '/planos',
+    path: '/planos',
+    getParentRoute: () => AuthenticatedEmpresaRouteRoute,
+  } as any)
 const AuthenticatedEmpresaPedidosRoute =
   AuthenticatedEmpresaPedidosRouteImport.update({
     id: '/pedidos',
@@ -192,6 +211,8 @@ const AuthenticatedEmpresaAvaliacoesRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/lojas': typeof LojasRoute
+  '/nova-senha': typeof NovaSenhaRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/empresa': typeof AuthenticatedEmpresaRouteRouteWithChildren
   '/master': typeof AuthenticatedMasterRouteRouteWithChildren
@@ -208,6 +229,7 @@ export interface FileRoutesByFullPath {
   '/empresa/entregadores': typeof AuthenticatedEmpresaEntregadoresRoute
   '/empresa/pdv': typeof AuthenticatedEmpresaPdvRoute
   '/empresa/pedidos': typeof AuthenticatedEmpresaPedidosRoute
+  '/empresa/planos': typeof AuthenticatedEmpresaPlanosRoute
   '/empresa/produtos': typeof AuthenticatedEmpresaProdutosRoute
   '/empresa/relatorios': typeof AuthenticatedEmpresaRelatoriosRoute
   '/master/empresas': typeof AuthenticatedMasterEmpresasRoute
@@ -220,6 +242,8 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/lojas': typeof LojasRoute
+  '/nova-senha': typeof NovaSenhaRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/app': typeof AuthenticatedAppRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
@@ -234,6 +258,7 @@ export interface FileRoutesByTo {
   '/empresa/entregadores': typeof AuthenticatedEmpresaEntregadoresRoute
   '/empresa/pdv': typeof AuthenticatedEmpresaPdvRoute
   '/empresa/pedidos': typeof AuthenticatedEmpresaPedidosRoute
+  '/empresa/planos': typeof AuthenticatedEmpresaPlanosRoute
   '/empresa/produtos': typeof AuthenticatedEmpresaProdutosRoute
   '/empresa/relatorios': typeof AuthenticatedEmpresaRelatoriosRoute
   '/master/empresas': typeof AuthenticatedMasterEmpresasRoute
@@ -248,6 +273,8 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/lojas': typeof LojasRoute
+  '/nova-senha': typeof NovaSenhaRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/_authenticated/empresa': typeof AuthenticatedEmpresaRouteRouteWithChildren
   '/_authenticated/master': typeof AuthenticatedMasterRouteRouteWithChildren
@@ -264,6 +291,7 @@ export interface FileRoutesById {
   '/_authenticated/empresa/entregadores': typeof AuthenticatedEmpresaEntregadoresRoute
   '/_authenticated/empresa/pdv': typeof AuthenticatedEmpresaPdvRoute
   '/_authenticated/empresa/pedidos': typeof AuthenticatedEmpresaPedidosRoute
+  '/_authenticated/empresa/planos': typeof AuthenticatedEmpresaPlanosRoute
   '/_authenticated/empresa/produtos': typeof AuthenticatedEmpresaProdutosRoute
   '/_authenticated/empresa/relatorios': typeof AuthenticatedEmpresaRelatoriosRoute
   '/_authenticated/master/empresas': typeof AuthenticatedMasterEmpresasRoute
@@ -278,6 +306,8 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/lojas'
+    | '/nova-senha'
     | '/sitemap.xml'
     | '/empresa'
     | '/master'
@@ -294,6 +324,7 @@ export interface FileRouteTypes {
     | '/empresa/entregadores'
     | '/empresa/pdv'
     | '/empresa/pedidos'
+    | '/empresa/planos'
     | '/empresa/produtos'
     | '/empresa/relatorios'
     | '/master/empresas'
@@ -306,6 +337,8 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/lojas'
+    | '/nova-senha'
     | '/sitemap.xml'
     | '/app'
     | '/onboarding'
@@ -320,6 +353,7 @@ export interface FileRouteTypes {
     | '/empresa/entregadores'
     | '/empresa/pdv'
     | '/empresa/pedidos'
+    | '/empresa/planos'
     | '/empresa/produtos'
     | '/empresa/relatorios'
     | '/master/empresas'
@@ -333,6 +367,8 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/lojas'
+    | '/nova-senha'
     | '/sitemap.xml'
     | '/_authenticated/empresa'
     | '/_authenticated/master'
@@ -349,6 +385,7 @@ export interface FileRouteTypes {
     | '/_authenticated/empresa/entregadores'
     | '/_authenticated/empresa/pdv'
     | '/_authenticated/empresa/pedidos'
+    | '/_authenticated/empresa/planos'
     | '/_authenticated/empresa/produtos'
     | '/_authenticated/empresa/relatorios'
     | '/_authenticated/master/empresas'
@@ -363,6 +400,8 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  LojasRoute: typeof LojasRoute
+  NovaSenhaRoute: typeof NovaSenhaRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   EntregadorIdRoute: typeof EntregadorIdRoute
   LojaSlugRoute: typeof LojaSlugRoute
@@ -376,6 +415,20 @@ declare module '@tanstack/react-router' {
       path: '/sitemap.xml'
       fullPath: '/sitemap.xml'
       preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/nova-senha': {
+      id: '/nova-senha'
+      path: '/nova-senha'
+      fullPath: '/nova-senha'
+      preLoaderRoute: typeof NovaSenhaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lojas': {
+      id: '/lojas'
+      path: '/lojas'
+      fullPath: '/lojas'
+      preLoaderRoute: typeof LojasRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -504,6 +557,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEmpresaProdutosRouteImport
       parentRoute: typeof AuthenticatedEmpresaRouteRoute
     }
+    '/_authenticated/empresa/planos': {
+      id: '/_authenticated/empresa/planos'
+      path: '/planos'
+      fullPath: '/empresa/planos'
+      preLoaderRoute: typeof AuthenticatedEmpresaPlanosRouteImport
+      parentRoute: typeof AuthenticatedEmpresaRouteRoute
+    }
     '/_authenticated/empresa/pedidos': {
       id: '/_authenticated/empresa/pedidos'
       path: '/pedidos'
@@ -572,6 +632,7 @@ interface AuthenticatedEmpresaRouteRouteChildren {
   AuthenticatedEmpresaEntregadoresRoute: typeof AuthenticatedEmpresaEntregadoresRoute
   AuthenticatedEmpresaPdvRoute: typeof AuthenticatedEmpresaPdvRoute
   AuthenticatedEmpresaPedidosRoute: typeof AuthenticatedEmpresaPedidosRoute
+  AuthenticatedEmpresaPlanosRoute: typeof AuthenticatedEmpresaPlanosRoute
   AuthenticatedEmpresaProdutosRoute: typeof AuthenticatedEmpresaProdutosRoute
   AuthenticatedEmpresaRelatoriosRoute: typeof AuthenticatedEmpresaRelatoriosRoute
   AuthenticatedEmpresaIndexRoute: typeof AuthenticatedEmpresaIndexRoute
@@ -589,6 +650,7 @@ const AuthenticatedEmpresaRouteRouteChildren: AuthenticatedEmpresaRouteRouteChil
       AuthenticatedEmpresaEntregadoresRoute,
     AuthenticatedEmpresaPdvRoute: AuthenticatedEmpresaPdvRoute,
     AuthenticatedEmpresaPedidosRoute: AuthenticatedEmpresaPedidosRoute,
+    AuthenticatedEmpresaPlanosRoute: AuthenticatedEmpresaPlanosRoute,
     AuthenticatedEmpresaProdutosRoute: AuthenticatedEmpresaProdutosRoute,
     AuthenticatedEmpresaRelatoriosRoute: AuthenticatedEmpresaRelatoriosRoute,
     AuthenticatedEmpresaIndexRoute: AuthenticatedEmpresaIndexRoute,
@@ -642,6 +704,8 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  LojasRoute: LojasRoute,
+  NovaSenhaRoute: NovaSenhaRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   EntregadorIdRoute: EntregadorIdRoute,
   LojaSlugRoute: LojaSlugRoute,

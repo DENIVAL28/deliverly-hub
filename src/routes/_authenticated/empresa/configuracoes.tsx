@@ -57,6 +57,7 @@ function ConfiguracoesPage() {
   const [zapiToken,      setZapiToken]      = useState("");
   const [zapiClientToken, setZapiClientToken] = useState("");
   const [cnpj,           setCnpj]           = useState("");
+  const [segmento,       setSegmento]       = useState("");
   const [zapiTestando,   setZapiTestando]   = useState(false);
 
   const [synced, setSynced] = useState(false);
@@ -79,6 +80,7 @@ function ConfiguracoesPage() {
     setZapiToken(emp.zapi_token ?? "");
     setZapiClientToken(emp.zapi_client_token ?? "");
     setCnpj(emp.cnpj ?? "");
+    setSegmento(emp.segmento ?? "");
     setSynced(true);
   }
 
@@ -87,12 +89,13 @@ function ConfiguracoesPage() {
   }
 
   async function uploadImagem(file: File, path: string): Promise<string | null> {
+    if (!file.type.startsWith("image/")) { toast.error("Envie apenas imagens (JPG, PNG, WebP)."); return null; }
+    if (file.size > 5 * 1024 * 1024) { toast.error("A imagem deve ter no máximo 5 MB."); return null; }
     const { error } = await supabase.storage
       .from("empresas")
       .upload(path, file, { upsert: true });
     if (error) {
-      console.error("Upload error:", error);
-      toast.error(`Erro no upload da imagem: ${error.message}`);
+      toast.error("Erro no upload da imagem.");
       return null;
     }
     const { data } = supabase.storage.from("empresas").getPublicUrl(path);
@@ -125,6 +128,7 @@ function ConfiguracoesPage() {
       zapi_token: zapiToken.trim() || null,
       zapi_client_token: zapiClientToken.trim() || null,
       cnpj: cnpj.replace(/\D/g, "").length === 14 ? cnpj.trim() : (cnpj.trim() || null),
+      segmento: segmento || null,
     };
 
     const logoFile   = logoRef.current?.files?.[0];
@@ -306,6 +310,27 @@ function ConfiguracoesPage() {
               <Label htmlFor="nome_fantasia">Nome do estabelecimento</Label>
               <Input id="nome_fantasia" value={nome} onChange={(e) => setNome(e.target.value)}
                 required className="h-10 rounded-xl" />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="segmento">Segmento</Label>
+              <select
+                id="segmento"
+                value={segmento}
+                onChange={(e) => setSegmento(e.target.value)}
+                className="h-10 w-full rounded-xl border border-zinc-200 px-3 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-brand/30"
+              >
+                <option value="">Selecione o segmento</option>
+                <option value="pizzaria">🍕 Pizzaria</option>
+                <option value="hamburgueria">🍔 Hamburgueria</option>
+                <option value="sushi">🍣 Sushi</option>
+                <option value="acai">🍧 Açaí</option>
+                <option value="marmita">🍱 Marmitaria</option>
+                <option value="lanchonete">🥪 Lanchonete</option>
+                <option value="confeitaria">🍰 Confeitaria</option>
+                <option value="restaurante">🍽️ Restaurante</option>
+                <option value="outro">🍴 Outro</option>
+              </select>
             </div>
 
             <div className="space-y-1.5">

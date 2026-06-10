@@ -6,6 +6,7 @@ DROP FUNCTION IF EXISTS criar_empresa_onboarding(text, text, text);
 DROP FUNCTION IF EXISTS criar_empresa_onboarding(text, text, text, text);
 DROP FUNCTION IF EXISTS criar_empresa_onboarding(text, text, text, text, text);
 DROP FUNCTION IF EXISTS criar_empresa_onboarding(text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS criar_empresa_onboarding(text, text, text, text, text, text, text);
 
 CREATE OR REPLACE FUNCTION criar_empresa_onboarding(
   p_nome_fantasia TEXT,
@@ -13,7 +14,8 @@ CREATE OR REPLACE FUNCTION criar_empresa_onboarding(
   p_cor_primaria  TEXT,
   p_cidade        TEXT DEFAULT NULL,
   p_whatsapp      TEXT DEFAULT NULL,
-  p_cnpj          TEXT DEFAULT NULL
+  p_cnpj          TEXT DEFAULT NULL,
+  p_segmento      TEXT DEFAULT NULL
 )
 RETURNS UUID
 LANGUAGE plpgsql
@@ -67,8 +69,8 @@ BEGIN
   LIMIT 1;
 
   -- Criar empresa com 7 dias de teste grátis
-  INSERT INTO empresas (nome_fantasia, slug, cor_primaria, cidade, whatsapp, cnpj, status, plano_id, vencimento)
-  VALUES (p_nome_fantasia, p_slug, p_cor_primaria, p_cidade, p_whatsapp, p_cnpj, 'ativa', v_plano_id, NOW() + INTERVAL '7 days')
+  INSERT INTO empresas (nome_fantasia, slug, cor_primaria, cidade, whatsapp, cnpj, segmento, status, plano_id, vencimento)
+  VALUES (p_nome_fantasia, p_slug, p_cor_primaria, p_cidade, p_whatsapp, p_cnpj, p_segmento, 'ativa', v_plano_id, NOW() + INTERVAL '7 days')
   RETURNING id INTO v_empresa_id;
 
   -- Vincular usuário

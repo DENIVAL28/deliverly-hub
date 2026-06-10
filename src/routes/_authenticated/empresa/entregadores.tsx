@@ -41,7 +41,7 @@ function EntregadoresPage() {
     enabled: !!empresaId,
     refetchInterval: 15000,
     queryFn: async () =>
-      (await supabase.from("entregadores" as any).select("*").eq("empresa_id", empresaId!).order("nome")).data ?? [],
+      (await supabase.from("entregadores").select("*").eq("empresa_id", empresaId!).order("nome")).data ?? [],
   });
 
   // Estatísticas por entregador
@@ -79,7 +79,7 @@ function EntregadoresPage() {
   async function salvar() {
     if (!nome.trim()) { toast.error("Digite o nome do entregador."); return; }
     setSalvando(true);
-    const { error } = await supabase.from("entregadores" as any).insert({
+    const { error } = await supabase.from("entregadores").insert({
       empresa_id: empresaId!, nome: nome.trim(), telefone: telefone.trim() || null,
     });
     setSalvando(false);
@@ -90,7 +90,7 @@ function EntregadoresPage() {
   }
 
   async function excluir(id: string) {
-    await supabase.from("entregadores" as any).delete().eq("id", id);
+    await supabase.from("entregadores").delete().eq("id", id);
     qc.invalidateQueries({ queryKey: ["entregadores-admin", empresaId] });
     toast.success("Entregador removido");
   }

@@ -7,7 +7,7 @@ export const Route = createFileRoute("/entregador/$id")({
   ssr: false,
   loader: async ({ params }) => {
     const { data } = await supabase
-      .from("entregadores" as any)
+      .from("entregadores")
       .select("*, empresas(nome_fantasia, logo_url, cor_primaria)")
       .eq("id", params.id)
       .maybeSingle();
@@ -57,7 +57,7 @@ function EntregadorPage() {
     return new Promise((resolve) => {
       navigator.geolocation.getCurrentPosition(
         async (pos) => {
-          await (supabase.from("entregadores" as any) as any)
+          await (supabase.from("entregadores") as any)
             .update({
               lat: pos.coords.latitude,
               lng: pos.coords.longitude,
@@ -105,7 +105,7 @@ function EntregadorPage() {
 
   async function mudarStatus(novoStatus: string) {
     setAtualizando(true);
-    await supabase.from("entregadores" as any).update({ status: novoStatus }).eq("id", entregador.id);
+    await supabase.from("entregadores").update({ status: novoStatus }).eq("id", entregador.id);
     setEntregador((e: any) => ({ ...e, status: novoStatus }));
     setAtualizando(false);
   }

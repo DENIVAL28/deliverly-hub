@@ -8,11 +8,14 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
+import { GoogleReCaptchaProvider } from "react-google-recaptcha-v3";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
+
+const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY ?? "";
 
 function NotFoundComponent() {
   return (
@@ -79,15 +82,22 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "SOS Sistemas — Plataforma de Delivery para o seu negócio" },
-      { name: "description", content: "SaaS multiempresa de delivery: cardápio online, pedidos em tempo real e checkout via WhatsApp para pizzarias, hamburguerias, açaíterias e mais." },
+      { title: "Deliverly Hub — Sistema de Delivery para Restaurantes e Lanchonetes" },
+      { name: "description", content: "Crie seu cardápio digital em minutos. Sistema completo de delivery com pedidos via WhatsApp, PDV, cupons e relatórios. Ideal para pizzarias, hamburguerias, açaíterias e mais." },
+      { name: "keywords", content: "sistema de delivery, cardápio digital, pedidos online, software para restaurante, pizzaria delivery, hamburgueria delivery, aplicativo delivery" },
       { name: "author", content: "SOS Sistemas" },
-      { property: "og:title", content: "SOS Sistemas — Plataforma de Delivery" },
-      { property: "og:description", content: "Tenha seu próprio sistema de delivery sem taxas abusivas." },
+      { name: "robots", content: "index, follow" },
+      { property: "og:title", content: "Deliverly Hub — Sistema de Delivery para Restaurantes" },
+      { property: "og:description", content: "Cardápio digital, pedidos pelo WhatsApp, PDV e relatórios. Tudo que seu restaurante precisa sem taxas abusivas." },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
+      { property: "og:url", content: "https://deliverly.sossistemas.com.br" },
+      { property: "og:locale", content: "pt_BR" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Deliverly Hub — Sistema de Delivery" },
+      { name: "twitter:description", content: "Crie seu cardápio digital e receba pedidos pelo WhatsApp. Sem taxas por pedido." },
     ],
     links: [
+      { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" },
@@ -132,8 +142,10 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <Outlet />
-      <Toaster />
+      <GoogleReCaptchaProvider reCaptchaKey={RECAPTCHA_SITE_KEY} language="pt-BR">
+        <Outlet />
+        <Toaster />
+      </GoogleReCaptchaProvider>
     </QueryClientProvider>
   );
 }

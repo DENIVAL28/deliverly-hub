@@ -33,13 +33,16 @@ type Filtro = "todas" | StatusDerived;
 function derivarStatus(e: any): StatusDerived {
   if (e.status === "bloqueada") return "bloqueada";
   if (e.vencimento) {
-    return new Date(e.vencimento) > new Date() ? "trial" : "vencida";
+    const d = new Date(e.vencimento);
+    if (!isNaN(d.getTime())) return d > new Date() ? "trial" : "vencida";
   }
   return "ativa";
 }
 
 function diasRestantes(vencimento: string): number {
-  return Math.ceil((new Date(vencimento).getTime() - Date.now()) / 86400000);
+  const d = new Date(vencimento);
+  if (isNaN(d.getTime())) return 0;
+  return Math.ceil((d.getTime() - Date.now()) / 86400000);
 }
 
 const STATUS_META: Record<StatusDerived, { label: string; bg: string; text: string }> = {
@@ -276,7 +279,7 @@ function EmpresasPage() {
       </div>
 
       {/* ── Aviso vencidas ── */}
-      {contas.vencida > 0 && filtro !== "ativas" && (
+      {contas.vencida > 0 && filtro !== ("ativas" as Filtro) && (
         <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 mb-4 text-sm text-amber-700">
           <AlertTriangle className="size-4 shrink-0" />
           <span>
