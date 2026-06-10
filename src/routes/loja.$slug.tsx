@@ -568,7 +568,7 @@ function LojaPage() {
 
       {/* Barra do carrinho */}
       {totalQty > 0 && !selectedProduct && !checkoutOpen && (
-        <div className="fixed bottom-0 left-0 right-0 z-30 p-4">
+        <div className="fixed bottom-0 left-0 right-0 z-30 px-4 pt-4" style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}>
           <div className="max-w-2xl mx-auto">
             <button onClick={() => setCheckoutOpen(true)}
               className="w-full b-btn text-white rounded-2xl h-14 flex items-center justify-between px-5 font-semibold transition-colors shadow-xl">
@@ -588,7 +588,7 @@ function LojaPage() {
       {acompanharOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-end sm:items-center justify-center"
           onClick={(e) => e.target === e.currentTarget && setAcompanharOpen(false)}>
-          <div className="bg-white w-full sm:max-w-sm sm:rounded-2xl rounded-t-2xl p-6">
+          <div className="bg-white w-full sm:max-w-sm sm:rounded-2xl rounded-t-2xl p-6 overflow-y-auto" style={{ maxHeight: "90dvh" }}>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <PackageSearch className="size-5" style={{ color: brandColor }} />
@@ -749,7 +749,8 @@ function LojaPage() {
       {checkoutOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-end sm:items-center justify-center"
           onClick={() => setCheckoutOpen(false)}>
-          <div className="bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl max-h-[92vh] overflow-y-auto"
+          <div className="bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl overflow-y-auto"
+            style={{ maxHeight: "92dvh", WebkitOverflowScrolling: "touch" } as any}
             onClick={(e) => e.stopPropagation()}>
             <div className="p-5">
               <div className="flex items-center justify-between mb-5">
@@ -856,7 +857,7 @@ function LojaPage() {
                   <Label>Forma de pagamento</Label>
                   <select name="pagamento" required value={formaPagamento}
                     onChange={(e) => setFormaPagamento(e.target.value)}
-                    className="w-full h-10 rounded-xl border border-zinc-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400/40">
+                    className="w-full h-12 rounded-xl border border-zinc-200 bg-white px-3 text-base focus:outline-none focus:ring-2 focus:ring-orange-400/40">
                     {(empresa as any).chave_pix && <option value="PIX">💳 PIX (QR code gerado na hora)</option>}
                     <option value="Dinheiro">💵 Dinheiro na entrega</option>
                     <option value="Cartão">💳 Cartão na entrega</option>
@@ -1040,7 +1041,7 @@ function ProductModal({ product: p, cartQty, fmt, onClose, onAdd }: {
     <div className="fixed inset-0 z-40 flex items-end sm:items-center justify-center" onClick={onClose}>
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
       <div className="relative bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-3xl overflow-hidden shadow-2xl flex flex-col"
-        style={{ maxHeight: "92vh" }} onClick={(e) => e.stopPropagation()}>
+        style={{ maxHeight: "92dvh" }} onClick={(e) => e.stopPropagation()}>
 
         {/* Foto */}
         {p.foto_url ? (
@@ -1203,7 +1204,7 @@ function FormField({ name, label, required }: { name: string; label: string; req
   return (
     <div className="space-y-1.5">
       <Label htmlFor={name}>{label}</Label>
-      <Input id={name} name={name} required={required} className="rounded-xl h-10" />
+      <Input id={name} name={name} required={required} className="rounded-xl h-12 text-base" />
     </div>
   );
 }

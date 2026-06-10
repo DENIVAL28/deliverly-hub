@@ -81,7 +81,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
       { title: "Deliverly Hub — Sistema de Delivery para Restaurantes e Lanchonetes" },
       { name: "description", content: "Crie seu cardápio digital em minutos. Sistema completo de delivery com pedidos via WhatsApp, PDV, cupons e relatórios. Ideal para pizzarias, hamburguerias, açaíterias e mais." },
       { name: "keywords", content: "sistema de delivery, cardápio digital, pedidos online, software para restaurante, pizzaria delivery, hamburgueria delivery, aplicativo delivery" },
