@@ -146,10 +146,14 @@ function Nav() {
             <a key={href} href={href} onClick={() => setOpen(false)}
               className="block text-sm font-medium text-zinc-600 hover:text-orange-500 py-1.5">{label}</a>
           ))}
-          <div className="flex gap-3 pt-2">
+          <Link to="/lojas" onClick={() => setOpen(false)}
+            className="block text-center bg-orange-500 text-white text-sm font-bold px-4 py-3 rounded-xl">
+            🛵 Pedir delivery
+          </Link>
+          <div className="flex gap-3">
             <Link to="/auth" className="flex-1 text-center text-sm font-medium px-4 py-2.5 border border-zinc-200 rounded-xl text-zinc-600">Entrar</Link>
             <a href={WA_LINK} target="_blank" rel="noreferrer" onClick={() => setOpen(false)}
-              className="flex-1 text-center bg-orange-500 text-white text-sm font-semibold px-4 py-2.5 rounded-xl">Demonstração</a>
+              className="flex-1 text-center bg-zinc-900 text-white text-sm font-semibold px-4 py-2.5 rounded-xl">Demonstração</a>
           </div>
         </div>
       )}
