@@ -124,6 +124,11 @@ function LojaPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
+  function abrirWhatsApp(url: string) {
+    const w = window.open(url, "_blank");
+    if (!w) window.location.href = url;
+  }
+
   async function checkout(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (empresa.status !== "ativa" || (empresa as any).aberto === false) { toast.error("Esta loja está temporariamente fechada."); return; }
@@ -228,14 +233,14 @@ function LojaPage() {
           const qrUrl = await QRCode.toDataURL(payload, { width: 240, margin: 2, color: { dark: "#18181b", light: "#ffffff" } });
           setPixModal({ payload, qrUrl, total, waLink: waUrl ?? "", pedidoNum: pedido.numero });
         } catch {
-          if (waUrl) window.open(waUrl, "_blank");
+          if (waUrl) abrirWhatsApp(waUrl);
           setPedidoFeito({ id: pedido.id, numero: pedido.numero });
         }
         return;
       }
     }
 
-    if (waUrl) window.open(waUrl, "_blank");
+    if (waUrl) abrirWhatsApp(waUrl);
     setPedidoFeito({ id: pedido.id, numero: pedido.numero });
   }
 
@@ -714,7 +719,7 @@ function LojaPage() {
             <button
               onClick={() => {
                 setPixModal(null);
-                if (pixModal.waLink) window.open(pixModal.waLink, "_blank");
+                if (pixModal.waLink) abrirWhatsApp(pixModal.waLink);
                 setPedidoFeito(null);
                 toast.success(`Pedido #${pixModal.pedidoNum} confirmado!`);
               }}
