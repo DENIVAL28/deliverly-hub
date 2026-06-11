@@ -25,11 +25,12 @@ const NEXT: Record<string, string> = {
   novo: "aceito", aceito: "preparo", preparo: "entrega", entrega: "finalizado",
 };
 
-// Mesa e PDV: pulam a etapa de entrega
+// Mesa, PDV e Retirada: pulam a etapa de entrega
 const NEXT_MESA: Record<string, string> = {
   novo: "aceito", aceito: "preparo", preparo: "finalizado", entrega: "finalizado",
 };
-const NEXT_PDV = NEXT_MESA;
+const NEXT_PDV      = NEXT_MESA;
+const NEXT_RETIRADA = NEXT_MESA;
 
 const ATIVOS = ["novo", "aceito", "preparo", "entrega"];
 const PAGE_SIZE = 20;
@@ -275,7 +276,7 @@ function PedidosPage() {
   const totalItems  = pedidosPag?.total ?? 0;
 
   async function advance(p: any, entregadorId?: string) {
-    const nextMap = p.mesa ? NEXT_MESA : NEXT;
+    const nextMap = p.tipo === "pdv" ? NEXT_PDV : p.tipo === "retirada" ? NEXT_RETIRADA : p.mesa ? NEXT_MESA : NEXT;
     const next = nextMap[p.status];
     if (!next) return;
     const update: any = { status: next };
@@ -513,26 +514,31 @@ function PedidosPage() {
                     <Button size="sm" variant="outline" onClick={() => cancel(p.id)} className="text-red-500 hover:text-red-600 border-red-200 hover:bg-red-50">
                       Cancelar
                     </Button>
-                    {(p.tipo === "pdv" ? NEXT_PDV : p.mesa ? NEXT_MESA : NEXT)[p.status] && (
-                      <div className="flex items-center gap-2">
-                        {/* Seletor de entregador — apenas para delivery (não PDV, não mesa) */}
-                        {!p.mesa && p.tipo !== "pdv" && NEXT[p.status] === "entrega" && entregadores.length > 0 && (
-                          <select
-                            value={entregadorSel[p.id] ?? ""}
-                            onChange={(e) => setEntregadorSel((s) => ({ ...s, [p.id]: e.target.value }))}
-                            className="h-9 rounded-xl border border-zinc-200 px-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/30"
-                          >
-                            <option value="">Entregador (opcional)</option>
-                            {entregadores.map((e: any) => (
-                              <option key={e.id} value={e.id}>{e.nome}</option>
-                            ))}
-                          </select>
-                        )}
-                        <Button onClick={() => advance(p, entregadorSel[p.id])} className="bg-brand hover:bg-brand/90">
-                          Avançar → {STATUS.find((s) => s.value === (p.tipo === "pdv" ? NEXT_PDV : p.mesa ? NEXT_MESA : NEXT)[p.status])?.label}
-                        </Button>
-                      </div>
-                    )}
+                    {(() => {
+                      const nextMap = p.tipo === "pdv" ? NEXT_PDV : p.tipo === "retirada" ? NEXT_RETIRADA : p.mesa ? NEXT_MESA : NEXT;
+                      const nextStatus = nextMap[p.status];
+                      if (!nextStatus) return null;
+                      return (
+                        <div className="flex items-center gap-2">
+                          {/* Seletor de entregador — só para delivery */}
+                          {!p.mesa && p.tipo !== "pdv" && p.tipo !== "retirada" && NEXT[p.status] === "entrega" && entregadores.length > 0 && (
+                            <select
+                              value={entregadorSel[p.id] ?? ""}
+                              onChange={(e) => setEntregadorSel((s) => ({ ...s, [p.id]: e.target.value }))}
+                              className="h-9 rounded-xl border border-zinc-200 px-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/30"
+                            >
+                              <option value="">Entregador (opcional)</option>
+                              {entregadores.map((e: any) => (
+                                <option key={e.id} value={e.id}>{e.nome}</option>
+                              ))}
+                            </select>
+                          )}
+                          <Button onClick={() => advance(p, entregadorSel[p.id])} className="bg-brand hover:bg-brand/90">
+                            Avançar → {STATUS.find((s) => s.value === nextStatus)?.label}
+                          </Button>
+                        </div>
+                      );
+                    })()}
                   </>
                 )}
 
