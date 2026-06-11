@@ -50,17 +50,40 @@ export const Route = createFileRoute("/_authenticated/empresa/pedidos")({
 
 /* ─── Mensagens WhatsApp por status ─── */
 const MSGS: Record<string, (p: any, nomeEmpresa: string) => string> = {
-  aceito:     (p, e) => `Olá ${p.cliente_nome}! 👋\n\nSeu pedido *#${p.numero}* foi *confirmado* pelo ${e}! 🎉\n\nEstamos preparando tudo com carinho para você.`,
-  preparo:    (p, e) => `Olá ${p.cliente_nome}! 👨‍🍳\n\nSeu pedido *#${p.numero}* está *em preparo* agora!\n\nEm breve estará prontinho.`,
-  entrega:    (p, e) => `Olá ${p.cliente_nome}! 🛵\n\nSeu pedido *#${p.numero}* *saiu para entrega*!${p.entregador_nome ? `\n\nEntregador: *${p.entregador_nome}*` : ""}\n\nFique de olho, já já chega! 😄`,
-  finalizado: (p, e) => `Olá ${p.cliente_nome}! ✅\n\nSeu pedido *#${p.numero}* foi *entregue*!\n\nEsperamos que tenha gostado. Avalie seu pedido:\n${window.location.origin}/pedido/${p.id}`,
-  cancelado:  (p, e) => `Olá ${p.cliente_nome}.\n\nInfelizmente seu pedido *#${p.numero}* foi *cancelado*.\n\nEntre em contato conosco para mais informações.`,
+  aceito: (p, e) =>
+    `✅ *Pedido #${p.numero} confirmado!*\n\nOlá, *${p.cliente_nome}*! Recebemos seu pedido e já estamos preparando tudo. 👨‍🍳\n\n_${e}_`,
+  preparo: (p, e) =>
+    `🍳 *Pedido #${p.numero} em preparo!*\n\nOlá, *${p.cliente_nome}*! Seu pedido está sendo feito agora. Logo ficará prontinho! ⏱\n\n_${e}_`,
+  entrega: (p, e) =>
+    `🛵 *Pedido #${p.numero} saiu para entrega!*\n\nOlá, *${p.cliente_nome}*! Seu pedido está a caminho.${p.entregador_nome ? `\nEntregador: *${p.entregador_nome}*` : ""}\n\nFique de olho, chega em breve! 📍\n\n_${e}_`,
+  finalizado: (p, e) =>
+    `🎉 *Pedido #${p.numero} entregue!*\n\nOlá, *${p.cliente_nome}*! Esperamos que tenha curtido. 😊\n\nAvalie sua experiência:\n${window.location.origin}/pedido/${p.id}\n\n_${e}_`,
+  cancelado: (p, e) =>
+    `❌ *Pedido #${p.numero} cancelado*\n\nOlá, *${p.cliente_nome}*. Infelizmente não foi possível processar seu pedido.\n\nEntre em contato para mais informações.\n\n_${e}_`,
 };
 
-function notificarWhatsApp(p: any, nomeEmpresa: string) {
+async function notificarWhatsApp(p: any, empresa: any) {
+  const nomeEmpresa = empresa?.nome_fantasia ?? "Estabelecimento";
   const msg = MSGS[p.status]?.(p, nomeEmpresa);
   if (!msg || !p.cliente_telefone) return;
   const tel = p.cliente_telefone.replace(/\D/g, "");
+
+  // Tenta Z-API se configurado
+  const { zapi_instance, zapi_token, zapi_client_token } = empresa ?? {};
+  if (zapi_instance && zapi_token) {
+    try {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (zapi_client_token) headers["Client-Token"] = zapi_client_token;
+      const res = await fetch(
+        `https://api.z-api.io/instances/${zapi_instance}/token/${zapi_token}/send-text`,
+        { method: "POST", headers, body: JSON.stringify({ phone: `55${tel}`, message: msg }) }
+      );
+      if (res.ok) { toast.success("Mensagem enviada via WhatsApp!"); return; }
+    } catch (_) {}
+    toast.error("Falha ao enviar via Z-API — abrindo WhatsApp Web como alternativa.");
+  }
+
+  // Fallback: abre WhatsApp Web
   window.open(`https://wa.me/55${tel}?text=${encodeURIComponent(msg)}`, "_blank");
 }
 
@@ -150,7 +173,7 @@ function PedidosPage() {
     queryKey: ["empresa-info", empresaId],
     enabled: !!empresaId,
     queryFn: async () =>
-      (await supabase.from("empresas").select("nome_fantasia").eq("id", empresaId!).single()).data,
+      (await supabase.from("empresas").select("nome_fantasia,zapi_instance,zapi_token,zapi_client_token").eq("id", empresaId!).single()).data,
   });
   const [tab, setTab] = useState<Tab>("ativos");
   const [somAtivo, setSomAtivo] = useState(true);
@@ -503,7 +526,7 @@ function PedidosPage() {
                 {/* Notificar cliente via WhatsApp */}
                 {p.cliente_telefone && MSGS[p.status] && (
                   <Button size="sm" variant="outline"
-                    onClick={() => notificarWhatsApp(p, empresa?.nome_fantasia ?? "Estabelecimento")}
+                    onClick={() => notificarWhatsApp(p, empresa)}
                     className="gap-1.5 text-green-600 hover:text-green-700 border-green-200 hover:bg-green-50">
                     <MessageCircle className="size-3.5" /> Notificar
                   </Button>
