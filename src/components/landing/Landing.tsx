@@ -21,27 +21,27 @@ const segments = [
 ];
 
 const features = [
-  { icon: Smartphone, title: "Cardápio Digital de Alta Conversão", body: "Transforme visitantes em clientes. Cardápio rápido, com fotos profissionais e descrições irresistíveis — sem que o cliente precise baixar nenhum app.", badge: "Mais acessado" },
-  { icon: Zap,        title: "Gestão de Pedidos em Tempo Real",    body: "Fim da bagunça no WhatsApp. Receba pedidos organizados no seu computador ou tablet e acompanhe cada etapa da produção com um clique.", badge: null },
-  { icon: MessageCircle, title: "Checkout Direto no WhatsApp",     body: "Agilidade que o seu cliente ama. O pedido chega formatado e pronto para a cozinha, reduzindo erros e acelerando o tempo de resposta.", badge: null },
-  { icon: BarChart3,  title: "Inteligência de Vendas",             body: "Decisões baseadas em dados, não em achismos. Saiba seu faturamento, ticket médio e quais itens são suas estrelas de vendas.", badge: null },
-  { icon: Store,      title: "Sua Marca, Sua Identidade",          body: "O cliente compra de você, não de um marketplace. Logo, cores e domínio próprios: construa autoridade e fidelize com a sua loja online.", badge: null },
-  { icon: Shield,     title: "Segurança de Nível Bancário",        body: "Foco total no seu crescimento. Dados isolados e protegidos por tecnologias de segurança de ponta — você nunca precisa se preocupar.", badge: null },
+  { icon: Smartphone,    title: "Cardápio Digital sem App",           body: "Seu cliente acessa pelo celular, sem baixar nada. Cardápio rápido com fotos, categorias e checkout em segundos.", badge: "Mais acessado" },
+  { icon: ClipboardList, title: "Caixa PDV para Vendas no Balcão",    body: "Venda no balcão com o mesmo sistema. Selecione produtos, aplique desconto, calcule troco e registre — tudo em um clique.", badge: "Exclusivo" },
+  { icon: Zap,           title: "Pedidos em Tempo Real com Som",      body: "Chegou pedido? O sistema toca um alerta sonoro e exibe na tela. Avance o status com um clique e notifique o cliente pelo WhatsApp.", badge: null },
+  { icon: MessageCircle, title: "Checkout Direto no WhatsApp",        body: "O pedido chega formatado e pronto para a cozinha. Menos erros, mais agilidade — sem digitar nada manualmente.", badge: null },
+  { icon: Bike,          title: "Gestão de Entregadores",             body: "Cadastre entregadores e atribua pedidos na hora. Controle quem está em rota sem precisar de planilha ou grupo de zap.", badge: null },
+  { icon: BarChart3,     title: "Relatórios e Cupons de Desconto",    body: "Veja faturamento, ticket médio e produtos mais vendidos. Crie cupons de desconto para fidelizar e atrair clientes novos.", badge: null },
 ];
 
 const plans = [
   {
     name: "Básico", price: "99",
-    tagline: "Profissionalize hoje. Pague menos do que uma refeição por dia.",
-    description: "Ideal para quem está começando e quer profissionalizar o atendimento.",
-    features: ["Até 25 produtos", "Até 3 cupons ativos", "Até 400 pedidos/mês", "Suporte por chat"],
-    cta: "Começar agora", highlight: false,
+    tagline: "Tudo que precisa para começar. Menos que R$4 por dia.",
+    description: "Cardápio digital, caixa PDV e gestão de entregadores — já incluso.",
+    features: ["Até 25 produtos", "Caixa PDV para vendas no balcão", "Gestão de entregadores", "PIX QR code automático", "Até 400 pedidos/mês", "Suporte por chat"],
+    cta: "Começar grátis por 7 dias", highlight: false,
   },
   {
     name: "Profissional", price: "199",
     tagline: "Zero comissão. Cada pedido, 100% do lucro no seu bolso.",
-    description: "A escolha de quem já fatura alto e precisa escalar.",
-    features: ["Até 150 produtos", "Até 600 pedidos/mês", "Até 20 entregadores", "Suporte prioritário"],
+    description: "Para quem já tem volume e precisa de mais capacidade.",
+    features: ["Até 150 produtos", "Caixa PDV para vendas no balcão", "Até 20 entregadores", "PIX QR code automático", "Até 600 pedidos/mês", "Suporte prioritário"],
     cta: "Quero escalar agora", highlight: true,
   },
   {
@@ -55,11 +55,12 @@ const plans = [
 
 
 const faqs = [
-  { q: "Meu cliente precisa baixar algum app?",           a: "Não. O cardápio é acessado direto pelo navegador, sem necessidade de download. Funciona em qualquer celular com internet." },
-  { q: "Como funciona o recebimento dos pagamentos?",     a: "Os clientes podem pagar na entrega (dinheiro, cartão, Pix) ou você pode combinar o pagamento diretamente no WhatsApp. O SOS Sistemas não cobra comissão sobre nenhuma venda." },
-  { q: "Consigo importar meu cardápio atual?",            a: "Sim. Nossa equipe te ajuda a migrar gratuitamente no período de setup. Se você tiver o cardápio em foto, PDF ou planilha, a gente resolve." },
-  { q: "O que acontece depois dos 7 dias grátis?",        a: "Você escolhe o plano ideal e continua normalmente. Se preferir não continuar, basta não assinar — sem cobranças automáticas, sem surpresas." },
-  { q: "Posso cancelar a qualquer momento?",              a: "Sim, sem multa e sem burocracia. Basta entrar em contato com nosso suporte. Você não está preso a nenhum contrato de fidelidade." },
+  { q: "Meu cliente precisa baixar algum app?",           a: "Não. O cardápio é acessado direto pelo celular, no navegador, sem precisar instalar nada. Funciona em qualquer smartphone com internet." },
+  { q: "O que é o Caixa PDV e para que serve?",          a: "É um sistema de caixa para vendas presenciais no balcão. Você seleciona os produtos, aplica desconto, escolhe a forma de pagamento e registra a venda — tudo dentro do mesmo painel, sem precisar de outro sistema." },
+  { q: "Como funciona o recebimento dos pagamentos?",     a: "Os clientes podem pagar na entrega (dinheiro, cartão ou PIX). Se escolherem PIX, o sistema gera o QR code automaticamente na hora do pedido. O SOS Sistemas não cobra comissão sobre nenhuma venda." },
+  { q: "Consigo importar meu cardápio atual?",            a: "Sim. Se tiver uma planilha, basta subir o arquivo CSV e o sistema importa os produtos e cria as categorias automaticamente. Se precisar de ajuda, nossa equipe migra com você." },
+  { q: "O que acontece depois dos 7 dias grátis?",        a: "Você escolhe o plano e continua. Se não quiser continuar, só não assina — sem cobrança automática e sem surpresa." },
+  { q: "Posso cancelar a qualquer momento?",              a: "Sim, sem multa, sem burocracia e sem contrato. Você não está preso a nada." },
 ];
 
 export function Landing() {
@@ -241,36 +242,36 @@ function Hero() {
           <div>
             <div className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 text-orange-400 text-xs font-bold px-4 py-1.5 rounded-full mb-8 uppercase tracking-widest">
               <span className="size-1.5 rounded-full bg-orange-400 animate-pulse" />
-              Plataforma de delivery próprio
+              Cardápio + PDV + Entregadores — tudo por R$99/mês
             </div>
 
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-black leading-[1.08] text-white mb-6">
-              Pare de enriquecer<br />
-              o <span className="relative inline-block">
+              Pare de perder<br />
+              margem com <span className="relative inline-block">
                 <span className="relative z-10 text-orange-400">marketplace.</span>
                 <span className="absolute -bottom-1 left-0 right-0 h-[3px] bg-orange-500/50 rounded-full" />
               </span><br />
-              Lucre para<br className="hidden sm:block" /> você mesmo.
+              Venda pelo seu canal.
             </h1>
 
             <p className="text-zinc-300 text-lg leading-relaxed mb-8 max-w-[46ch]">
-              Crie seu cardápio digital em minutos, receba pedidos direto no WhatsApp e{" "}
-              <strong className="text-white">fique com 100% do lucro</strong> — sem comissão por venda.
+              Cardápio digital + caixa PDV + gestão de entregadores em um sistema só —{" "}
+              <strong className="text-white">sem comissão por pedido, sem contrato.</strong>
             </p>
 
             <div className="flex flex-col sm:flex-row gap-3 mb-10">
               <Link to="/auth"
                 className="flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 text-white font-bold px-7 py-4 rounded-2xl text-base transition-all hover:scale-[1.02] shadow-xl shadow-orange-500/25">
-                Criar conta grátis — 7 dias <ArrowRight className="size-5" />
+                Testar grátis por 7 dias <ArrowRight className="size-5" />
               </Link>
               <a href={WA_LINK} target="_blank" rel="noreferrer"
                 className="flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-white border border-white/10 font-semibold px-7 py-4 rounded-2xl text-base transition-colors">
-                <MessageCircle className="size-4" /> Falar com a equipe
+                <MessageCircle className="size-4" /> Ver demonstração
               </a>
             </div>
 
             <div className="flex flex-wrap gap-4 text-sm text-zinc-300">
-              {["7 dias grátis", "Sem taxas por pedido", "Cancele quando quiser"].map((t) => (
+              {["7 dias grátis", "Sem taxas por pedido", "Caixa PDV incluso", "Cancele quando quiser"].map((t) => (
                 <span key={t} className="flex items-center gap-1.5">
                   <Check className="size-3.5 text-orange-400 shrink-0" /> {t}
                 </span>
@@ -377,11 +378,11 @@ function SocialProof() {
     <section className="bg-orange-500 py-4">
       <div className="mx-auto max-w-7xl px-6">
         <div className="flex flex-wrap items-center justify-center gap-8 text-white text-sm font-semibold">
-          <span className="flex items-center gap-2"><Check className="size-4" /> Sem contrato de fidelidade</span>
+          <span className="flex items-center gap-2"><Check className="size-4" /> Cardápio digital incluso</span>
           <span className="hidden sm:block text-white/30">|</span>
-          <span className="flex items-center gap-2"><Check className="size-4" /> Setup em menos de 24h</span>
+          <span className="flex items-center gap-2"><Check className="size-4" /> Caixa PDV incluso</span>
           <span className="hidden sm:block text-white/30">|</span>
-          <span className="flex items-center gap-2"><Check className="size-4" /> Suporte em português</span>
+          <span className="flex items-center gap-2"><Check className="size-4" /> Gestão de entregadores inclusa</span>
           <span className="hidden sm:block text-white/30">|</span>
           <span className="flex items-center gap-2"><Check className="size-4" /> 0% de comissão por pedido</span>
         </div>
@@ -393,10 +394,10 @@ function SocialProof() {
 /* ─── Stats ─── */
 function Stats() {
   const items = [
-    { value: "127+",   label: "Restaurantes ativos" },
-    { value: "R$ 2,4M", label: "Em pedidos processados" },
-    { value: "4.9★",   label: "Avaliação média" },
-    { value: "98%",    label: "Clientes satisfeitos" },
+    { value: "R$ 99",  label: "por mês, tudo incluso" },
+    { value: "0%",     label: "de comissão por pedido" },
+    { value: "< 24h",  label: "para o cardápio no ar" },
+    { value: "3 em 1", label: "Cardápio + PDV + Entregadores" },
   ];
   return (
     <section className="py-12 bg-white border-b border-zinc-100">
@@ -545,10 +546,10 @@ function Pricing() {
       <div className="mx-auto max-w-7xl px-6">
         <div className="text-center mb-14">
           <span className="text-xs font-bold uppercase tracking-widest text-orange-400 mb-3 block">Planos</span>
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">Preço justo. Retorno imediato.</h2>
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">Cardápio + PDV + Entregadores. A partir de R$99.</h2>
           <p className="text-zinc-400 text-sm max-w-[56ch] mx-auto">
-            Um restaurante que paga 25% de comissão em R$ 30.000/mês de faturamento perde{" "}
-            <strong className="text-orange-400">R$ 7.500 todo mês.</strong> Com o SOS, você paga a partir de R$ 99.
+            Outros sistemas cobram separado por cada módulo. Aqui,{" "}
+            <strong className="text-orange-400">tudo já está incluso no mesmo plano</strong> — sem surpresas na fatura.
           </p>
         </div>
         <div className="grid md:grid-cols-3 gap-6 items-center">
@@ -615,28 +616,28 @@ function CTA() {
           <div>
             <span className="text-xs font-bold uppercase tracking-widest text-orange-400 mb-4 block">Comece hoje</span>
             <h2 className="text-3xl md:text-5xl font-black text-white mb-5 leading-tight">
-              Pronto para parar de perder margem com marketplaces?
+              Seu delivery próprio no ar em menos de 24 horas.
             </h2>
             <p className="text-zinc-300 text-lg leading-relaxed">
-              O SOS Sistemas devolve a liberdade para o seu negócio. Solicite uma demonstração e veja o sistema funcionando na prática.
+              Cardápio digital, caixa PDV e gestão de entregadores — tudo por R$99/mês, sem comissão e sem contrato. Teste grátis por 7 dias.
             </p>
           </div>
 
           {/* Direita — ações */}
           <div className="bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-sm">
             <div className="flex flex-col gap-3 mb-6">
-              <a href={WA_LINK} target="_blank" rel="noreferrer"
+              <Link to="/auth"
                 className="flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 text-white font-bold px-8 py-4 rounded-2xl text-base transition-all hover:scale-[1.01] shadow-xl shadow-orange-500/25">
-                <MessageCircle className="size-5" /> Quero meu próprio delivery
-              </a>
-              <a href="#planos"
+                Criar conta grátis — 7 dias <ArrowRight className="size-5" />
+              </Link>
+              <a href={WA_LINK} target="_blank" rel="noreferrer"
                 className="flex items-center justify-center gap-2 bg-white/10 hover:bg-white/15 text-white font-semibold px-8 py-4 rounded-2xl text-base transition-colors border border-white/10">
-                Ver planos e preços
+                <MessageCircle className="size-4" /> Ver demonstração ao vivo
               </a>
             </div>
 
             <div className="space-y-2.5 mb-6">
-              {["7 dias grátis, sem cartão de crédito", "Setup em menos de 24h com nossa ajuda", "Suporte dedicado em português"].map((t) => (
+              {["7 dias grátis, sem cartão de crédito", "Cardápio + PDV + Entregadores — tudo incluso", "Setup em menos de 24h com nossa ajuda"].map((t) => (
                 <div key={t} className="flex items-center gap-2.5 text-sm text-zinc-300">
                   <Check className="size-4 text-green-400 shrink-0" /> {t}
                 </div>
