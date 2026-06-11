@@ -87,6 +87,12 @@ function AuthPage() {
   const [emailReset, setEmailReset] = useState("");
   const [enviado, setEnviado] = useState(false);
 
+  // MFA
+  const [mfaStep, setMfaStep]           = useState(false);
+  const [mfaCode, setMfaCode]           = useState("");
+  const [mfaFactorId, setMfaFactorId]   = useState("");
+  const [mfaChallengeId, setMfaChallengeId] = useState("");
+
   // Campos — login
   const [loginEmail, setLoginEmail]       = useState("");
   const [loginSenha, setLoginSenha]       = useState("");
@@ -120,8 +126,38 @@ function AuthPage() {
       email: loginEmail.trim(),
       password: loginSenha,
     });
+    if (error) { setLoading(false); toast.error(traduzirErro(error.message)); return; }
+
+    // Verifica se precisa de 2FA
+    const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (aal?.nextLevel === "aal2" && aal.currentLevel !== "aal2") {
+      const { data: factors } = await supabase.auth.mfa.listFactors();
+      const totp = factors?.totp?.[0];
+      if (totp) {
+        const { data: ch } = await supabase.auth.mfa.challenge({ factorId: totp.id });
+        setMfaFactorId(totp.id);
+        setMfaChallengeId(ch?.id ?? "");
+        setMfaStep(true);
+        setLoading(false);
+        return;
+      }
+    }
+
     setLoading(false);
-    if (error) { toast.error(traduzirErro(error.message)); return; }
+    toast.success("Bem-vindo de volta!");
+    navigate({ to: "/app" });
+  }
+
+  async function handleMfaVerify(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    const { error } = await supabase.auth.mfa.verify({
+      factorId: mfaFactorId,
+      challengeId: mfaChallengeId,
+      code: mfaCode.replace(/\s/g, ""),
+    });
+    setLoading(false);
+    if (error) { toast.error("Código inválido ou expirado."); setMfaCode(""); return; }
     toast.success("Bem-vindo de volta!");
     navigate({ to: "/app" });
   }
@@ -248,7 +284,39 @@ function AuthPage() {
 
             {/* ── Login ── */}
             <TabsContent value="login">
-              {esqueceu ? (
+              {mfaStep ? (
+                <form onSubmit={handleMfaVerify} className="space-y-5">
+                  <div className="text-center space-y-2">
+                    <div className="text-4xl">🔐</div>
+                    <p className="font-semibold text-zinc-900">Verificação em dois fatores</p>
+                    <p className="text-sm text-zinc-500">Abra o Google Authenticator ou Authy e digite o código de 6 dígitos.</p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Código do autenticador</Label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9 ]*"
+                      maxLength={7}
+                      autoFocus
+                      placeholder="000 000"
+                      value={mfaCode}
+                      onChange={(e) => setMfaCode(e.target.value)}
+                      className="w-full h-14 rounded-xl border border-zinc-200 text-center text-2xl font-mono tracking-[0.4em] focus:outline-none focus:ring-2 focus:ring-orange-400/40"
+                    />
+                  </div>
+                  <Button type="submit"
+                    disabled={loading || mfaCode.replace(/\s/g, "").length < 6}
+                    className="w-full bg-orange-500 hover:bg-orange-400 h-11 font-bold rounded-xl">
+                    {loading ? "Verificando…" : "Confirmar"}
+                  </Button>
+                  <button type="button"
+                    onClick={() => { setMfaStep(false); setMfaCode(""); }}
+                    className="w-full text-sm text-zinc-400 hover:text-zinc-600 transition-colors">
+                    ← Voltar ao login
+                  </button>
+                </form>
+              ) : esqueceu ? (
                 enviado ? (
                   <div className="text-center py-6 space-y-3">
                     <div className="text-4xl">📧</div>
