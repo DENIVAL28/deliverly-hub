@@ -2,8 +2,9 @@ import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import { ReactNode, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { LogOut, Menu, X } from "lucide-react";
+import { LogOut, Menu, X, AlertTriangle, XCircle } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/lib/use-auth";
 
 export interface NavItem {
   to: string;
@@ -16,6 +17,10 @@ export function AppShell({ title, items, children }: { title: string; items: Nav
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { diasRestantes, isMaster } = useAuth();
+
+  const showAviso = !isMaster && diasRestantes !== null && diasRestantes <= 3;
+  const vencido   = !isMaster && diasRestantes !== null && diasRestantes <= 0;
 
   async function signOut() {
     await qc.cancelQueries();
@@ -91,6 +96,30 @@ export function AppShell({ title, items, children }: { title: string; items: Nav
 
       {/* Conteúdo principal */}
       <main className="flex-1 min-w-0">
+        {/* Banner de vencimento */}
+        {showAviso && (
+          <div className={`w-full px-4 py-3 flex items-center justify-between gap-3 text-sm font-medium ${
+            vencido
+              ? "bg-red-600 text-white"
+              : "bg-amber-400 text-amber-950"
+          }`}>
+            <div className="flex items-center gap-2">
+              {vencido ? <XCircle className="size-4 shrink-0" /> : <AlertTriangle className="size-4 shrink-0" />}
+              {vencido
+                ? "Seu plano venceu. Sua loja pode ser bloqueada a qualquer momento."
+                : `Seu plano vence em ${diasRestantes} dia${diasRestantes === 1 ? "" : "s"}. Renove para não perder o acesso.`}
+            </div>
+            <Link
+              to="/empresa/planos"
+              className={`shrink-0 text-xs font-bold px-3 py-1.5 rounded-lg transition-colors ${
+                vencido
+                  ? "bg-white text-red-600 hover:bg-red-50"
+                  : "bg-amber-950/15 text-amber-950 hover:bg-amber-950/25"
+              }`}>
+              {vencido ? "Reativar agora" : "Renovar plano"}
+            </Link>
+          </div>
+        )}
         <div className="pt-14 md:pt-0">
           <div className="p-4 md:p-10 max-w-7xl mx-auto">{children}</div>
         </div>

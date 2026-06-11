@@ -5,7 +5,7 @@ import { useAuth } from "@/lib/use-auth";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/AppShell";
 import { toast } from "sonner";
-import { CheckCircle2, Zap, Crown, Sparkles, ExternalLink } from "lucide-react";
+import { CheckCircle2, Zap, Crown, Sparkles, ExternalLink, AlertTriangle, XCircle, CalendarDays } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/empresa/planos")({
   ssr: false,
@@ -81,9 +81,15 @@ const CORES: Record<string, { badge: string; btn: string; ring: string; icon: st
 };
 
 function PlanosPage() {
-  const { plano: planoAtual, empresaId } = useAuth();
+  const { plano: planoAtual, empresaId, vencimento, diasRestantes } = useAuth();
   const [loading, setLoading] = useState<string | null>(null);
   const navigate = useNavigate();
+
+  const vencido   = diasRestantes !== null && diasRestantes <= 0;
+  const urgente   = diasRestantes !== null && diasRestantes > 0 && diasRestantes <= 3;
+  const dataFmt   = vencimento
+    ? new Date(vencimento).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })
+    : null;
 
   // Detecta retorno do Mercado Pago
   const search = typeof window !== "undefined"
@@ -129,13 +135,36 @@ function PlanosPage() {
 
       <div className="max-w-5xl mx-auto px-4 py-8">
 
-        {/* Banner plano atual */}
-        {planoAtual && (
+        {/* Banner vencido */}
+        {vencido && (
+          <div className="mb-6 p-4 rounded-2xl bg-red-50 border border-red-200 flex items-start gap-3">
+            <XCircle className="size-5 text-red-500 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-bold text-red-700">Seu plano venceu em {dataFmt}.</p>
+              <p className="text-sm text-red-600 mt-0.5">Sua loja pode ser bloqueada a qualquer momento. Renove agora para garantir o acesso dos seus clientes.</p>
+            </div>
+          </div>
+        )}
+
+        {/* Banner urgente (≤ 3 dias) */}
+        {urgente && (
+          <div className="mb-6 p-4 rounded-2xl bg-amber-50 border border-amber-200 flex items-start gap-3">
+            <AlertTriangle className="size-5 text-amber-500 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-bold text-amber-800">Seu plano vence em {diasRestantes} dia{diasRestantes === 1 ? "" : "s"} ({dataFmt}).</p>
+              <p className="text-sm text-amber-700 mt-0.5">Renove agora para não interromper o acesso da sua loja.</p>
+            </div>
+          </div>
+        )}
+
+        {/* Banner plano atual (normal) */}
+        {planoAtual && !vencido && !urgente && (
           <div className="mb-8 p-4 rounded-2xl bg-white border border-zinc-100 shadow-sm flex items-center gap-3">
-            <CheckCircle2 className="size-5 text-green-500 shrink-0" />
+            <CalendarDays className="size-5 text-green-500 shrink-0" />
             <p className="text-sm text-zinc-700">
-              Seu plano atual é o <strong className="capitalize">{planoAtual}</strong>.
-              {" "}Ao assinar novamente, os 30 dias são somados ao vencimento atual.
+              Plano <strong className="capitalize">{planoAtual}</strong> ativo
+              {dataFmt && <> — vence em <strong>{dataFmt}</strong></>}.
+              {" "}Ao renovar, os 30 dias são somados ao vencimento atual.
             </p>
           </div>
         )}
