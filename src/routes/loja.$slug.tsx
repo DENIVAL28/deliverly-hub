@@ -58,7 +58,7 @@ function LojaPage() {
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [checkoutErro, setCheckoutErro]   = useState<string | null>(null);
   const [catAtiva, setCatAtiva]           = useState<string | null>(null);
-  const [formaPagamento, setFormaPagamento] = useState("Dinheiro");
+  const [formaPagamento, setFormaPagamento] = useState(() => (empresa as any).chave_pix ? "PIX" : "Dinheiro");
   const [pixModal, setPixModal]           = useState<{ payload: string; qrUrl: string; total: number; waLink: string; pedidoNum: number } | null>(null);
   const [acompanharOpen, setAcompanharOpen] = useState(false);
   const [telBusca, setTelBusca]           = useState("");

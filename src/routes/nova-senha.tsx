@@ -36,7 +36,9 @@ function NovaSenhaPage() {
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (senha.length < 6) { toast.error("A senha deve ter pelo menos 6 caracteres."); return; }
+    if (senha.length < 8) { toast.error("A senha deve ter pelo menos 8 caracteres."); return; }
+    if (!/[A-Z]/.test(senha)) { toast.error("Inclua ao menos uma letra maiúscula."); return; }
+    if (!/[0-9]/.test(senha)) { toast.error("Inclua ao menos um número."); return; }
     if (senha !== confirma) { toast.error("As senhas não coincidem."); return; }
     setLoading(true);
     const { error } = await supabase.auth.updateUser({ password: senha });
@@ -76,9 +78,9 @@ function NovaSenhaPage() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="senha">Nova senha</Label>
-                <Input id="senha" type="password" required minLength={6}
+                <Input id="senha" type="password" required minLength={8}
                   value={senha} onChange={(e) => setSenha(e.target.value)}
-                  placeholder="Mínimo 6 caracteres" />
+                  placeholder="Mín. 8 chars, 1 maiúscula, 1 número" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="confirma">Confirmar senha</Label>
