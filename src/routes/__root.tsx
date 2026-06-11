@@ -84,6 +84,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "description", content: "Sistema completo para restaurantes: cardápio digital, caixa PDV para balcão e gestão de entregadores — tudo por R$99/mês sem comissão por pedido. Pizzarias, hamburguerias, marmitarias e mais." },
       { name: "keywords", content: "sistema de delivery, cardápio digital restaurante, software pdv restaurante, gestão de entregadores, pedidos pelo whatsapp, sistema para pizzaria, sistema para hamburgueria, cardápio online grátis" },
       { name: "author", content: "SOS Sistemas" },
+      { name: "google-site-verification", content: "t_NpEKIaHkS11OO1NqCrFDSsClosuwQOgm_Rzgb5B5Q" },
       { name: "robots", content: "index, follow" },
       { property: "og:title", content: "SOS Sistemas — Cardápio Digital + PDV + Entregadores por R$99/mês" },
       { property: "og:description", content: "Cardápio digital, caixa PDV e gestão de entregadores num único sistema. Sem comissão, sem contrato. 7 dias grátis." },
