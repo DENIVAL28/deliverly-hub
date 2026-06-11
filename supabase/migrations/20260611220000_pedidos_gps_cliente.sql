@@ -1,7 +1,9 @@
--- Função atômica para criar pedido + itens + decrementar estoque + registrar cupom.
--- Toda operação acontece em uma única transação PostgreSQL — se qualquer passo falhar,
--- tudo é revertido (sem pedidos órfãos, sem estoque inconsistente).
+-- Adiciona coordenadas GPS do cliente ao pedido
+ALTER TABLE public.pedidos
+  ADD COLUMN IF NOT EXISTS cliente_lat  double precision,
+  ADD COLUMN IF NOT EXISTS cliente_lng  double precision;
 
+-- Recria finalizar_pedido com os dois novos parâmetros opcionais
 DROP FUNCTION IF EXISTS finalizar_pedido(uuid,text,text,text,text,text,numeric,numeric,numeric,text,text,text,uuid,jsonb);
 
 CREATE OR REPLACE FUNCTION finalizar_pedido(
@@ -63,7 +65,6 @@ BEGIN
       NULLIF(v_item->>'observacao', '')
     );
 
-    -- UPDATE atômico: PostgreSQL bloqueia a linha, evitando overselling concorrente
     IF v_prod_id IS NOT NULL AND (v_item->>'controlar_estoque')::BOOLEAN IS TRUE THEN
       UPDATE produtos
       SET estoque = GREATEST(0, COALESCE(estoque, 0) - v_qty)
@@ -71,7 +72,7 @@ BEGIN
     END IF;
   END LOOP;
 
-  -- 3. Incrementar uso do cupom (sem depender do valor lido pelo cliente)
+  -- 3. Incrementar uso do cupom
   IF p_cupom_id IS NOT NULL THEN
     UPDATE cupons
     SET usos_atual = COALESCE(usos_atual, 0) + 1

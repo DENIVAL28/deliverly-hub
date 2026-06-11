@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Minus, MessageCircle, Store, X, ShoppingBag, ImageIcon, Clock, ShoppingCart, Search, Copy, CheckCircle2, PackageSearch, ChevronLeft } from "lucide-react";
+import { Plus, Minus, MessageCircle, Store, X, ShoppingBag, ImageIcon, Clock, ShoppingCart, Search, Copy, CheckCircle2, PackageSearch, ChevronLeft, LocateFixed } from "lucide-react";
 import { toast } from "sonner";
 import QRCode from "qrcode";
 import { copiarTexto } from "@/lib/validacoes";
@@ -60,6 +60,8 @@ function LojaPage() {
   const [catAtiva, setCatAtiva]           = useState<string | null>(null);
   const [formaPagamento, setFormaPagamento] = useState(() => (empresa as any).chave_pix ? "PIX" : "Dinheiro");
   const [tipoEntrega, setTipoEntrega]       = useState<"delivery" | "retirada">("delivery");
+  const [clienteLat, setClienteLat]         = useState<number | null>(null);
+  const [clienteLng, setClienteLng]         = useState<number | null>(null);
   const [pixModal, setPixModal]           = useState<{ payload: string; qrUrl: string; total: number; waLink: string; pedidoNum: number } | null>(null);
   const [acompanharOpen, setAcompanharOpen] = useState(false);
   const [telBusca, setTelBusca]           = useState("");
@@ -194,6 +196,8 @@ const subtotal = totalPrice;
         p_status:           "novo",
         p_cupom_id:         cupomAplicado?.id ?? undefined,
         p_itens:            itensRpc,
+        p_cliente_lat:      clienteLat ?? undefined,
+        p_cliente_lng:      clienteLng ?? undefined,
       });
 
       if (error || !pedidoJson) {
@@ -905,7 +909,12 @@ const subtotal = totalPrice;
                 </div>
                 <FormField name="nome" label="Seu nome" required />
                 {!mesa && <FormField name="telefone" label="Telefone (WhatsApp)" required />}
-                {!mesa && tipoEntrega === "delivery" && <FormField name="endereco" label="Endereço de entrega" required />}
+                {!mesa && tipoEntrega === "delivery" && (
+                  <AddressField
+                    brandColor={brandColor}
+                    onCapture={(lat, lng) => { setClienteLat(lat); setClienteLng(lng); }}
+                  />
+                )}
                 {!mesa && tipoEntrega === "retirada" && (
                   <div className="text-xs text-zinc-500 bg-zinc-50 rounded-xl px-3 py-2.5 flex items-center gap-2">
                     🏪 Você retirará o pedido no balcão do estabelecimento.
@@ -1250,6 +1259,90 @@ function FormField({ name, label, required }: { name: string; label: string; req
     <div className="space-y-1.5">
       <Label htmlFor={name}>{label}</Label>
       <Input id={name} name={name} required={required} className="rounded-xl h-12 text-base" />
+    </div>
+  );
+}
+
+/* ─── Campo de endereço com captura de GPS ─── */
+function AddressField({ brandColor, onCapture }: {
+  brandColor: string;
+  onCapture: (lat: number, lng: number) => void;
+}) {
+  const [loading, setLoading] = useState(false);
+  const [erro, setErro]       = useState("");
+  const [capturado, setCapturado] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  async function usarGps() {
+    if (!navigator.geolocation) { setErro("GPS não disponível neste dispositivo."); return; }
+    setLoading(true); setErro(""); setCapturado(false);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude, longitude } = pos.coords;
+        try {
+          const res  = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
+            { headers: { "Accept-Language": "pt-BR,pt;q=0.9" } }
+          );
+          const data = await res.json();
+          const a    = data.address ?? {};
+          const partes = [
+            a.road ? (a.house_number ? `${a.road}, ${a.house_number}` : a.road) : null,
+            a.suburb ?? a.neighbourhood ?? a.quarter ?? null,
+            a.city ?? a.town ?? a.municipality ?? null,
+          ].filter(Boolean);
+          const addr = partes.length ? partes.join(" — ") : data.display_name ?? `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+          if (inputRef.current) inputRef.current.value = addr;
+        } catch {
+          if (inputRef.current) inputRef.current.value = `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+        }
+        onCapture(latitude, longitude);
+        setCapturado(true);
+        setLoading(false);
+      },
+      (err) => {
+        setErro(err.code === 1 ? "Permissão de GPS negada. Digite o endereço manualmente." : "Não foi possível obter localização.");
+        setLoading(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }
+
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor="endereco">Endereço de entrega</Label>
+      <div className="flex gap-2">
+        <input
+          ref={inputRef}
+          id="endereco"
+          name="endereco"
+          required
+          placeholder="Rua, número, bairro"
+          className="flex-1 h-12 rounded-xl border border-zinc-200 bg-white px-3 text-base placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-orange-400/40"
+        />
+        <button
+          type="button"
+          onClick={usarGps}
+          disabled={loading}
+          title="Usar minha localização GPS"
+          className={`h-12 px-3 rounded-xl border transition-colors disabled:opacity-50 ${
+            capturado
+              ? "bg-green-50 border-green-300 text-green-600"
+              : "border-zinc-200 text-zinc-400 hover:text-orange-500 hover:border-orange-300"
+          }`}
+        >
+          {loading
+            ? <span className="size-5 block rounded-full border-2 border-current border-t-transparent animate-spin" />
+            : <LocateFixed className="size-5" />
+          }
+        </button>
+      </div>
+      {capturado && (
+        <p className="text-xs text-green-600 font-medium flex items-center gap-1">
+          ✓ Localização GPS capturada
+        </p>
+      )}
+      {erro && <p className="text-xs text-red-500">{erro}</p>}
     </div>
   );
 }

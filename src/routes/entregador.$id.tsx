@@ -1,7 +1,9 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Bike, CheckCircle2, Clock, MapPin, Navigation, Package, Phone } from "lucide-react";
+
+const MapaEntrega = lazy(() => import("@/components/MapaEntrega"));
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -47,6 +49,9 @@ function EntregadorPage() {
   const [gpsErro, setGpsErro]     = useState("");
   const [gpsCarreg, setGpsCarreg] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [currentPos, setCurrentPos] = useState<{ lat: number; lng: number } | null>(
+    entregador.lat != null ? { lat: entregador.lat, lng: entregador.lng } : null
+  );
 
   function formatarErroGps(err: GeolocationPositionError): string {
     if (err.message.toLowerCase().includes("secure"))
@@ -65,6 +70,7 @@ function EntregadorPage() {
             p_lat: pos.coords.latitude,
             p_lng: pos.coords.longitude,
           });
+          setCurrentPos({ lat: pos.coords.latitude, lng: pos.coords.longitude });
           resolve(true);
         },
         (err) => { setGpsErro(formatarErroGps(err)); resolve(false); },
@@ -97,7 +103,7 @@ function EntregadorPage() {
   async function carregarPedidos() {
     const { data } = await supabase
       .from("pedidos")
-      .select("id, numero, cliente_nome, cliente_endereco, taxa_entrega, status, created_at")
+      .select("id, numero, cliente_nome, cliente_endereco, taxa_entrega, status, created_at, cliente_lat, cliente_lng")
       .eq("entregador_id" as any, entregador.id)
       .order("created_at", { ascending: false })
       .limit(20);
@@ -246,12 +252,31 @@ function EntregadorPage() {
                       {p.cliente_endereco}
                     </div>
                   )}
+                  {/* Mini mapa — exibe se o cliente compartilhou localização GPS */}
+                  {p.cliente_lat != null && (
+                    <div className="mt-3 overflow-hidden rounded-xl ring-1 ring-zinc-200">
+                      <Suspense fallback={<div className="h-44 bg-zinc-100 flex items-center justify-center text-xs text-zinc-400">Carregando mapa…</div>}>
+                        <MapaEntrega
+                          clienteLat={p.cliente_lat}
+                          clienteLng={p.cliente_lng}
+                          clienteNome={p.cliente_nome}
+                          entregadorLat={currentPos?.lat}
+                          entregadorLng={currentPos?.lng}
+                        />
+                      </Suspense>
+                    </div>
+                  )}
                   <div className="flex items-center justify-between mt-3 pt-3 border-t border-zinc-100">
                     <span className="text-sm font-bold text-green-600">Taxa: {fmt(Number(p.taxa_entrega ?? 0))}</span>
-                    <a href={`https://maps.google.com/?q=${encodeURIComponent(p.cliente_endereco ?? "")}`}
+                    <a
+                      href={
+                        p.cliente_lat != null
+                          ? `https://maps.google.com/?daddr=${p.cliente_lat},${p.cliente_lng}`
+                          : `https://maps.google.com/?q=${encodeURIComponent(p.cliente_endereco ?? "")}`
+                      }
                       target="_blank" rel="noreferrer"
                       className="text-xs text-blue-600 font-medium hover:underline flex items-center gap-1">
-                      <MapPin className="size-3" /> Ver no mapa
+                      <Navigation className="size-3" /> Navegar
                     </a>
                   </div>
                 </div>
