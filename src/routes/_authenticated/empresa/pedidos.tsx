@@ -156,11 +156,24 @@ function PedidosPage() {
   const [entregadorSel, setEntregadorSel] = useState<Record<string, string>>({});
   const [page, setPage] = useState(0);
   const [exportando, setExportando] = useState(false);
+  const [dataSel, setDataSel] = useState<Date>(() => { const d = new Date(); d.setHours(0,0,0,0); return d; });
   const somAtivoRef = useRef(true);
   somAtivoRef.current = somAtivo;
 
-  // Reset página ao trocar tab
-  useEffect(() => { setPage(0); }, [tab]);
+  const diaInicio = new Date(dataSel); diaInicio.setHours(0,0,0,0);
+  const diaFim    = new Date(dataSel); diaFim.setHours(23,59,59,999);
+  const hoje      = new Date(); hoje.setHours(0,0,0,0);
+  const isHoje    = dataSel.getTime() === hoje.getTime();
+
+  function diaLabel(d: Date) {
+    if (d.getTime() === hoje.getTime()) return "Hoje";
+    const ontem = new Date(hoje); ontem.setDate(hoje.getDate() - 1);
+    if (d.getTime() === ontem.getTime()) return "Ontem";
+    return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
+  }
+
+  // Reset página ao trocar tab ou data
+  useEffect(() => { setPage(0); }, [tab, dataSel]);
 
   // Supabase Realtime — novos pedidos + atualizações
   useEffect(() => {
@@ -205,14 +218,16 @@ function PedidosPage() {
         .order("created_at", { ascending: false })).data ?? [],
   });
 
-  // Query 2 — Paginados (todos/finalizados/cancelados)
+  // Query 2 — Paginados (todos/finalizados/cancelados) — filtrado por dia
   const { data: pedidosPag } = useQuery({
-    queryKey: ["pedidos-pag", empresaId, tab, page],
+    queryKey: ["pedidos-pag", empresaId, tab, page, diaInicio.toISOString()],
     enabled: !!empresaId && tab !== "ativos",
     queryFn: async () => {
       let q = supabase.from("pedidos")
         .select("*, pedido_itens(*)", { count: "exact" })
         .eq("empresa_id", empresaId!)
+        .gte("created_at", diaInicio.toISOString())
+        .lte("created_at", diaFim.toISOString())
         .order("created_at", { ascending: false })
         .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
       if (tab === "finalizados") q = q.eq("status", "finalizado");
@@ -271,13 +286,17 @@ function PedidosPage() {
         .select("*")
         .eq("empresa_id", empresaId)
         .order("created_at", { ascending: false });
+      if (tab !== "ativos") {
+        q = (q as any).gte("created_at", diaInicio.toISOString()).lte("created_at", diaFim.toISOString());
+      }
       if (tab === "finalizados") q = q.eq("status", "finalizado");
       if (tab === "cancelados")  q = q.eq("status", "cancelado");
       if (tab === "ativos")      q = (q as any).in("status", ATIVOS);
       const { data: rows } = await q;
       const csv = gerarCSV((rows ?? []) as any[], COLUNAS_PEDIDOS);
       const sufixo = tab === "todos" ? "todos" : tab;
-      baixarCSV(csv, `pedidos_${sufixo}_${new Date().toLocaleDateString("pt-BR").replace(/\//g, "-")}.csv`);
+      const dataStr = dataSel.toLocaleDateString("pt-BR").replace(/\//g, "-");
+      baixarCSV(csv, `pedidos_${sufixo}_${dataStr}.csv`);
     } finally {
       setExportando(false);
     }
@@ -327,21 +346,44 @@ function PedidosPage() {
         <LimiteBanner atual={pedidosMes} limite={limites.pedidos} tipo="pedidos este mês" minPlano="profissional" />
       )}
 
-      <div className="flex gap-1 mb-6 bg-surface rounded-lg p-1 w-fit ring-1 ring-black/5">
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
-              tab === t.id ? "bg-background text-ink shadow-sm" : "text-zinc-500 hover:text-ink"
-            }`}
-          >
-            {t.label}
-            {t.id === "ativos" && totalAtivos > 0 && (
-              <span className="ml-1.5 px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-brand text-white">{totalAtivos}</span>
-            )}
-          </button>
-        ))}
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+        {/* Tabs */}
+        <div className="flex gap-1 bg-surface rounded-lg p-1 w-fit ring-1 ring-black/5">
+          {TABS.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                tab === t.id ? "bg-background text-ink shadow-sm" : "text-zinc-500 hover:text-ink"
+              }`}
+            >
+              {t.label}
+              {t.id === "ativos" && totalAtivos > 0 && (
+                <span className="ml-1.5 px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-brand text-white">{totalAtivos}</span>
+              )}
+            </button>
+          ))}
+        </div>
+
+        {/* Navegação por dia — só nas tabs não-ativas */}
+        {tab !== "ativos" && (
+          <div className="flex items-center gap-1 bg-surface rounded-lg p-1 ring-1 ring-black/5">
+            <button
+              onClick={() => { const d = new Date(dataSel); d.setDate(d.getDate() - 1); setDataSel(d); }}
+              className="p-1.5 rounded-md text-zinc-500 hover:bg-background hover:text-ink transition-colors">
+              <ChevronLeft className="size-4" />
+            </button>
+            <span className="px-3 text-sm font-semibold text-ink min-w-[80px] text-center">
+              {diaLabel(dataSel)}
+            </span>
+            <button
+              onClick={() => { const d = new Date(dataSel); d.setDate(d.getDate() + 1); setDataSel(d); }}
+              disabled={isHoje}
+              className="p-1.5 rounded-md text-zinc-500 hover:bg-background hover:text-ink transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+              <ChevronRight className="size-4" />
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="space-y-3">
