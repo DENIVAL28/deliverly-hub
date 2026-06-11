@@ -228,12 +228,17 @@ function Nav() {
 function Hero() {
   return (
     <section className="relative bg-zinc-950 overflow-hidden min-h-screen flex items-center pt-20">
-      {/* Gradients de fundo */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_60%_-10%,_rgba(249,115,22,0.22),_transparent)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_50%_40%_at_10%_80%,_rgba(249,115,22,0.10),_transparent)]" />
-      {/* Grid sutil */}
-      <div className="absolute inset-0 opacity-[0.03]"
-        style={{ backgroundImage: "linear-gradient(rgba(255,255,255,.6) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.6) 1px,transparent 1px)", backgroundSize: "48px 48px" }} />
+      {/* Vídeo de fundo */}
+      <video
+        autoPlay muted loop playsInline
+        className="absolute inset-0 w-full h-full object-cover opacity-30 pointer-events-none"
+        src="/segments/Ultra_realistic_cinematic_food.mp4"
+      />
+      {/* Overlay escuro para legibilidade */}
+      <div className="absolute inset-0 bg-zinc-950/65" />
+      {/* Gradients laranja */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_60%_-10%,_rgba(249,115,22,0.25),_transparent)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_50%_40%_at_10%_80%,_rgba(249,115,22,0.12),_transparent)]" />
 
       <div className="relative mx-auto max-w-7xl px-6 py-20 w-full">
         <div className="grid lg:grid-cols-2 gap-16 items-center">
