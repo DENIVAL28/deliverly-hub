@@ -817,57 +817,6 @@ const subtotal = totalPrice;
                 ))}
               </div>
 
-              {/* Campo de cupom */}
-              <div className="border-t pt-3 mb-2">
-                {cupomAplicado ? (
-                  <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-xl px-3 py-2 mb-2">
-                    <div className="text-sm text-green-700 font-medium">
-                      🎉 Cupom <span className="font-mono font-bold">{cupomAplicado.codigo}</span> aplicado!
-                    </div>
-                    <button onClick={() => { setCupomAplicado(null); setCodigoCupom(""); }}
-                      className="text-green-500 hover:text-green-700 text-xs underline">
-                      Remover
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex gap-2 mb-2">
-                    <input
-                      value={codigoCupom}
-                      onChange={(e) => setCodigoCupom(e.target.value.toUpperCase())}
-                      placeholder="Tem cupom? Digite aqui"
-                      className="flex-1 h-9 rounded-xl border border-zinc-200 px-3 text-sm font-mono uppercase placeholder:normal-case placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-orange-400/40"
-                      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); aplicarCupom(); } }}
-                    />
-                    <button onClick={aplicarCupom} disabled={cupomLoading || !codigoCupom.trim()}
-                      className="px-4 h-9 rounded-xl bg-zinc-800 text-white text-sm font-medium hover:bg-zinc-700 disabled:opacity-40 transition-colors">
-                      {cupomLoading ? "..." : "Aplicar"}
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex justify-between text-sm mb-1">
-                <span className="text-zinc-500">Subtotal</span>
-                <span>{fmt(totalPrice)}</span>
-              </div>
-              {desconto > 0 && (
-                <div className="flex justify-between text-sm mb-1 text-green-600 font-medium">
-                  <span>Desconto ({cupomAplicado?.codigo})</span>
-                  <span>-{fmt(desconto)}</span>
-                </div>
-              )}
-              <div className="flex justify-between text-sm mb-2">
-                <span className="text-zinc-500">Taxa de entrega</span>
-                {tipoEntrega === "retirada"
-                  ? <span className="text-green-600 font-semibold">Grátis</span>
-                  : <span>{fmt(Number(empresa.taxa_entrega ?? 0))}</span>
-                }
-              </div>
-              <div className="flex justify-between font-bold text-base mb-6 border-t pt-2">
-                <span>Total</span>
-                <span>{fmt(Math.max(0, totalPrice - desconto + (tipoEntrega === "retirada" ? 0 : Number(empresa.taxa_entrega ?? 0))))}</span>
-              </div>
-
               {mesa && (
                 <div className="flex items-center gap-2 bg-brand/10 border border-brand/20 rounded-xl px-4 py-2.5 mb-2"
                   style={{ backgroundColor: `${brandColor}15`, borderColor: `${brandColor}30` }}>
@@ -880,7 +829,7 @@ const subtotal = totalPrice;
               )}
 
               <form onSubmit={checkout} className="space-y-3">
-                {/* Selector Delivery / Retirada */}
+                {/* Selector Delivery / Retirada — primeiro para o total ficar correto abaixo */}
                 {!mesa && (empresa as any).retirada_ativa && (
                   <div className="grid grid-cols-2 gap-2">
                     {(["delivery", "retirada"] as const).map((tipo) => (
@@ -890,15 +839,70 @@ const subtotal = totalPrice;
                         onClick={() => setTipoEntrega(tipo)}
                         className={`py-2.5 rounded-xl text-sm font-semibold border transition-all ${
                           tipoEntrega === tipo
-                            ? "b-bg text-white border-transparent"
+                            ? "b-btn text-white border-transparent"
                             : "bg-white border-zinc-200 text-zinc-500"
                         }`}
+                        style={tipoEntrega === tipo ? { backgroundColor: brandColor, borderColor: brandColor } : undefined}
                       >
                         {tipo === "delivery" ? "🛵 Delivery" : "🏪 Retirar no balcão"}
                       </button>
                     ))}
                   </div>
                 )}
+
+                {/* Resumo de valores */}
+                <div className="bg-zinc-50 rounded-xl px-4 py-3 space-y-1.5">
+                  {/* Campo de cupom */}
+                  <div className="pb-1.5 mb-1 border-b border-zinc-200">
+                    {cupomAplicado ? (
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm text-green-700 font-medium">
+                          🎉 Cupom <span className="font-mono font-bold">{cupomAplicado.codigo}</span> aplicado!
+                        </div>
+                        <button onClick={() => { setCupomAplicado(null); setCodigoCupom(""); }}
+                          className="text-green-500 hover:text-green-700 text-xs underline">
+                          Remover
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex gap-2">
+                        <input
+                          value={codigoCupom}
+                          onChange={(e) => setCodigoCupom(e.target.value.toUpperCase())}
+                          placeholder="Tem cupom? Digite aqui"
+                          className="flex-1 h-9 rounded-xl border border-zinc-200 bg-white px-3 text-sm font-mono uppercase placeholder:normal-case placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-orange-400/40"
+                          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); aplicarCupom(); } }}
+                        />
+                        <button onClick={aplicarCupom} disabled={cupomLoading || !codigoCupom.trim()}
+                          className="px-4 h-9 rounded-xl bg-zinc-800 text-white text-sm font-medium hover:bg-zinc-700 disabled:opacity-40 transition-colors">
+                          {cupomLoading ? "..." : "Aplicar"}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex justify-between text-sm">
+                    <span className="text-zinc-500">Subtotal</span>
+                    <span>{fmt(totalPrice)}</span>
+                  </div>
+                  {desconto > 0 && (
+                    <div className="flex justify-between text-sm text-green-600 font-medium">
+                      <span>Desconto ({cupomAplicado?.codigo})</span>
+                      <span>-{fmt(desconto)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-sm">
+                    <span className="text-zinc-500">Taxa de entrega</span>
+                    {tipoEntrega === "retirada"
+                      ? <span className="text-green-600 font-semibold">Grátis</span>
+                      : <span>{fmt(Number(empresa.taxa_entrega ?? 0))}</span>
+                    }
+                  </div>
+                  <div className="flex justify-between font-bold text-base pt-1.5 border-t border-zinc-200">
+                    <span>Total</span>
+                    <span>{fmt(Math.max(0, totalPrice - desconto + (tipoEntrega === "retirada" ? 0 : Number(empresa.taxa_entrega ?? 0))))}</span>
+                  </div>
+                </div>
                 <FormField name="nome" label="Seu nome" required />
                 {!mesa && <FormField name="telefone" label="Telefone (WhatsApp)" required />}
                 {!mesa && tipoEntrega === "delivery" && <FormField name="endereco" label="Endereço de entrega" required />}
