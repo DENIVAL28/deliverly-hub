@@ -858,11 +858,14 @@ const subtotal = totalPrice;
               )}
               <div className="flex justify-between text-sm mb-2">
                 <span className="text-zinc-500">Taxa de entrega</span>
-                <span>{fmt(Number(empresa.taxa_entrega ?? 0))}</span>
+                {tipoEntrega === "retirada"
+                  ? <span className="text-green-600 font-semibold">Grátis</span>
+                  : <span>{fmt(Number(empresa.taxa_entrega ?? 0))}</span>
+                }
               </div>
               <div className="flex justify-between font-bold text-base mb-6 border-t pt-2">
                 <span>Total</span>
-                <span>{fmt(Math.max(0, totalPrice - desconto + Number(empresa.taxa_entrega ?? 0)))}</span>
+                <span>{fmt(Math.max(0, totalPrice - desconto + (tipoEntrega === "retirada" ? 0 : Number(empresa.taxa_entrega ?? 0))))}</span>
               </div>
 
               {mesa && (
