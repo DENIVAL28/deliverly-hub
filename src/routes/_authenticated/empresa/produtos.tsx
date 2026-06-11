@@ -10,10 +10,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Trash2, Eye, EyeOff, ImagePlus, Settings2, ChevronDown, ChevronUp, Pencil, Package, PackageX, AlertTriangle } from "lucide-react";
+import { Plus, Trash2, Eye, EyeOff, ImagePlus, Settings2, ChevronDown, ChevronUp, Pencil, Package, PackageX, AlertTriangle, FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
 import { UpgradeGuard, LimiteBanner } from "@/components/UpgradeGuard";
 import { PLANO_LIMITS, limiteAtingido, parsarErroSupabase } from "@/lib/plano";
+import { ImportarProdutos } from "@/components/ImportarProdutos";
 
 export const Route = createFileRoute("/_authenticated/empresa/produtos")({
   component: ProdutosPage,
@@ -24,6 +25,7 @@ function ProdutosPage() {
   const limites = PLANO_LIMITS[plano];
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [importarOpen, setImportarOpen] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [opcoesAberto, setOpcoesAberto] = useState<string | null>(null);
@@ -138,8 +140,23 @@ function ProdutosPage() {
 
   return (
     <>
+      <ImportarProdutos
+        open={importarOpen}
+        onClose={() => setImportarOpen(false)}
+        empresaId={empresaId!}
+        categoriasExistentes={categorias ?? []}
+        onImportado={() => {
+          qc.invalidateQueries({ queryKey: ["produtos", empresaId] });
+          qc.invalidateQueries({ queryKey: ["categorias", empresaId] });
+        }}
+      />
+
       <PageHeader title="Produtos" subtitle="Itens do seu cardápio"
         action={
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => setImportarOpen(true)} className="gap-2">
+              <FileSpreadsheet className="size-4" /> Importar planilha
+            </Button>
           <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setPreview(null); setControlarEstoque(false); } }}>
             <DialogTrigger asChild>
               <Button disabled={atingiuLimite} className="bg-brand hover:bg-brand/90 gap-2" title={atingiuLimite ? `Limite de ${limites.produtos} produtos atingido` : undefined}>
@@ -207,6 +224,7 @@ function ProdutosPage() {
               </form>
             </DialogContent>
           </Dialog>
+          </div>
         }
       />
 

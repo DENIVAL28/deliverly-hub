@@ -8,14 +8,12 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
-import { GoogleReCaptchaProvider } from "react-google-recaptcha-v3";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
 
-const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY ?? "";
 
 function NotFoundComponent() {
   return (
@@ -142,10 +140,8 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <GoogleReCaptchaProvider reCaptchaKey={RECAPTCHA_SITE_KEY} language="pt-BR">
-        <Outlet />
-        <Toaster />
-      </GoogleReCaptchaProvider>
+      <Outlet />
+      <Toaster />
     </QueryClientProvider>
   );
 }

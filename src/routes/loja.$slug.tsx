@@ -1,7 +1,6 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { useRef, useMemo, useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useGoogleReCaptcha } from "react-google-recaptcha-v3";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,7 +42,6 @@ interface CartItem { id: string; nome: string; preco: number; qty: number; opcoe
 
 function LojaPage() {
   const { empresa, categorias, produtos, mediaAval, totalAval } = Route.useLoaderData();
-  const { executeRecaptcha } = useGoogleReCaptcha();
   // Lê mesa da URL: /loja/slug?mesa=3
   const mesa = useMemo(() => {
     if (typeof window === "undefined") return null;
@@ -162,9 +160,7 @@ function LojaPage() {
 
     setCheckoutLoading(true);
     try {
-      if (executeRecaptcha) { try { await executeRecaptcha("checkout"); } catch { /* sem chave */ } }
-
-      const subtotal = totalPrice;
+const subtotal = totalPrice;
       const taxa     = Number(empresa.taxa_entrega ?? 0);
       const total    = Math.round(Math.max(0, subtotal - desconto + taxa) * 100) / 100;
 
@@ -732,7 +728,7 @@ function LojaPage() {
             <button
               onClick={() => {
                 setPixModal(null);
-                if (pixModal.waLink) abrirWhatsApp(pixModal.waLink);
+                if (pixModal.waLink) window.open(pixModal.waLink, "_blank");
                 setPedidoFeito(null);
                 toast.success(`Pedido #${pixModal.pedidoNum} confirmado!`);
               }}

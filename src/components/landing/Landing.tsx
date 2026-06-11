@@ -66,8 +66,11 @@ export function Landing() {
   return (
     <div className="min-h-screen bg-white text-zinc-900 antialiased">
       <Nav />
+      <ConsumerHero />
+      <div id="para-restaurantes" />
       <Hero />
       <SocialProof />
+      <Stats />
       <ComoFunciona />
       <Segments />
       <Features />
@@ -76,6 +79,64 @@ export function Landing() {
       <FAQ />
       <Footer />
     </div>
+  );
+}
+
+/* ─── Consumer Hero ─── */
+function ConsumerHero() {
+  const categorias = [
+    "🍕 Pizzas", "🍔 Hambúrgueres", "🍱 Marmitas", "🍇 Açaí",
+    "🌮 Lanches", "☕ Cafeterias", "🥐 Padarias", "🍝 Restaurantes", "🍢 Espetinhos",
+  ];
+  return (
+    <section className="relative bg-zinc-950 overflow-hidden pt-32 pb-24">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_90%_70%_at_50%_-5%,_rgba(249,115,22,0.28),_transparent)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_40%_40%_at_80%_90%,_rgba(249,115,22,0.08),_transparent)]" />
+
+      <div className="relative mx-auto max-w-4xl px-6 text-center">
+        <div className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 text-orange-400 text-xs font-bold px-4 py-1.5 rounded-full mb-8 uppercase tracking-widest">
+          <span className="size-1.5 rounded-full bg-orange-400 animate-pulse" />
+          Delivery direto do restaurante para você
+        </div>
+
+        <h1 className="text-4xl md:text-6xl font-black text-white mb-5 leading-[1.08]">
+          Peça delivery dos<br />
+          <span className="text-orange-400">seus restaurantes</span><br />
+          favoritos
+        </h1>
+
+        <p className="text-zinc-300 text-lg leading-relaxed mb-10 max-w-[46ch] mx-auto">
+          Cardápios digitais, sem app para baixar. Faça seu pedido diretamente com o estabelecimento — rápido, sem filas e sem intermediários.
+        </p>
+
+        {/* Categorias pill */}
+        <div className="flex flex-wrap justify-center gap-2 mb-12">
+          {categorias.map((c) => (
+            <span key={c}
+              className="bg-white/5 border border-white/10 text-white text-sm font-medium px-4 py-2 rounded-full hover:bg-orange-500/20 hover:border-orange-500/30 transition-colors cursor-default select-none">
+              {c}
+            </span>
+          ))}
+        </div>
+
+        <Link to="/lojas"
+          className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white font-black px-10 py-4 rounded-2xl text-lg transition-all hover:scale-[1.02] shadow-2xl shadow-orange-500/30">
+          🛵 Ver restaurantes disponíveis <ArrowRight className="size-5" />
+        </Link>
+
+        <p className="text-zinc-500 text-sm mt-4">Sem cadastro necessário para fazer seu pedido</p>
+
+        {/* Transição para B2B */}
+        <div className="mt-16 pt-8 border-t border-white/5">
+          <p className="text-zinc-500 text-sm">
+            É dono de restaurante?{" "}
+            <a href="#para-restaurantes" className="text-orange-400 hover:text-orange-300 font-semibold transition-colors">
+              Crie o seu próprio delivery ↓
+            </a>
+          </p>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -198,13 +259,13 @@ function Hero() {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-3 mb-10">
-              <a href={WA_LINK} target="_blank" rel="noreferrer"
+              <Link to="/auth"
                 className="flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 text-white font-bold px-7 py-4 rounded-2xl text-base transition-all hover:scale-[1.02] shadow-xl shadow-orange-500/25">
-                Solicitar Demonstração Gratuita <ArrowRight className="size-5" />
-              </a>
-              <a href="#como-funciona"
+                Criar conta grátis — 7 dias <ArrowRight className="size-5" />
+              </Link>
+              <a href={WA_LINK} target="_blank" rel="noreferrer"
                 className="flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-white border border-white/10 font-semibold px-7 py-4 rounded-2xl text-base transition-colors">
-                Ver como funciona <ChevronDown className="size-4 text-zinc-400" />
+                <MessageCircle className="size-4" /> Falar com a equipe
               </a>
             </div>
 
@@ -392,10 +453,10 @@ function ComoFunciona() {
         </div>
 
         <div className="text-center mt-12">
-          <a href={WA_LINK} target="_blank" rel="noreferrer"
+          <Link to="/auth"
             className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white font-bold px-6 py-3 rounded-xl transition-all hover:scale-[1.02]">
             Quero começar agora <ArrowRight className="size-4" />
-          </a>
+          </Link>
           <p className="text-xs text-zinc-400 mt-2">7 dias grátis • Sem cartão de crédito</p>
         </div>
       </div>
@@ -516,13 +577,21 @@ function Pricing() {
                   </li>
                 ))}
               </ul>
-              <a href={p.name === "Premium" ? WA_LINK : WA_LINK}
-                target="_blank" rel="noreferrer"
-                className={`w-full text-center font-bold py-3 rounded-xl transition-all ${
-                  p.highlight ? "bg-white text-orange-500 hover:bg-orange-50" : "bg-white/10 text-white hover:bg-white/20"
-                }`}>
-                {p.cta}
-              </a>
+              {p.name === "Premium" ? (
+                <a href={WA_LINK} target="_blank" rel="noreferrer"
+                  className={`w-full text-center font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2 ${
+                    p.highlight ? "bg-white text-orange-500 hover:bg-orange-50" : "bg-white/10 text-white hover:bg-white/20"
+                  }`}>
+                  <MessageCircle className="size-4" /> {p.cta}
+                </a>
+              ) : (
+                <Link to="/auth"
+                  className={`w-full text-center font-bold py-3 rounded-xl transition-all block ${
+                    p.highlight ? "bg-white text-orange-500 hover:bg-orange-50" : "bg-white/10 text-white hover:bg-white/20"
+                  }`}>
+                  {p.cta}
+                </Link>
+              )}
             </div>
           ))}
         </div>

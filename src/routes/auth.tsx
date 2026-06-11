@@ -1,6 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { useGoogleReCaptcha } from "react-google-recaptcha-v3";
 import { supabase } from "@/integrations/supabase/client";
 import { traduzirErro } from "@/lib/erros";
 import { Button } from "@/components/ui/button";
@@ -27,13 +26,77 @@ export const Route = createFileRoute("/auth")({
   component: AuthPage,
 });
 
+// ── Validações ──────────────────────────────────────────────────────────────
+
+function validarNome(v: string) {
+  if (!v.trim()) return "Nome é obrigatório.";
+  if (v.trim().length < 2) return "Nome deve ter ao menos 2 caracteres.";
+  if (v.trim().length > 100) return "Nome muito longo (máx. 100 caracteres).";
+  if (!/^[A-Za-zÀ-ÖØ-öø-ÿ\s'-]+$/.test(v.trim())) return "Nome deve conter apenas letras.";
+  return "";
+}
+
+function validarEmail(v: string) {
+  if (!v.trim()) return "E-mail é obrigatório.";
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim())) return "E-mail inválido.";
+  return "";
+}
+
+function validarSenha(v: string, modo: "login" | "cadastro") {
+  if (!v) return "Senha é obrigatória.";
+  if (modo === "cadastro") {
+    if (v.length < 8) return "Senha deve ter ao menos 8 caracteres.";
+    if (!/[A-Z]/.test(v)) return "Inclua ao menos uma letra maiúscula.";
+    if (!/[0-9]/.test(v)) return "Inclua ao menos um número.";
+  }
+  return "";
+}
+
+// ── Componente de campo com erro inline ─────────────────────────────────────
+
+function Field({
+  name, label, type, value, onChange, erro, placeholder,
+}: {
+  name: string; label: string; type: string;
+  value: string; onChange: (v: string) => void;
+  erro?: string; placeholder?: string;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor={name}>{label}</Label>
+      <Input
+        id={name}
+        name={name}
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className={erro ? "border-red-400 focus-visible:ring-red-400" : ""}
+      />
+      {erro && <p className="text-xs text-red-500">{erro}</p>}
+    </div>
+  );
+}
+
+// ── Página ──────────────────────────────────────────────────────────────────
+
 function AuthPage() {
   const navigate = useNavigate();
-  const { executeRecaptcha } = useGoogleReCaptcha();
   const [loading, setLoading] = useState(false);
   const [esqueceu, setEsqueceu] = useState(false);
   const [emailReset, setEmailReset] = useState("");
   const [enviado, setEnviado] = useState(false);
+
+  // Campos — login
+  const [loginEmail, setLoginEmail]       = useState("");
+  const [loginSenha, setLoginSenha]       = useState("");
+  const [errosLogin, setErrosLogin]       = useState<Record<string, string>>({});
+
+  // Campos — cadastro
+  const [cadNome, setCadNome]             = useState("");
+  const [cadEmail, setCadEmail]           = useState("");
+  const [cadSenha, setCadSenha]           = useState("");
+  const [errosCad, setErrosCad]           = useState<Record<string, string>>({});
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -41,19 +104,21 @@ function AuthPage() {
     });
   }, [navigate]);
 
-  async function getRecaptchaToken(action: string): Promise<string | null> {
-    if (!executeRecaptcha) return null;
-    try { return await executeRecaptcha(action); } catch { return null; }
-  }
+  // ── Login ────────────────────────────────────────────────────────────────
 
-  async function handleLogin(e: React.FormEvent<HTMLFormElement>) {
+  async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
-    const fd = new FormData(e.currentTarget);
+    const erros = {
+      email: validarEmail(loginEmail),
+      senha: validarSenha(loginSenha, "login"),
+    };
+    setErrosLogin(erros);
+    if (Object.values(erros).some(Boolean)) return;
+
     setLoading(true);
-    await getRecaptchaToken("login");
     const { error } = await supabase.auth.signInWithPassword({
-      email: String(fd.get("email")),
-      password: String(fd.get("password")),
+      email: loginEmail.trim(),
+      password: loginSenha,
     });
     setLoading(false);
     if (error) { toast.error(traduzirErro(error.message)); return; }
@@ -61,11 +126,14 @@ function AuthPage() {
     navigate({ to: "/app" });
   }
 
-  async function handleResetPassword(e: React.FormEvent<HTMLFormElement>) {
+  // ── Esqueceu senha ───────────────────────────────────────────────────────
+
+  async function handleResetPassword(e: React.FormEvent) {
     e.preventDefault();
+    const erroEmail = validarEmail(emailReset);
+    if (erroEmail) { toast.error(erroEmail); return; }
     setLoading(true);
-    await getRecaptchaToken("reset_password");
-    const { error } = await supabase.auth.resetPasswordForEmail(emailReset, {
+    const { error } = await supabase.auth.resetPasswordForEmail(emailReset.trim(), {
       redirectTo: `${window.location.origin}/nova-senha`,
     });
     setLoading(false);
@@ -73,17 +141,25 @@ function AuthPage() {
     setEnviado(true);
   }
 
-  async function handleSignup(e: React.FormEvent<HTMLFormElement>) {
+  // ── Cadastro ─────────────────────────────────────────────────────────────
+
+  async function handleSignup(e: React.FormEvent) {
     e.preventDefault();
-    const fd = new FormData(e.currentTarget);
+    const erros = {
+      nome:  validarNome(cadNome),
+      email: validarEmail(cadEmail),
+      senha: validarSenha(cadSenha, "cadastro"),
+    };
+    setErrosCad(erros);
+    if (Object.values(erros).some(Boolean)) return;
+
     setLoading(true);
-    await getRecaptchaToken("signup");
     const { error } = await supabase.auth.signUp({
-      email: String(fd.get("email")),
-      password: String(fd.get("password")),
+      email: cadEmail.trim(),
+      password: cadSenha,
       options: {
         emailRedirectTo: `${window.location.origin}/app`,
-        data: { nome: String(fd.get("nome")) },
+        data: { nome: cadNome.trim() },
       },
     });
     setLoading(false);
@@ -91,13 +167,13 @@ function AuthPage() {
     toast.success("Conta criada! Verifique seu e-mail para confirmar.");
   }
 
+  // ── Render ───────────────────────────────────────────────────────────────
+
   return (
     <div className="min-h-screen grid lg:grid-cols-2">
 
-      {/* ── Lado esquerdo — animação ── */}
+      {/* Lado esquerdo — animação */}
       <div className="hidden lg:flex flex-col justify-between relative bg-zinc-950 overflow-hidden p-12">
-
-        {/* Keyframes injetados */}
         <style>{`
           @keyframes floatFood {
             0%   { transform: translateY(0px) rotate(0deg);   opacity: .75; }
@@ -110,17 +186,14 @@ function AuthPage() {
           }
         `}</style>
 
-        {/* Gradiente de fundo */}
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_60%_at_30%_40%,_rgba(249,115,22,0.18),_transparent)]" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_50%_50%_at_80%_80%,_rgba(249,115,22,0.08),_transparent)]" />
 
-        {/* Círculos pulsantes de fundo */}
         {[160, 260, 360].map((s, i) => (
           <div key={s} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-orange-500"
             style={{ width: s, height: s, animation: `pulseRing ${3 + i}s ease-in-out infinite`, animationDelay: `${i * 0.8}s` }} />
         ))}
 
-        {/* Emojis flutuantes */}
         {FLOATING_ITEMS.map((item, i) => (
           <div key={i} className={`absolute select-none ${item.size}`}
             style={{
@@ -133,7 +206,6 @@ function AuthPage() {
           </div>
         ))}
 
-        {/* Conteúdo */}
         <Link to="/" className="relative z-10">
           <img src="/segments/logo.png" alt="SOS Sistemas" className="h-12 w-auto object-contain brightness-0 invert" />
         </Link>
@@ -156,7 +228,7 @@ function AuthPage() {
         <p className="relative z-10 text-xs text-zinc-600">© 2026 SOS Sistemas</p>
       </div>
 
-      {/* ── Lado direito — formulário ── */}
+      {/* Lado direito — formulário */}
       <div className="flex items-center justify-center p-6 bg-white">
         <div className="w-full max-w-md">
           <Link to="/" className="lg:hidden block mb-8">
@@ -174,6 +246,7 @@ function AuthPage() {
               <TabsTrigger value="signup">Criar conta</TabsTrigger>
             </TabsList>
 
+            {/* ── Login ── */}
             <TabsContent value="login">
               {esqueceu ? (
                 enviado ? (
@@ -189,7 +262,7 @@ function AuthPage() {
                 ) : (
                   <form onSubmit={handleResetPassword} className="space-y-4">
                     <p className="text-sm text-zinc-500">Digite seu e-mail e enviaremos um link para redefinir sua senha.</p>
-                    <div className="space-y-2">
+                    <div className="space-y-1.5">
                       <Label htmlFor="email-reset">E-mail</Label>
                       <Input id="email-reset" type="email" required value={emailReset}
                         onChange={(e) => setEmailReset(e.target.value)} placeholder="seu@email.com" />
@@ -205,9 +278,11 @@ function AuthPage() {
                 )
               ) : (
                 <form onSubmit={handleLogin} className="space-y-4">
-                  <Field name="email" label="E-mail" type="email" />
-                  <Field name="password" label="Senha" type="password" />
-                  <div className="text-right -mt-2">
+                  <Field name="email" label="E-mail" type="email" placeholder="seu@email.com"
+                    value={loginEmail} onChange={setLoginEmail} erro={errosLogin.email} />
+                  <Field name="password" label="Senha" type="password" placeholder="••••••••"
+                    value={loginSenha} onChange={setLoginSenha} erro={errosLogin.senha} />
+                  <div className="text-right -mt-1">
                     <button type="button" onClick={() => setEsqueceu(true)}
                       className="text-xs text-zinc-400 hover:text-orange-500 transition-colors">
                       Esqueceu a senha?
@@ -220,11 +295,22 @@ function AuthPage() {
               )}
             </TabsContent>
 
+            {/* ── Cadastro ── */}
             <TabsContent value="signup">
               <form onSubmit={handleSignup} className="space-y-4">
-                <Field name="nome" label="Seu nome" type="text" />
-                <Field name="email" label="E-mail" type="email" />
-                <Field name="password" label="Senha" type="password" />
+                <Field name="nome" label="Seu nome" type="text" placeholder="João Silva"
+                  value={cadNome} onChange={setCadNome} erro={errosCad.nome} />
+                <Field name="email" label="E-mail" type="email" placeholder="seu@email.com"
+                  value={cadEmail} onChange={setCadEmail} erro={errosCad.email} />
+                <div className="space-y-1.5">
+                  <Field name="password" label="Senha" type="password" placeholder="Mín. 8 chars, 1 maiúscula, 1 número"
+                    value={cadSenha} onChange={setCadSenha} erro={errosCad.senha} />
+                  <ul className="text-[11px] text-zinc-400 space-y-0.5 pl-1">
+                    <li className={cadSenha.length >= 8 ? "text-green-500" : ""}>• Mínimo 8 caracteres</li>
+                    <li className={/[A-Z]/.test(cadSenha) ? "text-green-500" : ""}>• Ao menos 1 letra maiúscula</li>
+                    <li className={/[0-9]/.test(cadSenha) ? "text-green-500" : ""}>• Ao menos 1 número</li>
+                  </ul>
+                </div>
                 <Button type="submit" disabled={loading} className="w-full bg-orange-500 hover:bg-orange-400 h-11 text-base font-bold rounded-xl">
                   {loading ? "Criando conta…" : "Criar conta grátis"}
                 </Button>
@@ -240,15 +326,6 @@ function AuthPage() {
           </div>
         </div>
       </div>
-    </div>
-  );
-}
-
-function Field({ name, label, type }: { name: string; label: string; type: string }) {
-  return (
-    <div className="space-y-2">
-      <Label htmlFor={name}>{label}</Label>
-      <Input id={name} name={name} type={type} required />
     </div>
   );
 }

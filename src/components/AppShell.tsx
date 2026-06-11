@@ -77,7 +77,7 @@ export function AppShell({ title, items, children }: { title: string; items: Nav
           <div className="absolute inset-0 bg-black/30" />
           <div className="absolute top-14 left-0 bottom-0 w-64 bg-background flex flex-col" onClick={(e) => e.stopPropagation()}>
             <div className="px-3 py-3 text-[10px] font-semibold uppercase tracking-widest text-zinc-500">{title}</div>
-            <nav className="px-2 flex-1 space-y-0.5">
+            <nav className="px-2 flex-1 space-y-0.5 overflow-y-auto">
               <NavLinks />
             </nav>
             <div className="p-3 border-t border-black/5">

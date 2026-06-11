@@ -89,8 +89,13 @@ function EntregadoresPage() {
     toast.success("Entregador cadastrado!");
   }
 
-  async function excluir(id: string) {
-    await supabase.from("entregadores").delete().eq("id", id);
+  async function excluir(id: string, nome: string) {
+    if (!window.confirm(`Remover o entregador "${nome}"? Esta ação não pode ser desfeita.`)) return;
+    // Desvincular pedidos antes de excluir (evita erro de FK)
+    await supabase.from("pedidos").update({ entregador_id: null } as any)
+      .eq("empresa_id", empresaId!).eq("entregador_id" as any, id);
+    const { error } = await supabase.from("entregadores").delete().eq("id", id);
+    if (error) { toast.error("Não foi possível remover: " + error.message); return; }
     qc.invalidateQueries({ queryKey: ["entregadores-admin", empresaId] });
     toast.success("Entregador removido");
   }
@@ -245,7 +250,8 @@ function EntregadoresPage() {
                       className="size-8 rounded-lg border border-zinc-200 flex items-center justify-center text-zinc-400 hover:text-brand hover:border-brand/30 transition-colors">
                       <Link className="size-3.5" />
                     </a>
-                    <button onClick={() => excluir(e.id)}
+                    <button onClick={() => excluir(e.id, e.nome)}
+                      title="Remover entregador"
                       className="size-8 rounded-lg border border-zinc-200 flex items-center justify-center text-zinc-300 hover:text-red-500 hover:border-red-200 transition-colors">
                       <Trash2 className="size-3.5" />
                     </button>
