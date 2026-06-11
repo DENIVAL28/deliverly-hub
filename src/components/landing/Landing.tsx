@@ -231,11 +231,11 @@ function Hero() {
       {/* Vídeo de fundo */}
       <video
         autoPlay muted loop playsInline
-        className="absolute inset-0 w-full h-full object-cover opacity-30 pointer-events-none"
+        className="absolute inset-0 w-full h-full object-cover opacity-60 pointer-events-none"
         src="/segments/Ultra_realistic_cinematic_food.mp4"
       />
       {/* Overlay escuro para legibilidade */}
-      <div className="absolute inset-0 bg-zinc-950/65" />
+      <div className="absolute inset-0 bg-zinc-950/45" />
       {/* Gradients laranja */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_60%_-10%,_rgba(249,115,22,0.25),_transparent)]" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_50%_40%_at_10%_80%,_rgba(249,115,22,0.12),_transparent)]" />
