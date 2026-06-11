@@ -8,7 +8,7 @@ const JSONLD = {
   "applicationCategory": "BusinessApplication",
   "operatingSystem": "Web",
   "description": "Sistema completo de delivery para restaurantes: cardápio digital, pedidos via WhatsApp, PDV, cupons e relatórios.",
-  "url": "https://deliverly.sossistemas.com.br",
+  "url": "https://deliverly-hub.vercel.app",
   "offers": {
     "@type": "AggregateOffer",
     "priceCurrency": "BRL",
@@ -19,7 +19,7 @@ const JSONLD = {
   "provider": {
     "@type": "Organization",
     "name": "SOS Sistemas",
-    "url": "https://deliverly.sossistemas.com.br",
+    "url": "https://deliverly-hub.vercel.app",
   },
 };
 
@@ -30,7 +30,7 @@ export const Route = createFileRoute("/")({
       { name: "description", content: "Crie seu cardápio digital grátis e receba pedidos pelo WhatsApp. Sistema completo para pizzarias, hamburguerias, açaíterias e restaurantes. Sem taxas por pedido." },
       { property: "og:title", content: "Deliverly Hub — Sistema de Delivery para Restaurantes" },
       { property: "og:description", content: "Cardápio digital + pedidos pelo WhatsApp + PDV + relatórios. Tudo por R$99/mês. Sem taxas por pedido." },
-      { property: "og:url", content: "https://deliverly.sossistemas.com.br" },
+      { property: "og:url", content: "https://deliverly-hub.vercel.app" },
       { name: "script:ld+json", content: JSON.stringify(JSONLD) },
     ],
   }),
