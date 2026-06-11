@@ -353,9 +353,9 @@ const subtotal = totalPrice;
                   <Store className="size-9 text-zinc-400" />
                 </div>
               )}
-              <div className="pb-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h1 className="text-xl font-bold text-zinc-900 leading-tight">{empresa.nome_fantasia}</h1>
+              <div className="pb-1 min-w-0 flex-1">
+                <h1 className="text-xl font-bold text-zinc-900 leading-tight break-words">{empresa.nome_fantasia}</h1>
+                <div className="flex items-center gap-2 flex-wrap mt-1">
                   {mediaAval !== null && totalAval > 0 && (
                     <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-yellow-50 text-yellow-700">
                       ★ {mediaAval.toFixed(1)} <span className="font-normal text-yellow-500">({totalAval})</span>
