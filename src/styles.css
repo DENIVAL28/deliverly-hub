@@ -151,3 +151,8 @@
     color: var(--color-foreground);
   }
 }
+
+/* Esconde o badge do reCAPTCHA (Supabase Auth) */
+.grecaptcha-badge {
+  visibility: hidden !important;
+}
