@@ -117,10 +117,11 @@ function Nav() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          {/* Pedir delivery — sempre visível */}
           <Link to="/lojas"
-            className="hidden sm:flex items-center gap-2 text-sm font-semibold px-4 py-2.5 rounded-xl border border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white transition-all">
-            Pedir delivery
+            className="flex items-center gap-1.5 text-sm font-semibold px-3 py-2 rounded-xl border border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white transition-all whitespace-nowrap">
+            🛵 Pedir delivery
           </Link>
           <Link to="/auth"
             className={`hidden sm:block text-sm font-medium px-4 py-2 rounded-xl transition-colors ${
