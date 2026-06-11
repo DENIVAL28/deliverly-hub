@@ -80,13 +80,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-      { title: "Deliverly Hub — Sistema de Delivery para Restaurantes e Lanchonetes" },
-      { name: "description", content: "Crie seu cardápio digital em minutos. Sistema completo de delivery com pedidos via WhatsApp, PDV, cupons e relatórios. Ideal para pizzarias, hamburguerias, açaíterias e mais." },
-      { name: "keywords", content: "sistema de delivery, cardápio digital, pedidos online, software para restaurante, pizzaria delivery, hamburgueria delivery, aplicativo delivery" },
+      { title: "SOS Sistemas — Cardápio Digital + PDV + Entregadores para Restaurantes | R$99/mês" },
+      { name: "description", content: "Sistema completo para restaurantes: cardápio digital, caixa PDV para balcão e gestão de entregadores — tudo por R$99/mês sem comissão por pedido. Pizzarias, hamburguerias, marmitarias e mais." },
+      { name: "keywords", content: "sistema de delivery, cardápio digital restaurante, software pdv restaurante, gestão de entregadores, pedidos pelo whatsapp, sistema para pizzaria, sistema para hamburgueria, cardápio online grátis" },
       { name: "author", content: "SOS Sistemas" },
       { name: "robots", content: "index, follow" },
-      { property: "og:title", content: "Deliverly Hub — Sistema de Delivery para Restaurantes" },
-      { property: "og:description", content: "Cardápio digital, pedidos pelo WhatsApp, PDV e relatórios. Tudo que seu restaurante precisa sem taxas abusivas." },
+      { property: "og:title", content: "SOS Sistemas — Cardápio Digital + PDV + Entregadores por R$99/mês" },
+      { property: "og:description", content: "Cardápio digital, caixa PDV e gestão de entregadores num único sistema. Sem comissão, sem contrato. 7 dias grátis." },
       { property: "og:type", content: "website" },
       { property: "og:url", content: "https://deliverly.sossistemas.com.br" },
       { property: "og:locale", content: "pt_BR" },
@@ -113,7 +113,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="pt-BR">
       <head>
         <HeadContent />
       </head>
