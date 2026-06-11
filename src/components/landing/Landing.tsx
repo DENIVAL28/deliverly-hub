@@ -165,7 +165,7 @@ function Nav() {
           <Link to="/" className="flex items-center">
             <img
               src="/segments/logo.png"
-              alt="SOS Sistemas"
+              alt="Deliverly Hub"
               className={`h-14 w-auto max-w-[180px] object-contain transition-all duration-300 ${dark ? "brightness-0 invert" : ""}`}
             />
           </Link>
@@ -710,7 +710,7 @@ function Footer() {
       <div className="mx-auto max-w-7xl px-6">
         <div className="flex flex-col md:flex-row justify-between items-start gap-8 mb-8">
           <div>
-            <img src="/segments/logo.png" alt="SOS Sistemas" className="h-14 w-auto object-contain brightness-0 invert" />
+            <img src="/segments/logo.png" alt="Deliverly Hub" className="h-14 w-auto object-contain brightness-0 invert" />
             <p className="text-xs text-zinc-400 mt-2 max-w-[30ch]">Plataforma de delivery próprio para restaurantes que não aceitam pagar comissão.</p>
             <div className="flex items-center gap-3 mt-4">
               <a href={WA_LINK} target="_blank" rel="noreferrer"

@@ -50,7 +50,7 @@ export function AppShell({ title, items, children }: { title: string; items: Nav
       {/* Sidebar desktop */}
       <aside className="hidden md:flex w-60 shrink-0 flex-col border-r border-black/5 bg-background">
         <div className="px-6 h-16 flex items-center border-b border-black/5">
-          <span className="text-base font-bold tracking-tight text-brand">SOS Sistemas</span>
+          <Link to="/"><img src="/segments/logo.png" alt="Deliverly Hub" className="h-9 w-auto object-contain" /></Link>
         </div>
         <div className="px-3 py-2 text-[10px] font-semibold uppercase tracking-widest text-zinc-500">{title}</div>
         <nav className="px-2 flex-1 space-y-0.5">
@@ -65,7 +65,7 @@ export function AppShell({ title, items, children }: { title: string; items: Nav
 
       {/* Topbar mobile */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-40 h-14 bg-background border-b border-black/5 flex items-center justify-between px-4">
-        <span className="text-base font-bold tracking-tight text-brand">SOS Sistemas</span>
+        <img src="/segments/logo.png" alt="Deliverly Hub" className="h-8 w-auto object-contain" />
         <button onClick={() => setMobileOpen((v) => !v)} className="p-2 rounded-md text-zinc-600 hover:bg-zinc-100">
           {mobileOpen ? <X className="size-5" /> : <Menu className="size-5" />}
         </button>

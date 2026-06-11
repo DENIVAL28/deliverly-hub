@@ -29,7 +29,7 @@ function MasterDashboard() {
 
   return (
     <>
-      <PageHeader title="Visão geral" subtitle="Resumo da plataforma SOS Sistemas" />
+      <PageHeader title="Visão geral" subtitle="Resumo da plataforma Deliverly Hub" />
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         <StatCard label="Empresas" value={data?.total ?? 0} />
         <StatCard label="Ativas" value={data?.ativas ?? 0} />

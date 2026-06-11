@@ -130,7 +130,7 @@ function OnboardingPage() {
 
         {/* Logo */}
         <div className="text-center mb-8">
-          <img src="/segments/logo.png" alt="SOS Sistemas" className="h-10 w-auto mx-auto object-contain mb-4" />
+          <img src="/segments/logo.png" alt="Deliverly Hub" className="h-10 w-auto mx-auto object-contain mb-4" />
           <p className="text-sm text-zinc-500">Vamos configurar sua loja em 3 passos rápidos!</p>
         </div>
 

@@ -112,7 +112,7 @@ function LojasPage() {
         {/* Header simples */}
         <header className="px-6 py-5 flex items-center justify-between">
           <Link to="/">
-            <img src="/segments/logo.png" alt="SOS Sistemas" className="h-9 w-auto object-contain" />
+            <img src="/segments/logo.png" alt="Deliverly Hub" className="h-9 w-auto object-contain" />
           </Link>
           <Link to="/auth" className="text-sm text-zinc-400 hover:text-white transition-colors">
             Área do lojista
@@ -188,7 +188,7 @@ function LojasPage() {
       <header className="bg-white border-b border-zinc-100 sticky top-0 z-20 shadow-sm">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center gap-4">
           <Link to="/" className="shrink-0">
-            <img src="/segments/logo.png" alt="SOS Sistemas" className="h-9 w-auto object-contain" />
+            <img src="/segments/logo.png" alt="Deliverly Hub" className="h-9 w-auto object-contain" />
           </Link>
 
           <div className="relative flex-1 max-w-lg mx-auto">

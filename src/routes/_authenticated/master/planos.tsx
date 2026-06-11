@@ -59,7 +59,7 @@ function PlanosPage() {
 
   return (
     <>
-      <PageHeader title="Planos" subtitle="Planos comercializados pela SOS Sistemas" />
+      <PageHeader title="Planos" subtitle="Planos comercializados pelo Deliverly Hub" />
 
       <div className="grid md:grid-cols-3 gap-6">
         {(data ?? []).map((p: any) => (
