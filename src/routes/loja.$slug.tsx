@@ -344,16 +344,16 @@ const subtotal = totalPrice;
         )}
         <div className="bg-white shadow-sm">
           <div className="max-w-2xl mx-auto px-4 pb-4">
-            <div className="flex items-end gap-4 -mt-10 relative z-10">
+            <div className="flex items-start gap-4 relative z-10">
               {empresa.logo_url ? (
                 <img src={empresa.logo_url} alt={empresa.nome_fantasia}
-                  className="size-20 rounded-2xl object-cover ring-4 ring-white shadow-lg shrink-0" />
+                  className="size-20 rounded-2xl object-cover ring-4 ring-white shadow-lg shrink-0 -mt-10" />
               ) : (
-                <div className="size-20 rounded-2xl bg-zinc-100 ring-4 ring-white shadow-lg flex items-center justify-center shrink-0">
+                <div className="size-20 rounded-2xl bg-zinc-100 ring-4 ring-white shadow-lg flex items-center justify-center shrink-0 -mt-10">
                   <Store className="size-9 text-zinc-400" />
                 </div>
               )}
-              <div className="pb-1 min-w-0 flex-1">
+              <div className="pt-2 min-w-0 flex-1">
                 <h1 className="text-xl font-bold text-zinc-900 leading-tight break-words">{empresa.nome_fantasia}</h1>
                 <div className="flex items-center gap-2 flex-wrap mt-1">
                   {mediaAval !== null && totalAval > 0 && (
