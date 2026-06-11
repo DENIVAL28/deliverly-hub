@@ -1,0 +1,20 @@
+{
+  "name": "Deliverly Hub — Sistema de Delivery",
+  "short_name": "Deliverly",
+  "description": "Cardápio digital, PDV e gestão de entregadores para restaurantes",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#f97316",
+  "background_color": "#ffffff",
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

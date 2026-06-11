@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Minus, MessageCircle, Store, X, ShoppingBag, ImageIcon, Clock, ShoppingCart, Search, Copy, CheckCircle2, PackageSearch } from "lucide-react";
+import { Plus, Minus, MessageCircle, Store, X, ShoppingBag, ImageIcon, Clock, ShoppingCart, Search, Copy, CheckCircle2, PackageSearch, ChevronLeft } from "lucide-react";
 import { toast } from "sonner";
 import QRCode from "qrcode";
 import { copiarTexto } from "@/lib/validacoes";
@@ -325,9 +325,20 @@ const subtotal = totalPrice;
           <div className="h-40 sm:h-52 bg-cover bg-center relative"
             style={{ backgroundImage: `url(${empresa.banner_url})` }}>
             <div className="absolute inset-0 bg-gradient-to-b from-black/10 to-black/50" />
+            <button
+              onClick={() => { if (window.history.length > 1) window.history.back(); else window.location.href = "/"; }}
+              className="absolute top-3 left-3 z-20 flex items-center gap-1 bg-black/40 hover:bg-black/60 text-white text-xs font-semibold px-3 py-1.5 rounded-full backdrop-blur-sm transition-colors">
+              <ChevronLeft className="size-3.5" />Início
+            </button>
           </div>
         ) : (
-          <div className="h-28 bg-gradient-to-br from-zinc-800 to-zinc-900" />
+          <div className="h-28 bg-gradient-to-br from-zinc-800 to-zinc-900 relative">
+            <button
+              onClick={() => { if (window.history.length > 1) window.history.back(); else window.location.href = "/"; }}
+              className="absolute top-3 left-3 z-20 flex items-center gap-1 bg-white/20 hover:bg-white/30 text-white text-xs font-semibold px-3 py-1.5 rounded-full backdrop-blur-sm transition-colors">
+              <ChevronLeft className="size-3.5" />Início
+            </button>
+          </div>
         )}
         <div className="bg-white shadow-sm">
           <div className="max-w-2xl mx-auto px-4 pb-4">
