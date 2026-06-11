@@ -403,6 +403,9 @@ function PedidosPage() {
                     {p.tipo === "pdv" && !p.mesa && (
                       <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-violet-100 text-violet-600 uppercase tracking-wide">PDV</span>
                     )}
+                    {p.tipo === "retirada" && (
+                      <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-teal-100 text-teal-700 uppercase tracking-wide">🏪 Retirada</span>
+                    )}
                     <span className="text-xs text-zinc-400">
                       {new Date(p.created_at).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
                     </span>

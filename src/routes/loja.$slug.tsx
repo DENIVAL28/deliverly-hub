@@ -16,7 +16,7 @@ export const Route = createFileRoute("/loja/$slug")({
   loader: async ({ params }) => {
     const { data: empresa } = await supabase
       .from("empresas")
-      .select("id,nome_fantasia,slug,whatsapp,cor_primaria,taxa_entrega,status,aberto,logo_url,banner_url,tempo_entrega,pedido_minimo,horario_abertura,horario_fechamento,dias_semana,chave_pix,nome_recebedor,cidade_recebedor")
+      .select("id,nome_fantasia,slug,whatsapp,cor_primaria,taxa_entrega,status,aberto,logo_url,banner_url,tempo_entrega,pedido_minimo,horario_abertura,horario_fechamento,dias_semana,chave_pix,nome_recebedor,cidade_recebedor,retirada_ativa")
       .eq("slug", params.slug)
       .maybeSingle();
     if (!empresa) throw notFound();
@@ -59,6 +59,7 @@ function LojaPage() {
   const [checkoutErro, setCheckoutErro]   = useState<string | null>(null);
   const [catAtiva, setCatAtiva]           = useState<string | null>(null);
   const [formaPagamento, setFormaPagamento] = useState(() => (empresa as any).chave_pix ? "PIX" : "Dinheiro");
+  const [tipoEntrega, setTipoEntrega]       = useState<"delivery" | "retirada">("delivery");
   const [pixModal, setPixModal]           = useState<{ payload: string; qrUrl: string; total: number; waLink: string; pedidoNum: number } | null>(null);
   const [acompanharOpen, setAcompanharOpen] = useState(false);
   const [telBusca, setTelBusca]           = useState("");
@@ -149,19 +150,20 @@ function LojaPage() {
     const fd               = new FormData(e.currentTarget);
     const cliente_nome     = String(fd.get("nome")).trim().slice(0, 120);
     const cliente_telefone = mesa ? "" : String(fd.get("telefone")).replace(/\D/g, "").slice(0, 15);
-    const cliente_endereco = mesa ? `Mesa ${mesa}` : String(fd.get("endereco")).trim().slice(0, 255);
+    const isRetirada       = tipoEntrega === "retirada";
+    const cliente_endereco = mesa ? `Mesa ${mesa}` : isRetirada ? "Retirada no balcão" : String(fd.get("endereco")).trim().slice(0, 255);
     const forma_pagamento  = String(fd.get("pagamento"));
     const observacao       = String(fd.get("observacao") || "").trim().slice(0, 500);
 
     if (!cliente_nome || cliente_nome.length < 2) { setCheckoutErro("Informe seu nome completo."); return; }
     if (!mesa && (!cliente_telefone || cliente_telefone.length < 8)) { setCheckoutErro("Informe um telefone válido."); return; }
-    if (!mesa && (!cliente_endereco || cliente_endereco.length < 5)) { setCheckoutErro("Informe o endereço de entrega."); return; }
+    if (!mesa && !isRetirada && (!cliente_endereco || cliente_endereco.length < 5)) { setCheckoutErro("Informe o endereço de entrega."); return; }
     if (!["Dinheiro", "Cartão", "PIX"].includes(forma_pagamento)) { setCheckoutErro("Selecione a forma de pagamento."); return; }
 
     setCheckoutLoading(true);
     try {
 const subtotal = totalPrice;
-      const taxa     = Number(empresa.taxa_entrega ?? 0);
+      const taxa     = isRetirada ? 0 : Number(empresa.taxa_entrega ?? 0);
       const total    = Math.round(Math.max(0, subtotal - desconto + taxa) * 100) / 100;
 
       const itensRpc = items.map((i) => {
@@ -188,7 +190,7 @@ const subtotal = totalPrice;
         p_taxa_entrega:     taxa,
         p_total:            total,
         p_mesa:             mesa ? `Mesa ${mesa}` : undefined,
-        p_tipo:             "delivery",
+        p_tipo:             mesa ? "mesa" : isRetirada ? "retirada" : "delivery",
         p_status:           "novo",
         p_cupom_id:         cupomAplicado?.id ?? undefined,
         p_itens:            itensRpc,
@@ -202,7 +204,7 @@ const subtotal = totalPrice;
       const pedido = pedidoJson as { id: string; numero: number };
       const msg = encodeURIComponent(
         `*Pedido #${pedido.numero}*\n\n` +
-        (mesa ? `📍 Mesa ${mesa}\nCliente: ${cliente_nome}\n` : `Cliente: ${cliente_nome}\nTelefone: ${cliente_telefone}\nEndereço: ${cliente_endereco}\n`) + `\n` +
+        (mesa ? `📍 Mesa ${mesa}\nCliente: ${cliente_nome}\n` : isRetirada ? `🏪 *Retirada no balcão*\nCliente: ${cliente_nome}\nTelefone: ${cliente_telefone}\n` : `Cliente: ${cliente_nome}\nTelefone: ${cliente_telefone}\nEndereço: ${cliente_endereco}\n`) + `\n` +
         `*Itens:*\n${items.map((i) => {
           const opStr = i.opcoes?.length ? `\n   ↳ ${i.opcoes.map((o) => o.opcaoNome).join(", ")}` : "";
           return `${i.qty}× ${i.nome} — ${fmt(i.preco * i.qty)}${opStr}`;
@@ -875,9 +877,33 @@ const subtotal = totalPrice;
               )}
 
               <form onSubmit={checkout} className="space-y-3">
+                {/* Selector Delivery / Retirada */}
+                {!mesa && (empresa as any).retirada_ativa && (
+                  <div className="grid grid-cols-2 gap-2">
+                    {(["delivery", "retirada"] as const).map((tipo) => (
+                      <button
+                        key={tipo}
+                        type="button"
+                        onClick={() => setTipoEntrega(tipo)}
+                        className={`py-2.5 rounded-xl text-sm font-semibold border transition-all ${
+                          tipoEntrega === tipo
+                            ? "b-bg text-white border-transparent"
+                            : "bg-white border-zinc-200 text-zinc-500"
+                        }`}
+                      >
+                        {tipo === "delivery" ? "🛵 Delivery" : "🏪 Retirar no balcão"}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <FormField name="nome" label="Seu nome" required />
                 {!mesa && <FormField name="telefone" label="Telefone (WhatsApp)" required />}
-                {!mesa && <FormField name="endereco" label="Endereço de entrega" required />}
+                {!mesa && tipoEntrega === "delivery" && <FormField name="endereco" label="Endereço de entrega" required />}
+                {!mesa && tipoEntrega === "retirada" && (
+                  <div className="text-xs text-zinc-500 bg-zinc-50 rounded-xl px-3 py-2.5 flex items-center gap-2">
+                    🏪 Você retirará o pedido no balcão do estabelecimento.
+                  </div>
+                )}
                 <div className="space-y-1.5">
                   <Label>Forma de pagamento</Label>
                   <select name="pagamento" required value={formaPagamento}

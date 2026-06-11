@@ -58,6 +58,7 @@ function ConfiguracoesPage() {
   const [zapiClientToken, setZapiClientToken] = useState("");
   const [cnpj,           setCnpj]           = useState("");
   const [segmento,       setSegmento]       = useState("");
+  const [retiradaAtiva,  setRetiradaAtiva]  = useState(false);
   const [zapiTestando,   setZapiTestando]   = useState(false);
 
   const [synced, setSynced] = useState(false);
@@ -81,6 +82,7 @@ function ConfiguracoesPage() {
     setZapiClientToken(emp.zapi_client_token ?? "");
     setCnpj(emp.cnpj ?? "");
     setSegmento(emp.segmento ?? "");
+    setRetiradaAtiva(emp.retirada_ativa ?? false);
     setSynced(true);
   }
 
@@ -129,6 +131,7 @@ function ConfiguracoesPage() {
       zapi_client_token: zapiClientToken.trim() || null,
       cnpj: cnpj.replace(/\D/g, "").length === 14 ? cnpj.trim() : (cnpj.trim() || null),
       segmento: segmento || null,
+      retirada_ativa: retiradaAtiva,
     };
 
     const logoFile   = logoRef.current?.files?.[0];
@@ -388,6 +391,21 @@ function ConfiguracoesPage() {
               <Input id="tempo" value={tempo} onChange={(e) => setTempo(e.target.value)}
                 placeholder="Ex: 30-45 min" className="h-10 rounded-xl" />
               <p className="text-xs text-zinc-400">Mostrado no cardápio público (ex: "30-45 min")</p>
+            </div>
+
+            {/* Toggle retirada no balcão */}
+            <div className="flex items-center justify-between py-3 border-t border-black/5">
+              <div>
+                <p className="text-sm font-medium text-zinc-800">🏪 Retirada no balcão</p>
+                <p className="text-xs text-zinc-400 mt-0.5">Cliente escolhe buscar o pedido sem taxa de entrega</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setRetiradaAtiva((v) => !v)}
+                className={`relative w-11 h-6 rounded-full transition-colors ${retiradaAtiva ? "bg-brand" : "bg-zinc-200"}`}
+              >
+                <span className={`absolute top-0.5 left-0.5 size-5 bg-white rounded-full shadow transition-transform ${retiradaAtiva ? "translate-x-5" : "translate-x-0"}`} />
+              </button>
             </div>
           </section>
 
