@@ -401,7 +401,21 @@ function ConfiguracoesPage() {
               </div>
               <button
                 type="button"
-                onClick={() => setRetiradaAtiva((v) => !v)}
+                onClick={async () => {
+                  if (!empresaId) return;
+                  const novoValor = !retiradaAtiva;
+                  setRetiradaAtiva(novoValor);
+                  const { error } = await supabase
+                    .from("empresas")
+                    .update({ retirada_ativa: novoValor } as any)
+                    .eq("id", empresaId);
+                  if (error) {
+                    toast.error("Erro ao salvar: " + error.message);
+                    setRetiradaAtiva(!novoValor);
+                  } else {
+                    qc.invalidateQueries({ queryKey: ["empresa-config", empresaId] });
+                  }
+                }}
                 className={`relative w-11 h-6 rounded-full transition-colors ${retiradaAtiva ? "bg-brand" : "bg-zinc-200"}`}
               >
                 <span className={`absolute top-0.5 left-0.5 size-5 bg-white rounded-full shadow transition-transform ${retiradaAtiva ? "translate-x-5" : "translate-x-0"}`} />
