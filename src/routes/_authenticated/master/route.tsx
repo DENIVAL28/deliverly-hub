@@ -18,6 +18,16 @@ function MasterLayout() {
 
   if (loading) return <div className="p-10 text-sm text-zinc-500">Carregando…</div>;
 
+  if (!isMaster) return (
+    <div className="min-h-screen flex items-center justify-center bg-zinc-50">
+      <div className="text-center space-y-2">
+        <div className="text-4xl">🔒</div>
+        <p className="text-sm font-semibold text-zinc-700">Acesso restrito</p>
+        <p className="text-xs text-zinc-400">Você não tem permissão para acessar esta área.</p>
+      </div>
+    </div>
+  );
+
   return (
     <AppShell
       title="Master"
