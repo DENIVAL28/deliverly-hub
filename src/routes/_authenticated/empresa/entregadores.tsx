@@ -44,22 +44,25 @@ function EntregadoresPage() {
       (await supabase.from("entregadores").select("*").eq("empresa_id", empresaId!).order("nome")).data ?? [],
   });
 
-  // Estatísticas por entregador
+  // Estatísticas por entregador — mês atual
   const { data: stats = {} } = useQuery({
     queryKey: ["entregadores-stats", empresaId],
     enabled: !!empresaId,
     queryFn: async () => {
+      const inicioMes = new Date();
+      inicioMes.setDate(1); inicioMes.setHours(0, 0, 0, 0);
       const { data } = await supabase
         .from("pedidos")
-        .select("entregador_id, total, status")
+        .select("entregador_id, taxa_entrega")
         .eq("empresa_id", empresaId!)
         .eq("status" as any, "finalizado")
-        .not("entregador_id" as any, "is", null);
-      const map: Record<string, { qtd: number; total: number }> = {};
+        .not("entregador_id" as any, "is", null)
+        .gte("created_at", inicioMes.toISOString());
+      const map: Record<string, { qtd: number; ganhos: number }> = {};
       (data ?? []).forEach((p: any) => {
-        if (!map[p.entregador_id]) map[p.entregador_id] = { qtd: 0, total: 0 };
+        if (!map[p.entregador_id]) map[p.entregador_id] = { qtd: 0, ganhos: 0 };
         map[p.entregador_id].qtd++;
-        map[p.entregador_id].total += Number(p.total ?? 0);
+        map[p.entregador_id].ganhos += Number(p.taxa_entrega ?? 0);
       });
       return map;
     },
@@ -217,13 +220,11 @@ function EntregadoresPage() {
                         <Phone className="size-3" /> {e.telefone}
                       </a>
                     )}
-                    {/* Stats */}
-                    {stat && (
-                      <div className="flex gap-4 mt-2 text-xs text-zinc-500">
-                        <span>🛵 {stat.qtd} entrega{stat.qtd !== 1 ? "s" : ""}</span>
-                        <span>💰 {fmt(stat.total)} entregue</span>
-                      </div>
-                    )}
+                    {/* Stats — mês atual */}
+                    <div className="flex gap-4 mt-2 text-xs text-zinc-500">
+                      <span>🛵 {stat?.qtd ?? 0} entrega{(stat?.qtd ?? 0) !== 1 ? "s" : ""} este mês</span>
+                      <span>💰 {fmt(stat?.ganhos ?? 0)} em taxas</span>
+                    </div>
                     {/* GPS indicator */}
                     {e.ultima_localizacao ? (
                       <div className="flex items-center gap-1 text-xs text-green-600 mt-1">
