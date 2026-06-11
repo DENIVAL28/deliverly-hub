@@ -6,4 +6,3 @@ Disallow: /app
 Disallow: /onboarding
 Disallow: /nova-senha
 
-Sitemap: https://deliverly-hub.vercel.app/sitemap.xml
