@@ -218,6 +218,31 @@ function PedidosPage() {
         .order("created_at", { ascending: false })).data ?? [],
   });
 
+  // Query resumo do dia — finalizados
+  const { data: resumoDia } = useQuery({
+    queryKey: ["pedidos-resumo", empresaId, diaInicio.toISOString()],
+    enabled: !!empresaId && tab === "finalizados",
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("pedidos")
+        .select("total,forma_pagamento")
+        .eq("empresa_id", empresaId!)
+        .eq("status", "finalizado")
+        .gte("created_at", diaInicio.toISOString())
+        .lte("created_at", diaFim.toISOString());
+      if (!data?.length) return null;
+      const totalDia   = data.reduce((s, p) => s + Number(p.total), 0);
+      const qtd        = data.length;
+      const ticket     = totalDia / qtd;
+      const porForma: Record<string, number> = {};
+      data.forEach((p) => {
+        const f = p.forma_pagamento ?? "—";
+        porForma[f] = (porForma[f] ?? 0) + Number(p.total);
+      });
+      return { totalDia, qtd, ticket, porForma };
+    },
+  });
+
   // Query 2 — Paginados (todos/finalizados/cancelados) — filtrado por dia
   const { data: pedidosPag } = useQuery({
     queryKey: ["pedidos-pag", empresaId, tab, page, diaInicio.toISOString()],
@@ -385,6 +410,33 @@ function PedidosPage() {
           </div>
         )}
       </div>
+
+      {/* Resumo do dia — só na aba Finalizados */}
+      {tab === "finalizados" && resumoDia && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+          <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3">
+            <p className="text-xs text-green-600 font-medium">Pedidos finalizados</p>
+            <p className="text-2xl font-black text-green-700 mt-0.5">{resumoDia.qtd}</p>
+          </div>
+          <div className="bg-brand/5 border border-brand/20 rounded-xl px-4 py-3">
+            <p className="text-xs text-brand font-medium">Faturamento</p>
+            <p className="text-2xl font-black text-brand mt-0.5">{fmt(resumoDia.totalDia)}</p>
+          </div>
+          <div className="bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3">
+            <p className="text-xs text-zinc-500 font-medium">Ticket médio</p>
+            <p className="text-2xl font-black text-zinc-700 mt-0.5">{fmt(resumoDia.ticket)}</p>
+          </div>
+          <div className="bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3">
+            <p className="text-xs text-zinc-500 font-medium mb-1">Por forma</p>
+            {Object.entries(resumoDia.porForma).map(([forma, val]) => (
+              <div key={forma} className="flex justify-between text-xs text-zinc-600">
+                <span>{forma}</span>
+                <span className="font-semibold">{fmt(val as number)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="space-y-3">
         {filtered.map((p: any) => {
