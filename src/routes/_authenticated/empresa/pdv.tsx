@@ -148,6 +148,7 @@ function PDVPage() {
   const [obs, setObs]                     = useState("");
   const [finishing, setFinishing]         = useState(false);
   const [vendaFeita, setVendaFeita]       = useState<{ numero: number } | null>(null);
+  const [mobileTab, setMobileTab]         = useState<"produtos" | "pedido">("produtos");
 
   const { data: categorias = [] } = useQuery({
     queryKey: ["categorias", empresaId],
@@ -283,10 +284,27 @@ function PDVPage() {
 
       <PageHeader title="Caixa / PDV" subtitle="Vendas no balcão" />
 
+      {/* Abas mobile */}
+      <div className="flex lg:hidden mb-3 bg-white rounded-2xl ring-1 ring-zinc-200 p-1 gap-1">
+        <button onClick={() => setMobileTab("produtos")}
+          className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-colors ${mobileTab === "produtos" ? "bg-brand text-white" : "text-zinc-500"}`}>
+          🍽️ Produtos
+        </button>
+        <button onClick={() => setMobileTab("pedido")}
+          className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2 ${mobileTab === "pedido" ? "bg-brand text-white" : "text-zinc-500"}`}>
+          🛒 Pedido
+          {items.length > 0 && (
+            <span className={`size-5 rounded-full text-[10px] font-black flex items-center justify-center ${mobileTab === "pedido" ? "bg-white text-brand" : "bg-brand text-white"}`}>
+              {items.reduce((s, i) => s + i.qty, 0)}
+            </span>
+          )}
+        </button>
+      </div>
+
       <div className="flex gap-4 h-[calc(100vh-11rem)]">
 
         {/* ── Catálogo ── */}
-        <div className="flex-1 min-w-0 flex flex-col gap-3 overflow-hidden">
+        <div className={`flex-1 min-w-0 flex flex-col gap-3 overflow-hidden ${mobileTab === "pedido" ? "hidden lg:flex" : "flex"}`}>
           <div className="relative shrink-0">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-zinc-400" />
             <Input placeholder="Buscar produto…" value={busca} onChange={(e) => setBusca(e.target.value)} className="pl-9 bg-white" />
@@ -321,7 +339,7 @@ function PDVPage() {
         </div>
 
         {/* ── Carrinho ── */}
-        <div className="w-80 shrink-0 flex flex-col bg-white rounded-2xl ring-1 ring-zinc-200 overflow-hidden">
+        <div className={`lg:w-80 w-full shrink-0 flex flex-col bg-white rounded-2xl ring-1 ring-zinc-200 overflow-hidden ${mobileTab === "produtos" ? "hidden lg:flex" : "flex"}`}>
           <div className="px-4 py-3 border-b border-zinc-100 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <ShoppingCart className="size-4 text-brand" />
