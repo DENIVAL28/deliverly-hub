@@ -25,10 +25,11 @@ const NEXT: Record<string, string> = {
   novo: "aceito", aceito: "preparo", preparo: "entrega", entrega: "finalizado",
 };
 
-// Pedidos de mesa: pula a etapa de entrega
+// Mesa e PDV: pulam a etapa de entrega
 const NEXT_MESA: Record<string, string> = {
   novo: "aceito", aceito: "preparo", preparo: "finalizado", entrega: "finalizado",
 };
+const NEXT_PDV = NEXT_MESA;
 
 const ATIVOS = ["novo", "aceito", "preparo", "entrega"];
 const PAGE_SIZE = 20;
@@ -415,10 +416,10 @@ function PedidosPage() {
                     <Button size="sm" variant="outline" onClick={() => cancel(p.id)} className="text-red-500 hover:text-red-600 border-red-200 hover:bg-red-50">
                       Cancelar
                     </Button>
-                    {(p.mesa ? NEXT_MESA : NEXT)[p.status] && (
+                    {(p.tipo === "pdv" ? NEXT_PDV : p.mesa ? NEXT_MESA : NEXT)[p.status] && (
                       <div className="flex items-center gap-2">
-                        {/* Seletor de entregador — apenas para delivery */}
-                        {!p.mesa && NEXT[p.status] === "entrega" && entregadores.length > 0 && (
+                        {/* Seletor de entregador — apenas para delivery (não PDV, não mesa) */}
+                        {!p.mesa && p.tipo !== "pdv" && NEXT[p.status] === "entrega" && entregadores.length > 0 && (
                           <select
                             value={entregadorSel[p.id] ?? ""}
                             onChange={(e) => setEntregadorSel((s) => ({ ...s, [p.id]: e.target.value }))}
@@ -431,7 +432,7 @@ function PedidosPage() {
                           </select>
                         )}
                         <Button onClick={() => advance(p, entregadorSel[p.id])} className="bg-brand hover:bg-brand/90">
-                          Avançar → {STATUS.find((s) => s.value === (p.mesa ? NEXT_MESA : NEXT)[p.status])?.label}
+                          Avançar → {STATUS.find((s) => s.value === (p.tipo === "pdv" ? NEXT_PDV : p.mesa ? NEXT_MESA : NEXT)[p.status])?.label}
                         </Button>
                       </div>
                     )}
