@@ -3,12 +3,15 @@ import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Bike, CheckCircle2, Clock, MapPin, Navigation, Package, Phone } from "lucide-react";
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export const Route = createFileRoute("/entregador/$id")({
   ssr: false,
   loader: async ({ params }) => {
+    if (!UUID_RE.test(params.id)) throw notFound();
     const { data } = await supabase
       .from("entregadores")
-      .select("*, empresas(nome_fantasia, logo_url, cor_primaria)")
+      .select("id, nome, telefone, status, lat, lng, ultima_localizacao, empresas(nome_fantasia, logo_url, cor_primaria)")
       .eq("id", params.id)
       .maybeSingle();
     if (!data) throw notFound();
@@ -57,13 +60,11 @@ function EntregadorPage() {
     return new Promise((resolve) => {
       navigator.geolocation.getCurrentPosition(
         async (pos) => {
-          await (supabase.from("entregadores") as any)
-            .update({
-              lat: pos.coords.latitude,
-              lng: pos.coords.longitude,
-              ultima_localizacao: new Date().toISOString(),
-            })
-            .eq("id", entregador.id);
+          await (supabase as any).rpc("entregador_atualizar_gps", {
+            p_id:  entregador.id,
+            p_lat: pos.coords.latitude,
+            p_lng: pos.coords.longitude,
+          });
           resolve(true);
         },
         (err) => { setGpsErro(formatarErroGps(err)); resolve(false); },
@@ -96,7 +97,7 @@ function EntregadorPage() {
   async function carregarPedidos() {
     const { data } = await supabase
       .from("pedidos")
-      .select("id, numero, cliente_nome, cliente_endereco, total, status, created_at")
+      .select("id, numero, cliente_nome, cliente_endereco, taxa_entrega, status, created_at")
       .eq("entregador_id" as any, entregador.id)
       .order("created_at", { ascending: false })
       .limit(20);
@@ -105,7 +106,7 @@ function EntregadorPage() {
 
   async function mudarStatus(novoStatus: string) {
     setAtualizando(true);
-    await supabase.from("entregadores").update({ status: novoStatus }).eq("id", entregador.id);
+    await (supabase as any).rpc("entregador_atualizar_status", { p_id: entregador.id, p_status: novoStatus });
     setEntregador((e: any) => ({ ...e, status: novoStatus }));
     setAtualizando(false);
   }
@@ -122,7 +123,7 @@ function EntregadorPage() {
 
   const pedidosAtivos    = pedidos.filter((p) => p.status === "entrega");
   const pedidosHistorico = pedidos.filter((p) => p.status === "finalizado");
-  const totalEntregue    = pedidosHistorico.reduce((s, p) => s + Number(p.total ?? 0), 0);
+  const totalEntregue    = pedidosHistorico.reduce((s, p) => s + Number(p.taxa_entrega ?? 0), 0);
   const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
   return (
@@ -246,7 +247,7 @@ function EntregadorPage() {
                     </div>
                   )}
                   <div className="flex items-center justify-between mt-3 pt-3 border-t border-zinc-100">
-                    <span className="text-sm font-bold text-zinc-900">{fmt(Number(p.total))}</span>
+                    <span className="text-sm font-bold text-green-600">Taxa: {fmt(Number(p.taxa_entrega ?? 0))}</span>
                     <a href={`https://maps.google.com/?q=${encodeURIComponent(p.cliente_endereco ?? "")}`}
                       target="_blank" rel="noreferrer"
                       className="text-xs text-blue-600 font-medium hover:underline flex items-center gap-1">
@@ -281,7 +282,7 @@ function EntregadorPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-bold text-zinc-900">{fmt(Number(p.total))}</span>
+                    <span className="text-sm font-bold text-green-600">{fmt(Number(p.taxa_entrega ?? 0))}</span>
                     <CheckCircle2 className="size-4 text-green-500" />
                   </div>
                 </div>
