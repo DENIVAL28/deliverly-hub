@@ -9,7 +9,9 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TermosRouteImport } from './routes/termos'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as PrivacidadeRouteImport } from './routes/privacidade'
 import { Route as NovaSenhaRouteImport } from './routes/nova-senha'
 import { Route as LojasRouteImport } from './routes/lojas'
 import { Route as AuthRouteImport } from './routes/auth'
@@ -40,9 +42,19 @@ import { Route as AuthenticatedEmpresaClientesRouteImport } from './routes/_auth
 import { Route as AuthenticatedEmpresaCategoriasRouteImport } from './routes/_authenticated/empresa/categorias'
 import { Route as AuthenticatedEmpresaAvaliacoesRouteImport } from './routes/_authenticated/empresa/avaliacoes'
 
+const TermosRoute = TermosRouteImport.update({
+  id: '/termos',
+  path: '/termos',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacidadeRoute = PrivacidadeRouteImport.update({
+  id: '/privacidade',
+  path: '/privacidade',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NovaSenhaRoute = NovaSenhaRouteImport.update({
@@ -213,7 +225,9 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/lojas': typeof LojasRoute
   '/nova-senha': typeof NovaSenhaRoute
+  '/privacidade': typeof PrivacidadeRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/termos': typeof TermosRoute
   '/empresa': typeof AuthenticatedEmpresaRouteRouteWithChildren
   '/master': typeof AuthenticatedMasterRouteRouteWithChildren
   '/app': typeof AuthenticatedAppRoute
@@ -244,7 +258,9 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/lojas': typeof LojasRoute
   '/nova-senha': typeof NovaSenhaRoute
+  '/privacidade': typeof PrivacidadeRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/termos': typeof TermosRoute
   '/app': typeof AuthenticatedAppRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/entregador/$id': typeof EntregadorIdRoute
@@ -275,7 +291,9 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/lojas': typeof LojasRoute
   '/nova-senha': typeof NovaSenhaRoute
+  '/privacidade': typeof PrivacidadeRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/termos': typeof TermosRoute
   '/_authenticated/empresa': typeof AuthenticatedEmpresaRouteRouteWithChildren
   '/_authenticated/master': typeof AuthenticatedMasterRouteRouteWithChildren
   '/_authenticated/app': typeof AuthenticatedAppRoute
@@ -308,7 +326,9 @@ export interface FileRouteTypes {
     | '/auth'
     | '/lojas'
     | '/nova-senha'
+    | '/privacidade'
     | '/sitemap.xml'
+    | '/termos'
     | '/empresa'
     | '/master'
     | '/app'
@@ -339,7 +359,9 @@ export interface FileRouteTypes {
     | '/auth'
     | '/lojas'
     | '/nova-senha'
+    | '/privacidade'
     | '/sitemap.xml'
+    | '/termos'
     | '/app'
     | '/onboarding'
     | '/entregador/$id'
@@ -369,7 +391,9 @@ export interface FileRouteTypes {
     | '/auth'
     | '/lojas'
     | '/nova-senha'
+    | '/privacidade'
     | '/sitemap.xml'
+    | '/termos'
     | '/_authenticated/empresa'
     | '/_authenticated/master'
     | '/_authenticated/app'
@@ -402,7 +426,9 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   LojasRoute: typeof LojasRoute
   NovaSenhaRoute: typeof NovaSenhaRoute
+  PrivacidadeRoute: typeof PrivacidadeRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  TermosRoute: typeof TermosRoute
   EntregadorIdRoute: typeof EntregadorIdRoute
   LojaSlugRoute: typeof LojaSlugRoute
   PedidoIdRoute: typeof PedidoIdRoute
@@ -410,11 +436,25 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/termos': {
+      id: '/termos'
+      path: '/termos'
+      fullPath: '/termos'
+      preLoaderRoute: typeof TermosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/sitemap.xml': {
       id: '/sitemap.xml'
       path: '/sitemap.xml'
       fullPath: '/sitemap.xml'
       preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacidade': {
+      id: '/privacidade'
+      path: '/privacidade'
+      fullPath: '/privacidade'
+      preLoaderRoute: typeof PrivacidadeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/nova-senha': {
@@ -706,7 +746,9 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   LojasRoute: LojasRoute,
   NovaSenhaRoute: NovaSenhaRoute,
+  PrivacidadeRoute: PrivacidadeRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  TermosRoute: TermosRoute,
   EntregadorIdRoute: EntregadorIdRoute,
   LojaSlugRoute: LojaSlugRoute,
   PedidoIdRoute: PedidoIdRoute,

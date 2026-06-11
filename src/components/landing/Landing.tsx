@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import {
   ArrowRight, Store, Check, MessageCircle, Smartphone, Zap, Shield, BarChart3,
-  Menu, X, ChevronDown, Instagram, Mail, ClipboardList, Utensils, Bike,
+  Menu, X, ChevronDown, Mail, ClipboardList, Utensils, Bike,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -34,7 +34,7 @@ const plans = [
     name: "Básico", price: "99",
     tagline: "Tudo que precisa para começar. Menos que R$4 por dia.",
     description: "Cardápio digital, caixa PDV e gestão de entregadores — já incluso.",
-    features: ["Até 25 produtos", "Caixa PDV para vendas no balcão", "Gestão de entregadores", "PIX QR code automático", "Até 400 pedidos/mês", "Suporte por chat"],
+    features: ["Até 50 produtos", "Caixa PDV para vendas no balcão", "Gestão de entregadores", "PIX QR code automático", "Até 400 pedidos/mês", "Suporte por chat"],
     cta: "Começar grátis por 7 dias", highlight: false,
   },
   {
@@ -45,7 +45,7 @@ const plans = [
     cta: "Quero escalar agora", highlight: true,
   },
   {
-    name: "Premium", price: "349",
+    name: "Premium", price: "345",
     tagline: "Gerencie toda a rede num único painel. Franquias bem-vindas.",
     description: "Potência máxima para redes e franquias.",
     features: ["Gestão Multi-loja centralizada", "Múltiplos operadores", "Suporte 24h — Seg a Sex", "Integração via API"],
@@ -722,10 +722,6 @@ function Footer() {
                 className="size-8 rounded-lg bg-white/5 hover:bg-green-500/20 flex items-center justify-center text-zinc-400 hover:text-green-400 transition-colors">
                 <MessageCircle className="size-4" />
               </a>
-              <a href="https://instagram.com" target="_blank" rel="noreferrer"
-                className="size-8 rounded-lg bg-white/5 hover:bg-pink-500/20 flex items-center justify-center text-zinc-400 hover:text-pink-400 transition-colors">
-                <Instagram className="size-4" />
-              </a>
               <a href="mailto:contato@sossistemas.com.br"
                 className="size-8 rounded-lg bg-white/5 hover:bg-blue-500/20 flex items-center justify-center text-zinc-400 hover:text-blue-400 transition-colors">
                 <Mail className="size-4" />
@@ -753,15 +749,15 @@ function Footer() {
             <div>
               <div className="text-xs font-bold text-zinc-300 uppercase tracking-widest mb-3">Legal</div>
               <div className="space-y-2 text-xs text-zinc-400">
-                <a href="#" className="block hover:text-white transition-colors">Privacidade</a>
-                <a href="#" className="block hover:text-white transition-colors">Termos de uso</a>
+                <Link to="/privacidade" className="block hover:text-white transition-colors">Privacidade</Link>
+                <Link to="/termos" className="block hover:text-white transition-colors">Termos de uso</Link>
               </div>
             </div>
           </div>
         </div>
 
         <div className="pt-6 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <p className="text-xs text-zinc-600">© 2026 SOS Sistemas. Todos os direitos reservados.</p>
+          <p className="text-xs text-zinc-600">© 2026 Deliverly Hub — SOS Sistemas. Todos os direitos reservados.</p>
           <p className="text-xs text-zinc-700">Feito com dedicação no Mato Grosso 🇧🇷</p>
         </div>
       </div>

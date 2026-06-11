@@ -24,11 +24,12 @@ const SEGMENTOS = [
   { id: "lanchonete",   label: "Lanche",      emoji: "🥪" },
   { id: "confeitaria",  label: "Confeitaria", emoji: "🍰" },
   { id: "restaurante",  label: "Restaurante", emoji: "🍽️" },
+  { id: "outro",        label: "Outros",      emoji: "🏪" },
 ];
 
 const EMOJI_SEGMENTO: Record<string, string> = {
   pizzaria: "🍕", hamburgueria: "🍔", sushi: "🍣",
-  acai: "🍧", marmita: "🍱", lanchonete: "🥪",
+  acai: "🍧", marmita: "🍱", lanchonete: "🥪", outro: "🏪",
   confeitaria: "🍰", restaurante: "🍽️",
 };
 
