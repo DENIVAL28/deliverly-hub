@@ -1,4 +1,10 @@
-<?xml version="1.0" encoding="UTF-8"?>
+import { defineEventHandler, setHeader } from "h3";
+
+export default defineEventHandler((event) => {
+  setHeader(event, "Content-Type", "application/xml; charset=utf-8");
+  setHeader(event, "Cache-Control", "public, max-age=86400");
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://deliverly-hub.vercel.app/</loc>
@@ -18,4 +24,5 @@
     <changefreq>yearly</changefreq>
     <priority>0.4</priority>
   </url>
-</urlset>
+</urlset>`;
+});
