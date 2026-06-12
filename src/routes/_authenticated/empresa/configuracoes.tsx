@@ -298,7 +298,7 @@ function ConfiguracoesPage() {
               <div className="flex gap-2 mt-1">
                 {["#F97316","#EF4444","#8B5CF6","#3B82F6","#10B981","#F59E0B","#EC4899"].map((c) => (
                   <button key={c} type="button" onClick={() => setCor(c)}
-                    className={`size-6 rounded-full border-2 transition-all ${cor === c ? "border-zinc-900 scale-110" : "border-transparent"}`}
+                    className={`size-8 rounded-full border-2 transition-all ${cor === c ? "border-zinc-900 scale-110" : "border-transparent"}`}
                     style={{ background: c }} />
                 ))}
               </div>
@@ -427,7 +427,7 @@ function ConfiguracoesPage() {
           <section className="bg-background rounded-2xl ring-1 ring-black/5 p-6 space-y-4">
             <h2 className="font-semibold text-ink">Horário de funcionamento</h2>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-2 sm:gap-4">
               <div className="space-y-1.5">
                 <Label htmlFor="abertura">Abre às</Label>
                 <Input id="abertura" type="time" value={abertura}

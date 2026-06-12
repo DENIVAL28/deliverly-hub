@@ -467,7 +467,7 @@ function PedidosPage() {
           const tone = STATUS.find((s) => s.value === p.status);
           const isAtivo = ATIVOS.includes(p.status);
           return (
-            <div key={p.id} className="bg-background rounded-xl ring-1 ring-black/5 p-5">
+            <div key={p.id} className="bg-background rounded-xl ring-1 ring-black/5 p-3 sm:p-5">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <div className="flex items-center gap-3 flex-wrap">
@@ -552,7 +552,7 @@ function PedidosPage() {
                             <select
                               value={entregadorSel[p.id] ?? ""}
                               onChange={(e) => setEntregadorSel((s) => ({ ...s, [p.id]: e.target.value }))}
-                              className="h-9 rounded-xl border border-zinc-200 px-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/30"
+                              className="h-11 sm:h-9 rounded-xl border border-zinc-200 px-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/30"
                             >
                               <option value="">Entregador (opcional)</option>
                               {entregadores.map((e: any) => (

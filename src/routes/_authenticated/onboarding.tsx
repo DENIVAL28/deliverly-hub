@@ -172,7 +172,7 @@ function OnboardingPage() {
 
               <div className="space-y-2">
                 <Label>Segmento <span className="text-zinc-400 font-normal">(opcional)</span></Label>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {SEGMENTOS.map((s) => (
                     <button key={s.id} type="button"
                       onClick={() => setSegmento(segmento === s.id ? "" : s.id)}

@@ -291,7 +291,8 @@ function EmpresasPage() {
 
       {/* ── Tabela ── */}
       <div className="bg-background rounded-xl ring-1 ring-black/5 overflow-hidden">
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full text-sm min-w-[640px]">
           <thead className="bg-surface text-[10px] uppercase tracking-widest text-zinc-500">
             <tr>
               <th className="text-left px-4 py-3">Empresa</th>
@@ -391,6 +392,7 @@ function EmpresasPage() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       {/* ── Dialog: Usuários ── */}

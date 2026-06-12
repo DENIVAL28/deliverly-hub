@@ -730,7 +730,7 @@ const subtotal = totalPrice;
 
             {pixModal.qrUrl && (
               <div className="flex justify-center mb-4">
-                <img src={pixModal.qrUrl} alt="QR Code PIX" className="size-52 rounded-2xl border border-zinc-100 shadow-sm" />
+                <img src={pixModal.qrUrl} alt="QR Code PIX" className="size-40 sm:size-52 rounded-2xl border border-zinc-100 shadow-sm" />
               </div>
             )}
 
@@ -811,13 +811,13 @@ const subtotal = totalPrice;
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <button onClick={() => decCart(i.id)}
-                        className="size-7 rounded-full border border-zinc-200 flex items-center justify-center hover:border-orange-400">
-                        <Minus className="size-3" />
+                        className="size-8 rounded-full border border-zinc-200 flex items-center justify-center hover:border-orange-400">
+                        <Minus className="size-3.5" />
                       </button>
                       <span className="text-sm font-semibold w-5 text-center">{i.qty}</span>
                       <button onClick={() => addToCart({ id: i.id, nome: i.nome, preco: i.preco })}
-                        className="size-7 rounded-full bg-orange-500 text-white flex items-center justify-center">
-                        <Plus className="size-3" />
+                        className="size-8 rounded-full bg-orange-500 text-white flex items-center justify-center">
+                        <Plus className="size-3.5" />
                       </button>
                       <span className="text-sm font-semibold w-20 text-right text-zinc-900">
                         {fmt(i.preco * i.qty)}

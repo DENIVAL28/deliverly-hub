@@ -308,7 +308,7 @@ function ProdutosPage() {
         </DialogContent>
       </Dialog>
 
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {(produtos ?? []).map((p: any) => (
           <div key={p.id} className={`bg-background rounded-xl ring-1 ring-black/5 overflow-hidden transition-opacity ${!p.ativo ? "opacity-60" : ""}`}>
             {p.foto_url ? (
@@ -364,9 +364,9 @@ function ProdutosPage() {
                   </span>
                   <div className="flex items-center gap-1">
                     <button onClick={() => adjustEstoque(p.id, -1, p.estoque ?? 0)}
-                      className="size-6 rounded-md border border-zinc-200 text-zinc-500 hover:bg-zinc-100 flex items-center justify-center text-base leading-none font-bold transition-colors">−</button>
+                      className="size-8 rounded-md border border-zinc-200 text-zinc-500 hover:bg-zinc-100 flex items-center justify-center text-base leading-none font-bold transition-colors">−</button>
                     <button onClick={() => adjustEstoque(p.id, +1, p.estoque ?? 0)}
-                      className="size-6 rounded-md border border-zinc-200 text-zinc-500 hover:bg-zinc-100 flex items-center justify-center text-base leading-none font-bold transition-colors">+</button>
+                      className="size-8 rounded-md border border-zinc-200 text-zinc-500 hover:bg-zinc-100 flex items-center justify-center text-base leading-none font-bold transition-colors">+</button>
                   </div>
                 </div>
               )}

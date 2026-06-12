@@ -26,6 +26,7 @@ import { Route as AuthenticatedMasterRouteRouteImport } from './routes/_authenti
 import { Route as AuthenticatedEmpresaRouteRouteImport } from './routes/_authenticated/empresa/route'
 import { Route as AuthenticatedMasterIndexRouteImport } from './routes/_authenticated/master/index'
 import { Route as AuthenticatedEmpresaIndexRouteImport } from './routes/_authenticated/empresa/index'
+import { Route as AuthenticatedMasterSegurancaRouteImport } from './routes/_authenticated/master/seguranca'
 import { Route as AuthenticatedMasterRelatoriosRouteImport } from './routes/_authenticated/master/relatorios'
 import { Route as AuthenticatedMasterPlanosRouteImport } from './routes/_authenticated/master/planos'
 import { Route as AuthenticatedMasterMensalidadesRouteImport } from './routes/_authenticated/master/mensalidades'
@@ -129,6 +130,12 @@ const AuthenticatedEmpresaIndexRoute =
     id: '/',
     path: '/',
     getParentRoute: () => AuthenticatedEmpresaRouteRoute,
+  } as any)
+const AuthenticatedMasterSegurancaRoute =
+  AuthenticatedMasterSegurancaRouteImport.update({
+    id: '/seguranca',
+    path: '/seguranca',
+    getParentRoute: () => AuthenticatedMasterRouteRoute,
   } as any)
 const AuthenticatedMasterRelatoriosRoute =
   AuthenticatedMasterRelatoriosRouteImport.update({
@@ -250,6 +257,7 @@ export interface FileRoutesByFullPath {
   '/master/mensalidades': typeof AuthenticatedMasterMensalidadesRoute
   '/master/planos': typeof AuthenticatedMasterPlanosRoute
   '/master/relatorios': typeof AuthenticatedMasterRelatoriosRoute
+  '/master/seguranca': typeof AuthenticatedMasterSegurancaRoute
   '/empresa/': typeof AuthenticatedEmpresaIndexRoute
   '/master/': typeof AuthenticatedMasterIndexRoute
 }
@@ -281,6 +289,7 @@ export interface FileRoutesByTo {
   '/master/mensalidades': typeof AuthenticatedMasterMensalidadesRoute
   '/master/planos': typeof AuthenticatedMasterPlanosRoute
   '/master/relatorios': typeof AuthenticatedMasterRelatoriosRoute
+  '/master/seguranca': typeof AuthenticatedMasterSegurancaRoute
   '/empresa': typeof AuthenticatedEmpresaIndexRoute
   '/master': typeof AuthenticatedMasterIndexRoute
 }
@@ -316,6 +325,7 @@ export interface FileRoutesById {
   '/_authenticated/master/mensalidades': typeof AuthenticatedMasterMensalidadesRoute
   '/_authenticated/master/planos': typeof AuthenticatedMasterPlanosRoute
   '/_authenticated/master/relatorios': typeof AuthenticatedMasterRelatoriosRoute
+  '/_authenticated/master/seguranca': typeof AuthenticatedMasterSegurancaRoute
   '/_authenticated/empresa/': typeof AuthenticatedEmpresaIndexRoute
   '/_authenticated/master/': typeof AuthenticatedMasterIndexRoute
 }
@@ -351,6 +361,7 @@ export interface FileRouteTypes {
     | '/master/mensalidades'
     | '/master/planos'
     | '/master/relatorios'
+    | '/master/seguranca'
     | '/empresa/'
     | '/master/'
   fileRoutesByTo: FileRoutesByTo
@@ -382,6 +393,7 @@ export interface FileRouteTypes {
     | '/master/mensalidades'
     | '/master/planos'
     | '/master/relatorios'
+    | '/master/seguranca'
     | '/empresa'
     | '/master'
   id:
@@ -416,6 +428,7 @@ export interface FileRouteTypes {
     | '/_authenticated/master/mensalidades'
     | '/_authenticated/master/planos'
     | '/_authenticated/master/relatorios'
+    | '/_authenticated/master/seguranca'
     | '/_authenticated/empresa/'
     | '/_authenticated/master/'
   fileRoutesById: FileRoutesById
@@ -554,6 +567,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/empresa/'
       preLoaderRoute: typeof AuthenticatedEmpresaIndexRouteImport
       parentRoute: typeof AuthenticatedEmpresaRouteRoute
+    }
+    '/_authenticated/master/seguranca': {
+      id: '/_authenticated/master/seguranca'
+      path: '/seguranca'
+      fullPath: '/master/seguranca'
+      preLoaderRoute: typeof AuthenticatedMasterSegurancaRouteImport
+      parentRoute: typeof AuthenticatedMasterRouteRoute
     }
     '/_authenticated/master/relatorios': {
       id: '/_authenticated/master/relatorios'
@@ -706,6 +726,7 @@ interface AuthenticatedMasterRouteRouteChildren {
   AuthenticatedMasterMensalidadesRoute: typeof AuthenticatedMasterMensalidadesRoute
   AuthenticatedMasterPlanosRoute: typeof AuthenticatedMasterPlanosRoute
   AuthenticatedMasterRelatoriosRoute: typeof AuthenticatedMasterRelatoriosRoute
+  AuthenticatedMasterSegurancaRoute: typeof AuthenticatedMasterSegurancaRoute
   AuthenticatedMasterIndexRoute: typeof AuthenticatedMasterIndexRoute
 }
 
@@ -715,6 +736,7 @@ const AuthenticatedMasterRouteRouteChildren: AuthenticatedMasterRouteRouteChildr
     AuthenticatedMasterMensalidadesRoute: AuthenticatedMasterMensalidadesRoute,
     AuthenticatedMasterPlanosRoute: AuthenticatedMasterPlanosRoute,
     AuthenticatedMasterRelatoriosRoute: AuthenticatedMasterRelatoriosRoute,
+    AuthenticatedMasterSegurancaRoute: AuthenticatedMasterSegurancaRoute,
     AuthenticatedMasterIndexRoute: AuthenticatedMasterIndexRoute,
   }
 
