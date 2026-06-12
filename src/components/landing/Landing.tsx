@@ -191,10 +191,10 @@ function Nav() {
             }`}>
             Entrar
           </Link>
-          <a href={WA_LINK} target="_blank" rel="noreferrer"
+          <Link to="/auth"
             className="hidden sm:flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors shadow-lg shadow-orange-500/20">
-            Demonstração Gratuita <ArrowRight className="size-4" />
-          </a>
+            Testar grátis <ArrowRight className="size-4" />
+          </Link>
           <button onClick={() => setOpen((v) => !v)}
             className={`md:hidden p-2 rounded-lg transition-colors ${dark ? "text-white hover:bg-white/10" : "text-zinc-500 hover:bg-zinc-100"}`}>
             {open ? <X className="size-5" /> : <Menu className="size-5" />}
@@ -215,8 +215,8 @@ function Nav() {
           </Link>
           <div className="flex gap-3">
             <Link to="/auth" className="flex-1 text-center text-sm font-medium px-4 py-2.5 border border-zinc-200 rounded-xl text-zinc-600">Entrar</Link>
-            <a href={WA_LINK} target="_blank" rel="noreferrer" onClick={() => setOpen(false)}
-              className="flex-1 text-center bg-zinc-900 text-white text-sm font-semibold px-4 py-2.5 rounded-xl">Demonstração</a>
+            <Link to="/auth" onClick={() => setOpen(false)}
+              className="flex-1 text-center bg-orange-500 text-white text-sm font-semibold px-4 py-2.5 rounded-xl">Testar grátis</Link>
           </div>
         </div>
       )}
@@ -264,14 +264,14 @@ function Hero() {
               <strong className="text-white">sem comissão por pedido, sem contrato.</strong>
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-3 mb-10">
+            <div className="flex flex-col sm:flex-row items-center gap-4 mb-10">
               <Link to="/auth"
-                className="flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 text-white font-bold px-7 py-4 rounded-2xl text-base transition-all hover:scale-[1.02] shadow-xl shadow-orange-500/25">
+                className="flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 text-white font-bold px-7 py-4 rounded-2xl text-base transition-all hover:scale-[1.02] shadow-xl shadow-orange-500/25 w-full sm:w-auto">
                 Testar grátis por 7 dias <ArrowRight className="size-5" />
               </Link>
               <a href={WA_LINK} target="_blank" rel="noreferrer"
-                className="flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-white border border-white/10 font-semibold px-7 py-4 rounded-2xl text-base transition-colors">
-                <MessageCircle className="size-4" /> Ver demonstração
+                className="flex items-center gap-1.5 text-sm text-zinc-400 hover:text-white transition-colors">
+                <MessageCircle className="size-3.5" /> Dúvidas? Fala no WhatsApp
               </a>
             </div>
 
