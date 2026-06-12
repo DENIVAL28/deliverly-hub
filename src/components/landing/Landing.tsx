@@ -86,73 +86,58 @@ export function Landing() {
 /* ─── Consumer Hero ─── */
 function ConsumerHero() {
   const categorias = [
-    { emoji: "🍕", label: "Pizzas" },
-    { emoji: "🍔", label: "Hambúrgueres" },
-    { emoji: "🍱", label: "Marmitas" },
-    { emoji: "🍇", label: "Açaí" },
-    { emoji: "🌮", label: "Lanches" },
-    { emoji: "☕", label: "Cafeterias" },
-    { emoji: "🥐", label: "Padarias" },
-    { emoji: "🍝", label: "Restaurantes" },
-    { emoji: "🍢", label: "Espetinhos" },
+    "🍕 Pizzas", "🍔 Hambúrgueres", "🍱 Marmitas", "🍇 Açaí",
+    "🌮 Lanches", "☕ Cafeterias", "🥐 Padarias", "🍝 Restaurantes", "🍢 Espetinhos",
   ];
   return (
-    <>
-      <section className="relative bg-zinc-950 overflow-hidden pt-28 pb-20">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_80%_at_0%_50%,_rgba(249,115,22,0.18),_transparent)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_50%_50%_at_100%_80%,_rgba(249,115,22,0.07),_transparent)]" />
+    <section className="relative bg-zinc-950 overflow-hidden pt-32 pb-24">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_90%_70%_at_50%_-5%,_rgba(249,115,22,0.28),_transparent)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_40%_40%_at_80%_90%,_rgba(249,115,22,0.08),_transparent)]" />
 
-        <div className="relative mx-auto max-w-7xl px-6">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-
-            {/* Esquerda — copy */}
-            <div>
-              <div className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 text-orange-400 text-xs font-bold px-4 py-1.5 rounded-full mb-6 uppercase tracking-widest">
-                <span className="size-1.5 rounded-full bg-orange-400 animate-pulse" />
-                Sem app, sem cadastro
-              </div>
-
-              <h1 className="text-4xl md:text-5xl font-black text-white mb-4 leading-[1.08]">
-                Peça direto do<br />
-                <span className="text-orange-400">restaurante</span><br />
-                para você.
-              </h1>
-
-              <p className="text-zinc-400 text-base leading-relaxed mb-8 max-w-[40ch]">
-                Cardápio digital, pedido pelo WhatsApp, sem intermediários e sem taxas escondidas.
-              </p>
-
-              <Link to="/lojas"
-                className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white font-bold px-8 py-4 rounded-2xl text-base transition-all hover:scale-[1.02] shadow-xl shadow-orange-500/30">
-                🛵 Ver restaurantes <ArrowRight className="size-5" />
-              </Link>
-              <p className="text-zinc-600 text-xs mt-3">Sem cadastro necessário</p>
-            </div>
-
-            {/* Direita — grid de categorias */}
-            <div className="grid grid-cols-3 gap-3">
-              {categorias.map(({ emoji, label }) => (
-                <Link to="/lojas" key={label}
-                  className="bg-white/5 hover:bg-orange-500/15 border border-white/8 hover:border-orange-500/30 rounded-2xl p-4 flex flex-col items-center gap-2 transition-all group">
-                  <span className="text-3xl">{emoji}</span>
-                  <span className="text-xs font-semibold text-zinc-300 group-hover:text-white transition-colors text-center">{label}</span>
-                </Link>
-              ))}
-            </div>
-          </div>
+      <div className="relative mx-auto max-w-4xl px-6 text-center">
+        <div className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 text-orange-400 text-xs font-bold px-4 py-1.5 rounded-full mb-8 uppercase tracking-widest">
+          <span className="size-1.5 rounded-full bg-orange-400 animate-pulse" />
+          Delivery direto do restaurante para você
         </div>
-      </section>
 
-      {/* Tira de transição B2B */}
-      <div className="bg-zinc-900 border-y border-white/5 py-3 text-center">
-        <p className="text-zinc-500 text-sm">
-          É dono de restaurante?{" "}
-          <a href="#para-restaurantes" className="text-orange-400 hover:text-orange-300 font-semibold transition-colors">
-            Monte seu próprio delivery ↓
-          </a>
+        <h1 className="text-4xl md:text-6xl font-black text-white mb-5 leading-[1.08]">
+          Peça delivery dos<br />
+          <span className="text-orange-400">seus restaurantes</span><br />
+          favoritos
+        </h1>
+
+        <p className="text-zinc-300 text-lg leading-relaxed mb-10 max-w-[46ch] mx-auto">
+          Cardápios digitais, sem app para baixar. Faça seu pedido diretamente com o estabelecimento — rápido, sem filas e sem intermediários.
         </p>
+
+        {/* Categorias pill */}
+        <div className="flex flex-wrap justify-center gap-2 mb-12">
+          {categorias.map((c) => (
+            <span key={c}
+              className="bg-white/5 border border-white/10 text-white text-sm font-medium px-4 py-2 rounded-full hover:bg-orange-500/20 hover:border-orange-500/30 transition-colors cursor-default select-none">
+              {c}
+            </span>
+          ))}
+        </div>
+
+        <Link to="/lojas"
+          className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white font-black px-10 py-4 rounded-2xl text-lg transition-all hover:scale-[1.02] shadow-2xl shadow-orange-500/30">
+          🛵 Ver restaurantes disponíveis <ArrowRight className="size-5" />
+        </Link>
+
+        <p className="text-zinc-500 text-sm mt-4">Sem cadastro necessário para fazer seu pedido</p>
+
+        {/* Transição para B2B */}
+        <div className="mt-16 pt-8 border-t border-white/5">
+          <p className="text-zinc-500 text-sm">
+            É dono de restaurante?{" "}
+            <a href="#para-restaurantes" className="text-orange-400 hover:text-orange-300 font-semibold transition-colors">
+              Crie o seu próprio delivery ↓
+            </a>
+          </p>
+        </div>
       </div>
-    </>
+    </section>
   );
 }
 
