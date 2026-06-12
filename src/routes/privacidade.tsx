@@ -1,7 +1,7 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+﻿import { createFileRoute, Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/privacidade")({
-  head: () => ({ meta: [{ title: "Política de Privacidade — Deliverly Hub" }] }),
+  head: () => ({ meta: [{ title: "Política de Privacidade — Delivery Hub" }] }),
   component: PrivacidadePage,
 });
 
@@ -18,7 +18,7 @@ function PrivacidadePage() {
 
           <section>
             <h2 className="text-lg font-bold text-zinc-900 mb-2">1. Quem somos</h2>
-            <p>O Deliverly Hub é uma plataforma SaaS de gestão de delivery operada pela <strong>SOS Sistemas</strong>, com sede no Mato Grosso, Brasil. Nosso contato: <a href="mailto:contato@sossistemas.com.br" className="text-orange-500 hover:underline">contato@sossistemas.com.br</a>.</p>
+            <p>O Delivery Hub é uma plataforma SaaS de gestão de delivery operada pela <strong>SOS Sistemas</strong>, com sede no Mato Grosso, Brasil. Nosso contato: <a href="mailto:contato@sossistemas.com.br" className="text-orange-500 hover:underline">contato@sossistemas.com.br</a>.</p>
           </section>
 
           <section>

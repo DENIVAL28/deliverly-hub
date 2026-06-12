@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+﻿import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { traduzirErro } from "@/lib/erros";
@@ -275,7 +275,7 @@ function AuthPage() {
         ))}
 
         <Link to="/" className="relative z-10">
-          <img src="/segments/logo1.png" alt="Deliverly Hub" className="h-12 w-auto object-contain brightness-0 invert" />
+          <img src="/segments/logo1.png" alt="Delivery Hub" className="h-12 w-auto object-contain brightness-0 invert" />
         </Link>
 
         <div className="relative z-10">
@@ -293,14 +293,14 @@ function AuthPage() {
           </div>
         </div>
 
-        <p className="relative z-10 text-xs text-zinc-600">© 2026 Deliverly Hub</p>
+        <p className="relative z-10 text-xs text-zinc-600">© 2026 Delivery Hub</p>
       </div>
 
       {/* Lado direito — formulário */}
       <div className="flex items-center justify-center p-6 bg-white">
         <div className="w-full max-w-md">
           <Link to="/" className="lg:hidden block mb-8">
-            <img src="/segments/logo1.png" alt="Deliverly Hub" className="h-10 w-auto object-contain" />
+            <img src="/segments/logo1.png" alt="Delivery Hub" className="h-10 w-auto object-contain" />
           </Link>
 
           <div className="mb-8">

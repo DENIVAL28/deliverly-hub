@@ -1,6 +1,6 @@
-{
-  "name": "Deliverly Hub — Sistema de Delivery",
-  "short_name": "Deliverly",
+﻿{
+  "name": "Delivery Hub — Sistema de Delivery",
+  "short_name": "Delivery",
   "description": "Cardápio digital, PDV e gestão de entregadores para restaurantes",
   "start_url": "/",
   "scope": "/",

@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+﻿import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -59,7 +59,7 @@ function PlanosPage() {
 
   return (
     <>
-      <PageHeader title="Planos" subtitle="Planos comercializados pelo Deliverly Hub" />
+      <PageHeader title="Planos" subtitle="Planos comercializados pelo Delivery Hub" />
 
       <div className="grid md:grid-cols-3 gap-6">
         {(data ?? []).map((p: any) => (

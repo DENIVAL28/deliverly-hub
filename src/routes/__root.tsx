@@ -1,4 +1,4 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+﻿import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
   Link,
@@ -90,14 +90,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "default" },
-      { name: "apple-mobile-web-app-title", content: "Deliverly" },
+      { name: "apple-mobile-web-app-title", content: "Delivery" },
       { property: "og:title", content: "SOS Sistemas — Cardápio Digital + PDV + Entregadores por R$99/mês" },
       { property: "og:description", content: "Cardápio digital, caixa PDV e gestão de entregadores num único sistema. Sem comissão, sem contrato. 7 dias grátis." },
       { property: "og:type", content: "website" },
-      { property: "og:url", content: "https://deliverly-hub.vercel.app" },
+      { property: "og:url", content: "https://delivery-hub.vercel.app" },
       { property: "og:locale", content: "pt_BR" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "Deliverly Hub — Sistema de Delivery" },
+      { name: "twitter:title", content: "Delivery Hub — Sistema de Delivery" },
       { name: "twitter:description", content: "Crie seu cardápio digital e receba pedidos pelo WhatsApp. Sem taxas por pedido." },
     ],
     links: [

@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+﻿import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/AppShell";
@@ -35,7 +35,7 @@ function SegurancaPage() {
     setLoadingPage(true);
     const { data, error } = await supabase.auth.mfa.enroll({
       factorType: "totp",
-      friendlyName: "Deliverly Hub Master",
+      friendlyName: "Delivery Hub Master",
     });
     setLoadingPage(false);
     if (error || !data) { toast.error(error?.message ?? "Erro ao iniciar cadastro."); return; }

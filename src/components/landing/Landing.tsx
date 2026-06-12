@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+﻿import { Link } from "@tanstack/react-router";
 import {
   ArrowRight, Store, Check, MessageCircle, Smartphone, Zap, Shield, BarChart3,
   Menu, X, ChevronDown, Mail, ClipboardList, Utensils, Bike,
@@ -832,7 +832,7 @@ function Footer() {
         </div>
 
         <div className="pt-6 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <p className="text-xs text-zinc-600">© 2026 Deliverly Hub — SOS Sistemas. Todos os direitos reservados.</p>
+          <p className="text-xs text-zinc-600">© 2026 Delivery Hub — SOS Sistemas. Todos os direitos reservados.</p>
           <p className="text-xs text-zinc-700">Feito com dedicação no Mato Grosso 🇧🇷</p>
         </div>
       </div>

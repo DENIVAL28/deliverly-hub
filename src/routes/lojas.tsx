@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+﻿import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { MapPin, Clock, ShoppingBag, Search, ChevronRight, ChevronDown, X } from "lucide-react";
@@ -228,7 +228,7 @@ function LojasPage() {
       <header className="bg-white border-b border-zinc-100 sticky top-0 z-20 shadow-sm">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center gap-4">
           <Link to="/" className="shrink-0">
-            <img src="/segments/logo1.png" alt="Deliverly Hub" className="h-9 w-auto object-contain" />
+            <img src="/segments/logo1.png" alt="Delivery Hub" className="h-9 w-auto object-contain" />
           </Link>
 
           <div className="relative flex-1 max-w-lg mx-auto">

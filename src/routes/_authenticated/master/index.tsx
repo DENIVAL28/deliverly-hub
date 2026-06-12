@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+﻿import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, StatCard } from "@/components/AppShell";
@@ -29,7 +29,7 @@ function MasterDashboard() {
 
   return (
     <>
-      <PageHeader title="Visão geral" subtitle="Resumo da plataforma Deliverly Hub" />
+      <PageHeader title="Visão geral" subtitle="Resumo da plataforma Delivery Hub" />
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         <StatCard label="Empresas" value={data?.total ?? 0} />
         <StatCard label="Ativas" value={data?.ativas ?? 0} />

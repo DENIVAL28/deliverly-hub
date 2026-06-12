@@ -1,7 +1,7 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+﻿import { createFileRoute, Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/termos")({
-  head: () => ({ meta: [{ title: "Termos de Uso — Deliverly Hub" }] }),
+  head: () => ({ meta: [{ title: "Termos de Uso — Delivery Hub" }] }),
   component: TermosPage,
 });
 
@@ -18,12 +18,12 @@ function TermosPage() {
 
           <section>
             <h2 className="text-lg font-bold text-zinc-900 mb-2">1. Aceitação dos termos</h2>
-            <p>Ao criar uma conta ou usar a plataforma Deliverly Hub, você concorda com estes Termos de Uso. Caso não concorde, não utilize o serviço.</p>
+            <p>Ao criar uma conta ou usar a plataforma Delivery Hub, você concorda com estes Termos de Uso. Caso não concorde, não utilize o serviço.</p>
           </section>
 
           <section>
             <h2 className="text-lg font-bold text-zinc-900 mb-2">2. Descrição do serviço</h2>
-            <p>O Deliverly Hub é uma plataforma SaaS que oferece cardápio digital, caixa PDV e gestão de entregadores para estabelecimentos de alimentação. O acesso é fornecido mediante assinatura mensal.</p>
+            <p>O Delivery Hub é uma plataforma SaaS que oferece cardápio digital, caixa PDV e gestão de entregadores para estabelecimentos de alimentação. O acesso é fornecido mediante assinatura mensal.</p>
           </section>
 
           <section>
