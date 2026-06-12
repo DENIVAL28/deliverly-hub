@@ -110,49 +110,58 @@ function LojasPage() {
   if (cidade === null) {
     return (
       <div className="min-h-screen bg-zinc-950 flex flex-col">
-        {/* Header simples */}
-        <header className="px-6 py-5 flex items-center justify-between">
+        {/* Gradientes de fundo */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_50%_at_50%_-10%,_rgba(249,115,22,0.18),_transparent)] pointer-events-none" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_40%_30%_at_80%_90%,_rgba(249,115,22,0.08),_transparent)] pointer-events-none" />
+
+        {/* Header */}
+        <header className="relative px-6 py-5 flex items-center justify-between">
           <Link to="/">
-            <img src="/segments/logo.png" alt="Deliverly Hub" className="h-9 w-auto object-contain" />
+            <img src="/segments/logo1.png" alt="SOS Sistemas" className="h-9 w-auto object-contain brightness-0 invert" />
           </Link>
-          <Link to="/auth" className="text-sm text-zinc-400 hover:text-white transition-colors">
-            Área do lojista
+          <Link to="/auth" className="text-sm font-medium text-zinc-400 hover:text-white transition-colors">
+            Área do lojista →
           </Link>
         </header>
 
-        <div className="flex-1 flex flex-col items-center justify-center px-4 pb-16">
-          <div className="w-full max-w-md">
-            <div className="text-center mb-8">
-              <div className="text-5xl mb-4">📍</div>
-              <h1 className="text-3xl font-black text-white mb-2">Onde você está?</h1>
-              <p className="text-zinc-400 text-sm">Selecione sua cidade para ver os restaurantes disponíveis na sua região.</p>
+        <div className="relative flex-1 flex flex-col items-center justify-center px-4 pb-20">
+          <div className="w-full max-w-lg">
+
+            {/* Hero */}
+            <div className="text-center mb-10">
+              <div className="inline-flex size-16 items-center justify-center rounded-2xl bg-orange-500 shadow-2xl shadow-orange-500/30 mb-6">
+                <MapPin className="size-8 text-white" />
+              </div>
+              <h1 className="text-4xl font-black text-white mb-3 leading-tight">
+                Peça delivery<br />
+                <span className="text-orange-400">na sua cidade</span>
+              </h1>
+              <p className="text-zinc-400 text-base max-w-[38ch] mx-auto">
+                Escolha sua cidade e veja os restaurantes disponíveis agora.
+              </p>
             </div>
 
-            {/* Busca de cidade */}
+            {/* Busca */}
             <div className="relative mb-4">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-zinc-500" />
               <input
                 type="text"
-                placeholder="Buscar cidade..."
+                placeholder="Buscar sua cidade..."
                 value={buscaCidade}
                 onChange={(e) => setBuscaCidade(e.target.value)}
                 autoFocus
-                className="w-full h-13 py-3.5 pl-11 pr-4 rounded-2xl bg-zinc-800 border border-zinc-700 text-white placeholder-zinc-500 text-sm focus:outline-none focus:border-orange-500 transition-colors"
+                className="w-full py-4 pl-12 pr-4 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-zinc-500 text-sm focus:outline-none focus:border-orange-500 focus:bg-white/8 transition-all"
               />
             </div>
 
-            {/* Lista de cidades */}
+            {/* Lista de cidades / estados */}
             {loading ? (
               <div className="space-y-2">
                 {[1,2,3].map((n) => (
-                  <div key={n} className="h-14 bg-zinc-800 rounded-2xl animate-pulse" />
+                  <div key={n} className="h-16 bg-white/5 rounded-2xl animate-pulse" />
                 ))}
               </div>
-            ) : cidadesFiltradas.length === 0 ? (
-              <div className="text-center py-8 text-zinc-500 text-sm">
-                {buscaCidade ? "Nenhuma cidade encontrada." : "Nenhum estabelecimento cadastrado ainda."}
-              </div>
-            ) : (
+            ) : cidadesFiltradas.length > 0 ? (
               <div className="space-y-2">
                 {cidadesFiltradas.map((c) => {
                   const qtd = lojas.filter((l) => (l.cidade ?? "").toLowerCase() === c.toLowerCase()).length;
@@ -160,19 +169,49 @@ function LojasPage() {
                     <button
                       key={c}
                       onClick={() => escolherCidade(c)}
-                      className="w-full flex items-center justify-between px-5 py-4 rounded-2xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 hover:border-orange-500/50 text-left transition-all group"
+                      className="w-full flex items-center justify-between px-5 py-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-orange-500/40 text-left transition-all group"
                     >
                       <div className="flex items-center gap-3">
-                        <MapPin className="size-5 text-orange-500 shrink-0" />
-                        <span className="text-white font-semibold">{c}</span>
+                        <div className="size-9 rounded-xl bg-orange-500/10 flex items-center justify-center shrink-0">
+                          <MapPin className="size-4 text-orange-400" />
+                        </div>
+                        <div>
+                          <span className="text-white font-semibold block">{c}</span>
+                          <span className="text-xs text-zinc-500">{qtd} estabelecimento{qtd !== 1 ? "s" : ""}</span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-zinc-500">{qtd} estabelecimento{qtd !== 1 ? "s" : ""}</span>
-                        <ChevronRight className="size-4 text-zinc-600 group-hover:text-orange-500 transition-colors" />
-                      </div>
+                      <ChevronRight className="size-4 text-zinc-600 group-hover:text-orange-400 transition-colors" />
                     </button>
                   );
                 })}
+              </div>
+            ) : (
+              /* Estado vazio — nenhuma loja cadastrada ainda */
+              <div className="mt-2 rounded-3xl border border-white/10 bg-white/5 p-8 text-center">
+                <div className="text-4xl mb-4">🍽️</div>
+                <p className="text-white font-bold text-lg mb-1">
+                  {buscaCidade ? "Cidade não encontrada" : "Ainda sem estabelecimentos"}
+                </p>
+                <p className="text-zinc-400 text-sm mb-6 max-w-[34ch] mx-auto">
+                  {buscaCidade
+                    ? "Tente outro nome ou verifique a grafia."
+                    : "Seu restaurante pode ser o primeiro da sua cidade aqui."}
+                </p>
+                {!buscaCidade && (
+                  <Link to="/auth"
+                    className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white font-bold px-6 py-3 rounded-xl text-sm transition-colors shadow-lg shadow-orange-500/20">
+                    Cadastrar meu restaurante <ChevronRight className="size-4" />
+                  </Link>
+                )}
+              </div>
+            )}
+
+            {/* Segmentos como pills decorativos */}
+            {!loading && cidadesFiltradas.length === 0 && !buscaCidade && (
+              <div className="mt-8 flex flex-wrap justify-center gap-2">
+                {["🍕 Pizzas","🍔 Burgers","🍱 Marmitas","🍇 Açaí","☕ Cafés","🥐 Padarias"].map((s) => (
+                  <span key={s} className="px-3 py-1.5 rounded-full border border-white/10 bg-white/5 text-xs font-medium text-zinc-400">{s}</span>
+                ))}
               </div>
             )}
           </div>
@@ -189,7 +228,7 @@ function LojasPage() {
       <header className="bg-white border-b border-zinc-100 sticky top-0 z-20 shadow-sm">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center gap-4">
           <Link to="/" className="shrink-0">
-            <img src="/segments/logo.png" alt="Deliverly Hub" className="h-9 w-auto object-contain" />
+            <img src="/segments/logo1.png" alt="Deliverly Hub" className="h-9 w-auto object-contain" />
           </Link>
 
           <div className="relative flex-1 max-w-lg mx-auto">

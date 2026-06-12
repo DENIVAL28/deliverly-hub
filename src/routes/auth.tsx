@@ -275,7 +275,7 @@ function AuthPage() {
         ))}
 
         <Link to="/" className="relative z-10">
-          <img src="/segments/logo.png" alt="Deliverly Hub" className="h-12 w-auto object-contain brightness-0 invert" />
+          <img src="/segments/logo1.png" alt="Deliverly Hub" className="h-12 w-auto object-contain brightness-0 invert" />
         </Link>
 
         <div className="relative z-10">
@@ -300,7 +300,7 @@ function AuthPage() {
       <div className="flex items-center justify-center p-6 bg-white">
         <div className="w-full max-w-md">
           <Link to="/" className="lg:hidden block mb-8">
-            <img src="/segments/logo.png" alt="Deliverly Hub" className="h-10 w-auto object-contain" />
+            <img src="/segments/logo1.png" alt="Deliverly Hub" className="h-10 w-auto object-contain" />
           </Link>
 
           <div className="mb-8">
@@ -314,21 +314,6 @@ function AuthPage() {
               <TabsTrigger value="signup">Criar conta</TabsTrigger>
             </TabsList>
 
-            {/* ── Google OAuth ── */}
-            <button
-              type="button"
-              onClick={handleGoogle}
-              className="w-full flex items-center justify-center gap-3 h-11 rounded-xl border border-zinc-200 bg-white hover:bg-zinc-50 transition-colors text-sm font-medium text-zinc-700 mb-4"
-            >
-              <GoogleIcon />
-              Continuar com Google
-            </button>
-
-            <div className="flex items-center gap-3 mb-4">
-              <div className="flex-1 h-px bg-zinc-200" />
-              <span className="text-xs text-zinc-400">ou</span>
-              <div className="flex-1 h-px bg-zinc-200" />
-            </div>
 
             {/* ── Login ── */}
             <TabsContent value="login">
