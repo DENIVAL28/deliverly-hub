@@ -32,23 +32,23 @@ const features = [
 const plans = [
   {
     name: "Básico", price: "99",
-    tagline: "Tudo que precisa para começar. Menos que R$4 por dia.",
-    description: "Cardápio digital, caixa PDV e gestão de entregadores — já incluso.",
-    features: ["Até 50 produtos", "Caixa PDV para vendas no balcão", "Gestão de entregadores", "PIX QR code automático", "Até 400 pedidos/mês", "Suporte por chat"],
+    tagline: "Menos que R$4 por dia para ter delivery próprio.",
+    description: "Cardápio digital, caixa PDV e entregadores — tudo incluso.",
+    features: ["Até 50 produtos", "Caixa PDV para vendas no balcão", "Até 3 entregadores", "PIX QR code automático", "Até 400 pedidos/mês", "Suporte por chat"],
     cta: "Começar grátis por 7 dias", highlight: false,
   },
   {
     name: "Profissional", price: "199",
-    tagline: "Zero comissão. Cada pedido, 100% do lucro no seu bolso.",
+    tagline: "Cada pedido, 100% do lucro no seu bolso.",
     description: "Para quem já tem volume e precisa de mais capacidade.",
     features: ["Até 150 produtos", "Caixa PDV para vendas no balcão", "Até 20 entregadores", "PIX QR code automático", "Até 600 pedidos/mês", "Suporte prioritário"],
-    cta: "Quero escalar agora", highlight: true,
+    cta: "Quero crescer agora", highlight: true,
   },
   {
     name: "Premium", price: "345",
-    tagline: "Gerencie toda a rede num único painel. Franquias bem-vindas.",
-    description: "Potência máxima para redes e franquias.",
-    features: ["Gestão Multi-loja centralizada", "Múltiplos operadores", "Suporte 24h — Seg a Sex", "Integração via API"],
+    tagline: "Sem limite. Para quem opera em alto volume.",
+    description: "Recursos ilimitados e atendimento próximo.",
+    features: ["Produtos ilimitados", "Entregadores ilimitados", "Pedidos ilimitados", "Cupons ilimitados", "Relatórios avançados", "Suporte prioritário — Seg a Sex"],
     cta: "Falar com consultor", highlight: false,
   },
 ];
@@ -57,8 +57,8 @@ const plans = [
 const faqs = [
   { q: "Meu cliente precisa baixar algum app?",           a: "Não. O cardápio é acessado direto pelo celular, no navegador, sem precisar instalar nada. Funciona em qualquer smartphone com internet." },
   { q: "O que é o Caixa PDV e para que serve?",          a: "É um sistema de caixa para vendas presenciais no balcão. Você seleciona os produtos, aplica desconto, escolhe a forma de pagamento e registra a venda — tudo dentro do mesmo painel, sem precisar de outro sistema." },
-  { q: "Como funciona o recebimento dos pagamentos?",     a: "Os clientes podem pagar na entrega (dinheiro, cartão ou PIX). Se escolherem PIX, o sistema gera o QR code automaticamente na hora do pedido. O SOS Sistemas não cobra comissão sobre nenhuma venda." },
-  { q: "Consigo importar meu cardápio atual?",            a: "Sim. Se tiver uma planilha, basta subir o arquivo CSV e o sistema importa os produtos e cria as categorias automaticamente. Se precisar de ajuda, nossa equipe migra com você." },
+  { q: "Como funciona o recebimento dos pagamentos?",     a: "Os clientes podem pagar na entrega (dinheiro, cartão ou PIX). Se escolherem PIX, o sistema gera o QR code automaticamente na hora do pedido. Não cobramos comissão sobre nenhuma venda." },
+  { q: "Como cadastro meu cardápio?",                     a: "Diretamente pelo painel, em poucos cliques. Você adiciona nome, foto, preço e categoria de cada produto. Se precisar de ajuda para montar, nossa equipe te orienta sem custo adicional." },
   { q: "O que acontece depois dos 7 dias grátis?",        a: "Você escolhe o plano e continua. Se não quiser continuar, só não assina — sem cobrança automática e sem surpresa." },
   { q: "Posso cancelar a qualquer momento?",              a: "Sim, sem multa, sem burocracia e sem contrato. Você não está preso a nada." },
 ];
@@ -503,8 +503,8 @@ function Segments() {
       <div className="mx-auto max-w-7xl px-6">
         <div className="text-center mb-14">
           <span className="text-xs font-bold uppercase tracking-widest text-orange-500 mb-3 block">Segmentos</span>
-          <h2 className="text-3xl md:text-4xl font-bold text-zinc-900 mb-3">Tecnologia sob medida para o seu sabor.</h2>
-          <p className="text-zinc-500 max-w-[52ch] mx-auto">Não importa o tamanho da sua operação — o SOS Sistemas se adapta ao fluxo da sua cozinha.</p>
+          <h2 className="text-3xl md:text-4xl font-bold text-zinc-900 mb-3">Para cada cozinha, o cardápio certo.</h2>
+          <p className="text-zinc-500 max-w-[52ch] mx-auto">Do espetinho ao restaurante — o sistema se adapta ao ritmo da sua operação.</p>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           {segments.map(({ img, emoji, label, desc, bg, dot }) => (
@@ -523,7 +523,7 @@ function Features() {
       <div className="mx-auto max-w-7xl px-6">
         <div className="max-w-2xl mb-14">
           <span className="text-xs font-bold uppercase tracking-widest text-orange-500 mb-3 block">Recursos</span>
-          <h2 className="text-3xl md:text-4xl font-bold text-zinc-900 text-balance">Tudo que você precisa para escalar o delivery</h2>
+          <h2 className="text-3xl md:text-4xl font-bold text-zinc-900 text-balance">Cada recurso pensado para o dia a dia do seu delivery</h2>
         </div>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {features.map(({ icon: Icon, title, body, badge }) => (
@@ -551,7 +551,7 @@ function Pricing() {
       <div className="mx-auto max-w-7xl px-6">
         <div className="text-center mb-14">
           <span className="text-xs font-bold uppercase tracking-widest text-orange-400 mb-3 block">Planos</span>
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">Cardápio + PDV + Entregadores. A partir de R$99.</h2>
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">Planos simples, sem letra miúda.</h2>
           <p className="text-zinc-400 text-sm max-w-[56ch] mx-auto">
             Outros sistemas cobram separado por cada módulo. Aqui,{" "}
             <strong className="text-orange-400">tudo já está incluso no mesmo plano</strong> — sem surpresas na fatura.
@@ -624,7 +624,7 @@ function CTA() {
               Seu delivery próprio no ar em menos de 24 horas.
             </h2>
             <p className="text-zinc-300 text-lg leading-relaxed">
-              Cardápio digital, caixa PDV e gestão de entregadores — tudo por R$99/mês, sem comissão e sem contrato. Teste grátis por 7 dias.
+              Monte seu cardápio, gerencie pedidos e entregadores em um único painel — sem comissão e sem contrato. Cancele quando quiser.
             </p>
           </div>
 
@@ -642,7 +642,7 @@ function CTA() {
             </div>
 
             <div className="space-y-2.5 mb-6">
-              {["7 dias grátis, sem cartão de crédito", "Cardápio + PDV + Entregadores — tudo incluso", "Setup em menos de 24h com nossa ajuda"].map((t) => (
+              {["7 dias grátis, sem cartão de crédito", "Sem comissão por pedido, sem contrato", "Suporte na configuração sem custo"].map((t) => (
                 <div key={t} className="flex items-center gap-2.5 text-sm text-zinc-300">
                   <Check className="size-4 text-green-400 shrink-0" /> {t}
                 </div>
