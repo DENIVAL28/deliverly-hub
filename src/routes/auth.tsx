@@ -106,8 +106,14 @@ function AuthPage() {
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
-      if (data.user) navigate({ to: "/app" });
+      if (data.user) navigate({ to: "/app", replace: true });
     });
+    // Captura SIGNED_IN disparado após confirmação de e-mail (PKCE callback)
+    // e após signUp sem confirmação obrigatória
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) navigate({ to: "/app", replace: true });
+    });
+    return () => subscription.unsubscribe();
   }, [navigate]);
 
   // ── Login ────────────────────────────────────────────────────────────────
@@ -200,6 +206,12 @@ function AuthPage() {
     });
     setLoading(false);
     if (error) { toast.error(traduzirErro(error.message)); return; }
+    // Se confirmação de e-mail estiver desabilitada, usuário já tem sessão — redirecionar
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      navigate({ to: "/app", replace: true });
+      return;
+    }
     toast.success("Conta criada! Verifique seu e-mail para confirmar.");
   }
 

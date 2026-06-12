@@ -335,7 +335,7 @@ function OnboardingPage() {
                   </div>
                   <div className="min-w-0">
                     <div className="font-bold text-zinc-900 truncate">{nome}</div>
-                    <div className="text-xs text-zinc-400 truncate">sossistemas.com.br/loja/{slug}</div>
+                    <div className="text-xs text-zinc-400 truncate">{typeof window !== "undefined" ? window.location.hostname : ""}/loja/{slug}</div>
                   </div>
                   <div className="ml-auto shrink-0">
                     <span className="px-3 py-1.5 rounded-lg text-white text-xs font-semibold"
