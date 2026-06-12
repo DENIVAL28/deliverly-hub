@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/master/mensalidades")({
@@ -18,7 +18,7 @@ function MensalidadesPage() {
     queryFn: async () => {
       const { data } = await supabase
         .from("empresas")
-        .select("id,nome_fantasia,vencimento,status,planos(nome,valor)")
+        .select("id,nome_fantasia,vencimento,status,cancelado,planos(nome,valor)")
         .order("vencimento", { ascending: true });
       return data ?? [];
     },
@@ -76,16 +76,35 @@ function MensalidadesPage() {
                   <td className="px-4 py-3 text-zinc-600">{e.planos?.valor ? fmt(Number(e.planos.valor)) : "—"}</td>
                   <td className={`px-4 py-3 font-medium ${vencido ? "text-red-600" : "text-zinc-600"}`}>{e.vencimento ?? "—"}</td>
                   <td className="px-4 py-3">
-                    <span className={`px-2 py-1 text-[10px] font-bold rounded uppercase ${
-                      e.status === "ativa" ? "bg-green-100 text-green-700" :
-                      e.status === "vencida" ? "bg-amber-100 text-amber-700" :
-                      "bg-red-100 text-red-700"
-                    }`}>{e.status}</span>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className={`px-2 py-1 text-[10px] font-bold rounded uppercase ${
+                        e.status === "ativa" ? "bg-green-100 text-green-700" :
+                        e.status === "vencida" ? "bg-amber-100 text-amber-700" :
+                        "bg-red-100 text-red-700"
+                      }`}>{e.status}</span>
+                      {e.cancelado && (
+                        <span className="px-2 py-1 text-[10px] font-bold rounded uppercase bg-zinc-100 text-zinc-500">
+                          cancelado
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <Button size="sm" variant="outline" onClick={() => renovar(e.id, e.vencimento)} className="gap-1">
-                      <RefreshCw className="size-3" /> Renovar +30d
-                    </Button>
+                    <div className="flex items-center justify-end gap-2">
+                      {e.cancelado && (
+                        <Button size="sm" variant="outline" className="gap-1 text-green-700 border-green-200 hover:bg-green-50"
+                          onClick={async () => {
+                            await supabase.from("empresas").update({ cancelado: false, cancelado_em: null } as any).eq("id", e.id);
+                            qc.invalidateQueries({ queryKey: ["mensalidades"] });
+                            toast.success("Assinatura reativada");
+                          }}>
+                          <RotateCcw className="size-3" /> Reativar
+                        </Button>
+                      )}
+                      <Button size="sm" variant="outline" onClick={() => renovar(e.id, e.vencimento)} className="gap-1">
+                        <RefreshCw className="size-3" /> Renovar +30d
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               );

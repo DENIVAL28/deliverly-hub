@@ -5,7 +5,7 @@ import { useAuth } from "@/lib/use-auth";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/AppShell";
 import { toast } from "sonner";
-import { CheckCircle2, Zap, Crown, Sparkles, ExternalLink, AlertTriangle, XCircle, CalendarDays } from "lucide-react";
+import { CheckCircle2, Zap, Crown, Sparkles, ExternalLink, AlertTriangle, XCircle, CalendarDays, BanIcon, RotateCcw } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/empresa/planos")({
   ssr: false,
@@ -81,8 +81,10 @@ const CORES: Record<string, { badge: string; btn: string; ring: string; icon: st
 };
 
 function PlanosPage() {
-  const { plano: planoAtual, empresaId, vencimento, diasRestantes } = useAuth();
+  const { plano: planoAtual, empresaId, vencimento, diasRestantes, cancelado } = useAuth();
   const [loading, setLoading] = useState<string | null>(null);
+  const [cancelando, setCancelando] = useState(false);
+  const [confirmCancelar, setConfirmCancelar] = useState(false);
   const navigate = useNavigate();
 
   const vencido   = diasRestantes !== null && diasRestantes <= 0;
@@ -109,6 +111,33 @@ function PlanosPage() {
     }
   }, []);
 
+  async function cancelarAssinatura() {
+    if (!empresaId) return;
+    setCancelando(true);
+    const { error } = await supabase
+      .from("empresas")
+      .update({ cancelado: true, cancelado_em: new Date().toISOString() } as any)
+      .eq("id", empresaId);
+    setCancelando(false);
+    setConfirmCancelar(false);
+    if (error) { toast.error("Erro ao cancelar. Tente novamente."); return; }
+    toast.success("Assinatura cancelada. Seu acesso continua até o fim do período.");
+    window.location.reload();
+  }
+
+  async function reativarAssinatura() {
+    if (!empresaId) return;
+    setCancelando(true);
+    const { error } = await supabase
+      .from("empresas")
+      .update({ cancelado: false, cancelado_em: null } as any)
+      .eq("id", empresaId);
+    setCancelando(false);
+    if (error) { toast.error("Erro ao reativar. Tente novamente."); return; }
+    toast.success("Assinatura reativada!");
+    window.location.reload();
+  }
+
   async function assinar(planoId: string) {
     setLoading(planoId);
     try {
@@ -134,6 +163,57 @@ function PlanosPage() {
       <PageHeader title="Planos" subtitle="Escolha o plano ideal para o seu negócio" />
 
       <div className="max-w-5xl mx-auto px-4 py-8">
+
+        {/* Modal confirmação cancelamento */}
+        {confirmCancelar && (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="size-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+                  <BanIcon className="size-5 text-red-600" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-zinc-900">Cancelar assinatura?</h3>
+                  <p className="text-xs text-zinc-500">Esta ação pode ser desfeita a qualquer momento.</p>
+                </div>
+              </div>
+              <p className="text-sm text-zinc-700 mb-2">
+                Seu acesso continuará normalmente até <strong>{dataFmt ?? "o fim do período"}</strong>.
+              </p>
+              <p className="text-sm text-zinc-500 mb-6">
+                Após essa data, sua loja será desativada. Você pode reativar sua assinatura antes disso sem perder nada.
+              </p>
+              <div className="flex gap-3">
+                <Button variant="outline" className="flex-1" onClick={() => setConfirmCancelar(false)}>
+                  Voltar
+                </Button>
+                <Button
+                  disabled={cancelando}
+                  onClick={cancelarAssinatura}
+                  className="flex-1 bg-red-600 hover:bg-red-500 text-white"
+                >
+                  {cancelando ? "Cancelando…" : "Confirmar cancelamento"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Banner cancelado */}
+        {cancelado && !vencido && (
+          <div className="mb-6 p-4 rounded-2xl bg-zinc-50 border border-zinc-200 flex items-start gap-3">
+            <BanIcon className="size-5 text-zinc-400 shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm font-bold text-zinc-700">Assinatura cancelada.</p>
+              <p className="text-sm text-zinc-500 mt-0.5">
+                Seu acesso continua até <strong>{dataFmt}</strong>. Após essa data sua loja será desativada.
+              </p>
+            </div>
+            <Button size="sm" variant="outline" disabled={cancelando} onClick={reativarAssinatura} className="shrink-0 gap-1.5">
+              <RotateCcw className="size-3" /> Reativar
+            </Button>
+          </div>
+        )}
 
         {/* Banner vencido */}
         {vencido && (
@@ -265,6 +345,21 @@ function PlanosPage() {
             PIX, cartão de crédito e boleto. Sem assinatura automática — você renova quando quiser.
           </p>
         </div>
+
+        {/* Cancelar assinatura */}
+        {planoAtual && !vencido && !cancelado && (
+          <div className="mt-8 pt-8 border-t border-zinc-100 text-center">
+            <p className="text-xs text-zinc-400 mb-2">
+              Quer parar? Sem fidelidade e sem multa.
+            </p>
+            <button
+              onClick={() => setConfirmCancelar(true)}
+              className="text-xs text-zinc-400 hover:text-red-500 underline underline-offset-2 transition-colors"
+            >
+              Cancelar assinatura
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

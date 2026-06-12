@@ -14,6 +14,7 @@ export interface AuthState {
   plano: Plano;
   vencimento: string | null;
   diasRestantes: number | null;
+  cancelado: boolean;
 }
 
 export function useAuth(): AuthState {
@@ -26,6 +27,7 @@ export function useAuth(): AuthState {
     plano: "profissional",
     vencimento: null,
     diasRestantes: null,
+    cancelado: false,
   });
 
   useEffect(() => {
@@ -33,7 +35,7 @@ export function useAuth(): AuthState {
 
     async function load(user: User | null) {
       if (!user) {
-        if (active) setState({ loading: false, user: null, roles: [], empresaId: null, isMaster: false, plano: "profissional", vencimento: null, diasRestantes: null });
+        if (active) setState({ loading: false, user: null, roles: [], empresaId: null, isMaster: false, plano: "profissional", vencimento: null, diasRestantes: null, cancelado: false });
         return;
       }
       const [{ data: rolesData }, { data: profile }] = await Promise.all([
@@ -46,11 +48,12 @@ export function useAuth(): AuthState {
       let plano: Plano = "profissional";
       let vencimento: string | null = null;
       let diasRestantes: number | null = null;
+      let cancelado = false;
 
       if (empresaId) {
         const { data: emp } = await supabase
           .from("empresas")
-          .select("plano,vencimento")
+          .select("plano,vencimento,cancelado")
           .eq("id", empresaId)
           .maybeSingle();
         if ((emp as any)?.plano) plano = (emp as any).plano as Plano;
@@ -59,6 +62,7 @@ export function useAuth(): AuthState {
           const diff = new Date(vencimento).getTime() - Date.now();
           diasRestantes = Math.ceil(diff / (1000 * 60 * 60 * 24));
         }
+        cancelado = (emp as any)?.cancelado ?? false;
       }
 
       if (active) setState({
@@ -70,6 +74,7 @@ export function useAuth(): AuthState {
         plano,
         vencimento,
         diasRestantes,
+        cancelado,
       });
     }
 

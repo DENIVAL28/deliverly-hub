@@ -60,7 +60,7 @@ const faqs = [
   { q: "Como funciona o recebimento dos pagamentos?",     a: "Os clientes podem pagar na entrega (dinheiro, cartão ou PIX). Se escolherem PIX, o sistema gera o QR code automaticamente na hora do pedido. Não cobramos comissão sobre nenhuma venda." },
   { q: "Como cadastro meu cardápio?",                     a: "Diretamente pelo painel, em poucos cliques. Você adiciona nome, foto, preço e categoria de cada produto. Se precisar de ajuda para montar, nossa equipe te orienta sem custo adicional." },
   { q: "O que acontece depois dos 7 dias grátis?",        a: "Você escolhe o plano e continua. Se não quiser continuar, só não assina — sem cobrança automática e sem surpresa." },
-  { q: "Posso cancelar a qualquer momento?",              a: "Sim, sem multa, sem burocracia e sem contrato. Você não está preso a nada." },
+  { q: "Posso cancelar a qualquer momento?",              a: "Sim, sem multa e sem contrato. Ao cancelar, seu acesso continua até o fim do período já pago. Depois disso, a loja é desativada — e você pode reativar quando quiser." },
 ];
 
 export function Landing() {
