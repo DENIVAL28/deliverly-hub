@@ -67,7 +67,7 @@ export function Landing() {
   return (
     <div className="min-h-screen bg-white text-zinc-900 antialiased">
       <Nav />
-      <ConsumerHero />
+      <ConsumerHeroV2 />
       <div id="para-restaurantes" />
       <Hero />
       <SocialProof />
@@ -84,6 +84,80 @@ export function Landing() {
 }
 
 /* ─── Consumer Hero ─── */
+function ConsumerHeroV2() {
+  const categorias = ["Pizzas", "Hambúrgueres", "Marmitas", "Açaí", "Padarias", "Restaurantes"];
+  return (
+    <section className="relative overflow-hidden bg-zinc-950 pt-28 pb-16 md:pt-36 md:pb-24">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_20%_0%,_rgba(249,115,22,0.28),_transparent)]" />
+      <div className="absolute inset-0 bg-[linear-gradient(120deg,_rgba(9,9,11,0.94),_rgba(9,9,11,0.74)_48%,_rgba(249,115,22,0.10))]" />
+
+      <div className="relative mx-auto grid max-w-7xl gap-10 px-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+        <div className="max-w-2xl">
+          <div className="inline-flex items-center gap-2 rounded-full border border-orange-500/20 bg-orange-500/10 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-orange-300">
+            <span className="size-1.5 rounded-full bg-green-400" />
+            Delivery direto, sem app e sem cadastro
+          </div>
+
+          <h1 className="mt-7 text-4xl font-black leading-[1.04] text-white md:text-6xl">
+            Peça comida direto dos restaurantes da sua cidade
+          </h1>
+
+          <p className="mt-5 max-w-[52ch] text-base leading-relaxed text-zinc-300 md:text-lg">
+            Escolha a loja, monte seu pedido e envie direto para o estabelecimento. Mais rápido para você, melhor para o restaurante, sem intermediários no caminho.
+          </p>
+
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <Link to="/lojas"
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-orange-500 px-7 py-4 text-base font-black text-white shadow-2xl shadow-orange-500/25 transition-all hover:scale-[1.02] hover:bg-orange-400">
+              <Bike className="size-5" /> Ver restaurantes disponíveis <ArrowRight className="size-5" />
+            </Link>
+          </div>
+
+          <div className="mt-6 flex flex-wrap gap-3 text-sm text-zinc-400">
+            {["Sem cadastro", "Sem aplicativo", "Pedido direto com a loja"].map((item) => (
+              <span key={item} className="inline-flex items-center gap-2">
+                <Check className="size-4 text-orange-400" /> {item}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <div className="relative">
+          {/* Glow atrás do vídeo */}
+          <div className="absolute -inset-8 rounded-full bg-orange-500/20 blur-3xl" />
+
+          {/* Container do vídeo */}
+          <div className="relative overflow-hidden rounded-[2rem] border border-white/10 shadow-2xl shadow-black/40 ring-1 ring-orange-500/10 bg-zinc-950">
+            <video
+              autoPlay
+              muted
+              loop
+              playsInline
+              className="w-full h-full object-cover block"
+              style={{ maxHeight: 480 }}
+            >
+              <source src="/segments/Create_a_high_end_animated_vec.mp4" type="video/mp4" />
+              <source src="/segments/Create_a_modern_D_vector_anim.mp4" type="video/mp4" />
+            </video>
+            {/* Overlay sutil com gradiente nas bordas */}
+            <div className="absolute inset-0 pointer-events-none" style={{
+              background: "linear-gradient(to bottom, rgba(9,9,11,0.25) 0%, transparent 20%, transparent 80%, rgba(9,9,11,0.55) 100%)",
+            }} />
+          </div>
+
+          <div className="mt-5 flex flex-wrap justify-center gap-2 lg:justify-start">
+            {categorias.map((c) => (
+              <span key={c} className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-white">
+                {c}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function ConsumerHero() {
   const categorias = [
     "🍕 Pizzas", "🍔 Hambúrgueres", "🍱 Marmitas", "🍇 Açaí",
@@ -164,8 +238,8 @@ function Nav() {
         <div className="flex items-center gap-8">
           <Link to="/" className="flex items-center">
             <img
-              src="/segments/logo.png"
-              alt="Deliverly Hub"
+              src="/segments/logo1.png"
+              alt="SOS Sistemas"
               className={`h-14 w-auto max-w-[180px] object-contain transition-all duration-300 ${dark ? "brightness-0 invert" : ""}`}
             />
           </Link>
@@ -517,10 +591,18 @@ function Features() {
   return (
     <section id="recursos" className="py-24 bg-zinc-50">
       <div className="mx-auto max-w-7xl px-6">
-        <div className="max-w-2xl mb-14">
-          <span className="text-xs font-bold uppercase tracking-widest text-orange-500 mb-3 block">Recursos</span>
-          <h2 className="text-3xl md:text-4xl font-bold text-zinc-900 text-balance">Cada recurso pensado para o dia a dia do seu delivery</h2>
+        <div className="grid lg:grid-cols-2 gap-10 items-center mb-14">
+          <div>
+            <span className="text-xs font-bold uppercase tracking-widest text-orange-500 mb-3 block">Recursos</span>
+            <h2 className="text-3xl md:text-4xl font-bold text-zinc-900 text-balance">Cada recurso pensado para o dia a dia do seu delivery</h2>
+          </div>
+          <div className="aspect-video overflow-hidden rounded-2xl ring-1 ring-zinc-200 shadow-lg bg-zinc-950">
+            <video autoPlay muted loop playsInline className="w-full h-full object-cover">
+              <source src="/segments/Create_a_modern_D_vector_anim.mp4" type="video/mp4" />
+            </video>
+          </div>
         </div>
+
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {features.map(({ icon: Icon, title, body, badge }) => (
             <div key={title} className="bg-white hover:bg-orange-50 rounded-2xl p-6 ring-1 ring-zinc-200 hover:ring-orange-200 transition-all group">
@@ -708,7 +790,7 @@ function Footer() {
       <div className="mx-auto max-w-7xl px-6">
         <div className="flex flex-col md:flex-row justify-between items-start gap-8 mb-8">
           <div>
-            <img src="/segments/logo.png" alt="Deliverly Hub" className="h-14 w-auto object-contain brightness-0 invert" />
+            <img src="/segments/logo1.png" alt="SOS Sistemas" className="h-14 w-auto object-contain brightness-0 invert" />
             <p className="text-xs text-zinc-400 mt-2 max-w-[30ch]">Plataforma de delivery próprio para restaurantes que não aceitam pagar comissão.</p>
             <div className="flex items-center gap-3 mt-4">
               <a href={WA_LINK} target="_blank" rel="noreferrer"

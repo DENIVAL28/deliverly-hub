@@ -167,22 +167,11 @@ function LojaPage() {
 
     setCheckoutLoading(true);
     try {
-const subtotal = totalPrice;
-      const taxa     = isRetirada ? 0 : Number(empresa.taxa_entrega ?? 0);
-      const total    = Math.round(Math.max(0, subtotal - desconto + taxa) * 100) / 100;
-
-      const itensRpc = items.map((i) => {
-        const prod = (produtos as any[]).find((p) => p.id === i.id);
-        return {
-          produto_id: i.id,
-          nome: i.nome,
-          quantidade: i.qty,
-          preco_unitario: i.preco,
-          subtotal: i.preco * i.qty,
-          observacao: i.opcoes?.length ? i.opcoes.map((o: any) => o.opcaoNome).join(", ") : null,
-          controlar_estoque: !!prod?.controlar_estoque,
-        };
-      });
+      const itensRpc = items.map((i) => ({
+        produto_id:  i.id,
+        quantidade:  i.qty,
+        observacao:  i.opcoes?.length ? i.opcoes.map((o: { opcaoNome: string }) => o.opcaoNome).join(", ") : null,
+      }));
 
       const { data: pedidoJson, error } = await supabase.rpc("finalizar_pedido", {
         p_empresa_id:       empresa.id,
@@ -191,12 +180,8 @@ const subtotal = totalPrice;
         p_cliente_endereco: cliente_endereco,
         p_forma_pagamento:  forma_pagamento,
         p_observacao:       observacao || undefined,
-        p_subtotal:         subtotal,
-        p_taxa_entrega:     taxa,
-        p_total:            total,
         p_mesa:             mesa ? `Mesa ${mesa}` : undefined,
         p_tipo:             mesa ? "mesa" : isRetirada ? "retirada" : "delivery",
-        p_status:           "novo",
         p_cupom_id:         cupomAplicado?.id ?? undefined,
         p_itens:            itensRpc,
         p_cliente_lat:      clienteLat ?? undefined,
@@ -211,7 +196,11 @@ const subtotal = totalPrice;
         return;
       }
 
-      const pedido = pedidoJson as { id: string; numero: number };
+      const pedido = pedidoJson as { id: string; numero: number; subtotal: number; taxa_entrega: number; desconto: number; total: number };
+      const subtotal = pedido.subtotal;
+      const taxa     = pedido.taxa_entrega;
+      const desconto = pedido.desconto;
+      const total    = pedido.total;
       const msg = encodeURIComponent(
         `*Pedido #${pedido.numero}*\n\n` +
         (mesa ? `📍 Mesa ${mesa}\nCliente: ${cliente_nome}\n` : isRetirada ? `🏪 *Retirada no balcão*\nCliente: ${cliente_nome}\nTelefone: ${cliente_telefone}\n` : `Cliente: ${cliente_nome}\nTelefone: ${cliente_telefone}\nEndereço: ${cliente_endereco}\n`) + `\n` +
@@ -264,7 +253,7 @@ const subtotal = totalPrice;
       .from("pedidos")
       .select("id, numero, status, total, created_at")
       .eq("empresa_id", empresa.id)
-      .eq("cliente_telefone" as any, telBusca.trim())
+      .eq("cliente_telefone" as any, tel)
       .order("created_at", { ascending: false })
       .limit(5);
     setPedidosBusca(data ?? []);

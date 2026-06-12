@@ -7,17 +7,41 @@ const MapaEntrega = lazy(() => import("@/components/MapaEntrega"));
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+interface Entregador {
+  id: string;
+  public_token: string;
+  nome: string;
+  telefone: string | null;
+  status: string;
+  lat: number | null;
+  lng: number | null;
+  ultima_localizacao: string | null;
+  empresas: { nome_fantasia: string; logo_url: string | null; cor_primaria: string | null } | null;
+}
+
+interface PedidoEntregador {
+  id: string;
+  numero: number;
+  cliente_nome: string;
+  cliente_endereco: string | null;
+  taxa_entrega: number;
+  status: string;
+  created_at: string;
+  cliente_lat: number | null;
+  cliente_lng: number | null;
+}
+
 export const Route = createFileRoute("/entregador/$id")({
   ssr: false,
   loader: async ({ params }) => {
     if (!UUID_RE.test(params.id)) throw notFound();
     const { data } = await supabase
       .from("entregadores")
-      .select("id, nome, telefone, status, lat, lng, ultima_localizacao, empresas(nome_fantasia, logo_url, cor_primaria)")
-      .eq("id", params.id)
+      .select("id, public_token, nome, telefone, status, lat, lng, ultima_localizacao, empresas(nome_fantasia, logo_url, cor_primaria)")
+      .eq("public_token" as never, params.id)
       .maybeSingle();
     if (!data) throw notFound();
-    return data as any;
+    return data as unknown as Entregador;
   },
   component: EntregadorPage,
   notFoundComponent: () => (
@@ -40,8 +64,8 @@ const STATUS_PEDIDO: Record<string, { label: string; cor: string }> = {
 
 function EntregadorPage() {
   const entregadorInicial = Route.useLoaderData();
-  const [entregador, setEntregador] = useState<any>(entregadorInicial);
-  const [pedidos, setPedidos] = useState<any[]>([]);
+  const [entregador, setEntregador] = useState<Entregador>(entregadorInicial);
+  const [pedidos, setPedidos] = useState<PedidoEntregador[]>([]);
   const [atualizando, setAtualizando] = useState(false);
 
   // GPS tracking
@@ -50,7 +74,7 @@ function EntregadorPage() {
   const [gpsCarreg, setGpsCarreg] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [currentPos, setCurrentPos] = useState<{ lat: number; lng: number } | null>(
-    entregador.lat != null ? { lat: entregador.lat, lng: entregador.lng } : null
+    entregador.lat != null && entregador.lng != null ? { lat: entregador.lat, lng: entregador.lng } : null
   );
 
   function formatarErroGps(err: GeolocationPositionError): string {
@@ -66,9 +90,9 @@ function EntregadorPage() {
       navigator.geolocation.getCurrentPosition(
         async (pos) => {
           await (supabase as any).rpc("entregador_atualizar_gps", {
-            p_id:  entregador.id,
-            p_lat: pos.coords.latitude,
-            p_lng: pos.coords.longitude,
+            p_token: entregador.public_token,
+            p_lat:   pos.coords.latitude,
+            p_lng:   pos.coords.longitude,
           });
           setCurrentPos({ lat: pos.coords.latitude, lng: pos.coords.longitude });
           resolve(true);
@@ -97,23 +121,23 @@ function EntregadorPage() {
 
   useEffect(() => () => { if (intervalRef.current) clearInterval(intervalRef.current); }, []);
 
-  const empresa = entregador.empresas as any;
+  const empresa = entregador.empresas;
   const statusAtual = STATUS_OPTIONS.find((s) => s.value === entregador.status) ?? STATUS_OPTIONS[0];
 
   async function carregarPedidos() {
-    const { data } = await supabase
+    const { data } = await (supabase as any)
       .from("pedidos")
       .select("id, numero, cliente_nome, cliente_endereco, taxa_entrega, status, created_at, cliente_lat, cliente_lng")
-      .eq("entregador_id" as any, entregador.id)
+      .eq("entregador_id", entregador.id)
       .order("created_at", { ascending: false })
       .limit(20);
-    setPedidos(data ?? []);
+    setPedidos((data ?? []) as PedidoEntregador[]);
   }
 
   async function mudarStatus(novoStatus: string) {
     setAtualizando(true);
-    await (supabase as any).rpc("entregador_atualizar_status", { p_id: entregador.id, p_status: novoStatus });
-    setEntregador((e: any) => ({ ...e, status: novoStatus }));
+    await (supabase as any).rpc("entregador_atualizar_status", { p_token: entregador.public_token, p_status: novoStatus });
+    setEntregador((e) => ({ ...e, status: novoStatus }));
     setAtualizando(false);
   }
 
@@ -253,7 +277,7 @@ function EntregadorPage() {
                     </div>
                   )}
                   {/* Mini mapa — exibe se o cliente compartilhou localização GPS */}
-                  {p.cliente_lat != null && (
+                  {p.cliente_lat != null && p.cliente_lng != null && (
                     <div className="mt-3 overflow-hidden rounded-xl ring-1 ring-zinc-200">
                       <Suspense fallback={<div className="h-44 bg-zinc-100 flex items-center justify-center text-xs text-zinc-400">Carregando mapa…</div>}>
                         <MapaEntrega

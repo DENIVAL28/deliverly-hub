@@ -147,7 +147,7 @@ function PDVPage() {
   const [descontoPct, setDescontoPct]     = useState("");
   const [obs, setObs]                     = useState("");
   const [finishing, setFinishing]         = useState(false);
-  const [vendaFeita, setVendaFeita]       = useState<{ numero: number } | null>(null);
+  const [vendaFeita, setVendaFeita]       = useState<{ numero: number; total: number } | null>(null);
   const [mobileTab, setMobileTab]         = useState<"produtos" | "pedido">("produtos");
 
   const { data: categorias = [] } = useQuery({
@@ -215,13 +215,9 @@ function PDVPage() {
     setFinishing(true);
     try {
       const itensRpc = items.map((i) => ({
-        produto_id:        i.id,
-        nome:              i.nome,
-        quantidade:        i.qty,
-        preco_unitario:    i.preco,
-        subtotal:          i.preco * i.qty,
-        observacao:        i.opcoes?.length ? i.opcoes.map((o) => o.opcaoNome).join(", ") : null,
-        controlar_estoque: !!(produtos as any[]).find((p) => p.id === i.id)?.controlar_estoque,
+        produto_id: i.id,
+        quantidade: i.qty,
+        observacao: i.opcoes?.length ? i.opcoes.map((o) => o.opcaoNome).join(", ") : null,
       }));
 
       const obsCompleta = [
@@ -230,24 +226,18 @@ function PDVPage() {
       ].filter(Boolean).join(" | ");
 
       const { data, error } = await supabase.rpc("finalizar_pedido", {
-        p_empresa_id:       empresaId!,
-        p_cliente_nome:     "Balcão",
-        p_cliente_telefone: undefined,
-        p_cliente_endereco: undefined,
-        p_forma_pagamento:  pagamento,
-        p_observacao:       obsCompleta || undefined,
-        p_subtotal:         subtotal,
-        p_taxa_entrega:     0,
-        p_total:            total,
-        p_mesa:             undefined,
-        p_tipo:             "pdv",
-        p_status:           "novo",
-        p_cupom_id:         undefined,
-        p_itens:            itensRpc,
+        p_empresa_id:   empresaId!,
+        p_cliente_nome: "Balcão",
+        p_forma_pagamento: pagamento,
+        p_observacao:   obsCompleta || undefined,
+        p_tipo:         "pdv",
+        p_itens:        itensRpc,
+        p_desconto_pdv: desconto > 0 ? desconto : undefined,
       });
 
       if (error || !data) { toast.error("Erro: " + (error?.message ?? "tente novamente")); return; }
-      setVendaFeita({ numero: (data as any).numero });
+      const pedido = data as { numero: number; total: number };
+      setVendaFeita({ numero: pedido.numero, total: pedido.total });
       qc.invalidateQueries({ queryKey: ["pedidos-empresa", empresaId] });
     } finally {
       setFinishing(false);
@@ -263,7 +253,7 @@ function PDVPage() {
         <div className="text-center">
           <p className="text-3xl font-black text-zinc-900">Venda #{vendaFeita.numero}</p>
           <p className="text-zinc-500 mt-1">registrada com sucesso!</p>
-          <p className="text-2xl font-black text-brand mt-3">{fmt(total)}</p>
+          <p className="text-2xl font-black text-brand mt-3">{fmt(vendaFeita.total)}</p>
           {trocoVal !== null && trocoVal >= 0 && (
             <p className="text-sm text-zinc-500 mt-1">Troco: <span className="font-bold text-zinc-800">{fmt(trocoVal)}</span></p>
           )}
