@@ -62,6 +62,9 @@ function LojaPage() {
   const [tipoEntrega, setTipoEntrega]       = useState<"delivery" | "retirada">("delivery");
   const [clienteLat, setClienteLat]         = useState<number | null>(null);
   const [clienteLng, setClienteLng]         = useState<number | null>(null);
+  const [clienteCpf, setClienteCpf]         = useState("");
+  const [clienteCep, setClienteCep]         = useState("");
+  const [clienteCidade, setClienteCidade]   = useState("");
   const [pixModal, setPixModal]           = useState<{ payload: string; qrUrl: string; total: number; waLink: string; pedidoNum: number } | null>(null);
   const [acompanharOpen, setAcompanharOpen] = useState(false);
   const [telBusca, setTelBusca]           = useState("");
@@ -198,6 +201,9 @@ const subtotal = totalPrice;
         p_itens:            itensRpc,
         p_cliente_lat:      clienteLat ?? undefined,
         p_cliente_lng:      clienteLng ?? undefined,
+        p_cliente_cpf:      clienteCpf.replace(/\D/g, "").length === 11 ? clienteCpf : undefined,
+        p_cliente_cep:      clienteCep.replace(/\D/g, "").length === 8  ? clienteCep : undefined,
+        p_cliente_cidade:   clienteCidade || undefined,
       });
 
       if (error || !pedidoJson) {
@@ -910,6 +916,14 @@ const subtotal = totalPrice;
                 <FormField name="nome" label="Seu nome" required />
                 {!mesa && <FormField name="telefone" label="Telefone (WhatsApp)" required />}
                 {!mesa && tipoEntrega === "delivery" && (
+                  <CepField
+                    cep={clienteCep}
+                    onCepChange={setClienteCep}
+                    onCidadeChange={setClienteCidade}
+                    brandColor={brandColor}
+                  />
+                )}
+                {!mesa && tipoEntrega === "delivery" && (
                   <AddressField
                     brandColor={brandColor}
                     onCapture={(lat, lng) => { setClienteLat(lat); setClienteLng(lng); }}
@@ -936,6 +950,7 @@ const subtotal = totalPrice;
                     <p className="text-xs text-zinc-400">Pagamento feito no momento da entrega</p>
                   )}
                 </div>
+                <CpfField value={clienteCpf} onChange={setClienteCpf} />
                 <div className="space-y-1.5">
                   <Label>Observação (opcional)</Label>
                   <Textarea name="observacao" rows={2} className="rounded-xl resize-none" />
@@ -1259,6 +1274,109 @@ function FormField({ name, label, required }: { name: string; label: string; req
     <div className="space-y-1.5">
       <Label htmlFor={name}>{label}</Label>
       <Input id={name} name={name} required={required} className="rounded-xl h-12 text-base" />
+    </div>
+  );
+}
+
+/* ─── Campo CEP com auto-fill ViaCEP ─── */
+function CepField({ cep, onCepChange, onCidadeChange, brandColor }: {
+  cep: string;
+  onCepChange: (v: string) => void;
+  onCidadeChange: (v: string) => void;
+  brandColor: string;
+}) {
+  const [loading, setLoading] = useState(false);
+  const [erro, setErro]       = useState("");
+  const cidadeRef = useRef<HTMLInputElement>(null);
+
+  function formatCep(v: string) {
+    const d = v.replace(/\D/g, "").slice(0, 8);
+    return d.length > 5 ? `${d.slice(0, 5)}-${d.slice(5)}` : d;
+  }
+
+  async function buscarCep(valor: string) {
+    const digits = valor.replace(/\D/g, "");
+    if (digits.length !== 8) return;
+    setLoading(true); setErro("");
+    try {
+      const res  = await fetch(`https://viacep.com.br/ws/${digits}/json/`);
+      const data = await res.json();
+      if (data.erro) { setErro("CEP não encontrado."); setLoading(false); return; }
+      const cidade = `${data.localidade}/${data.uf}`;
+      onCidadeChange(cidade);
+      if (cidadeRef.current) cidadeRef.current.value = cidade;
+    } catch {
+      setErro("Não foi possível consultar o CEP.");
+    }
+    setLoading(false);
+  }
+
+  return (
+    <div className="grid grid-cols-2 gap-2">
+      <div className="space-y-1.5">
+        <Label>CEP <span className="text-zinc-400 font-normal">(opcional)</span></Label>
+        <div className="relative">
+          <input
+            type="text"
+            inputMode="numeric"
+            placeholder="00000-000"
+            value={cep}
+            onChange={(e) => {
+              const v = formatCep(e.target.value);
+              onCepChange(v);
+              if (v.replace(/\D/g,"").length === 8) buscarCep(v);
+            }}
+            className="w-full h-12 rounded-xl border border-zinc-200 bg-white px-3 text-base focus:outline-none focus:ring-2 focus:ring-orange-400/40"
+          />
+          {loading && (
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 size-4 rounded-full border-2 border-orange-400 border-t-transparent animate-spin" />
+          )}
+        </div>
+        {erro && <p className="text-xs text-red-500">{erro}</p>}
+      </div>
+      <div className="space-y-1.5">
+        <Label>Cidade</Label>
+        <input
+          ref={cidadeRef}
+          type="text"
+          placeholder="São Paulo/SP"
+          defaultValue=""
+          onChange={(e) => onCidadeChange(e.target.value)}
+          className="w-full h-12 rounded-xl border border-zinc-200 bg-white px-3 text-base focus:outline-none focus:ring-2 focus:ring-orange-400/40"
+          style={{ "--tw-ring-color": brandColor } as any}
+        />
+      </div>
+    </div>
+  );
+}
+
+/* ─── Campo CPF com formatação ─── */
+function CpfField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  function formatCpf(v: string) {
+    const d = v.replace(/\D/g, "").slice(0, 11);
+    if (d.length <= 3) return d;
+    if (d.length <= 6) return `${d.slice(0,3)}.${d.slice(3)}`;
+    if (d.length <= 9) return `${d.slice(0,3)}.${d.slice(3,6)}.${d.slice(6)}`;
+    return `${d.slice(0,3)}.${d.slice(3,6)}.${d.slice(6,9)}-${d.slice(9)}`;
+  }
+
+  const digits = value.replace(/\D/g, "");
+  const valido = digits.length === 0 || digits.length === 11;
+
+  return (
+    <div className="space-y-1.5">
+      <Label>CPF <span className="text-zinc-400 font-normal">(opcional — para nota fiscal)</span></Label>
+      <input
+        type="text"
+        inputMode="numeric"
+        placeholder="000.000.000-00"
+        value={value}
+        onChange={(e) => onChange(formatCpf(e.target.value))}
+        className={`w-full h-12 rounded-xl border bg-white px-3 text-base focus:outline-none focus:ring-2 focus:ring-orange-400/40 ${
+          !valido ? "border-red-300" : "border-zinc-200"
+        }`}
+      />
+      {!valido && <p className="text-xs text-red-500">CPF incompleto.</p>}
     </div>
   );
 }

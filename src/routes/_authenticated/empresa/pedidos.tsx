@@ -493,6 +493,10 @@ function PedidosPage() {
                     </div>
                   )}
                   {p.cliente_endereco && <div className="text-xs text-zinc-500">{p.cliente_endereco}</div>}
+                  {(p.cliente_cep || p.cliente_cidade) && (
+                    <div className="text-xs text-zinc-400">{[p.cliente_cep, p.cliente_cidade].filter(Boolean).join(" — ")}</div>
+                  )}
+                  {p.cliente_cpf && <div className="text-xs text-zinc-400">CPF: {p.cliente_cpf}</div>}
                   {p.observacao && <div className="text-xs text-zinc-500 italic mt-1">"{p.observacao}"</div>}
                 </div>
                 <div className="text-right">
