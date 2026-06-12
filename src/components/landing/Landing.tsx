@@ -459,11 +459,7 @@ function ComoFunciona() {
         </div>
 
         <div className="text-center mt-12">
-          <Link to="/auth"
-            className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white font-bold px-6 py-3 rounded-xl transition-all hover:scale-[1.02]">
-            Quero começar agora <ArrowRight className="size-4" />
-          </Link>
-          <p className="text-xs text-zinc-400 mt-2">7 dias grátis • Sem cartão de crédito</p>
+          <p className="text-xs text-zinc-400">Sem técnico, sem contrato — você configura tudo ou pedimos ajuda gratuita.</p>
         </div>
       </div>
     </section>
@@ -628,20 +624,14 @@ function CTA() {
             </p>
           </div>
 
-          {/* Direita — ações */}
-          <div className="bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-sm">
-            <div className="flex flex-col gap-3 mb-6">
-              <Link to="/auth"
-                className="flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 text-white font-bold px-8 py-4 rounded-2xl text-base transition-all hover:scale-[1.01] shadow-xl shadow-orange-500/25">
-                Criar conta grátis — 7 dias <ArrowRight className="size-5" />
-              </Link>
-              <a href={WA_LINK} target="_blank" rel="noreferrer"
-                className="flex items-center justify-center gap-2 bg-white/10 hover:bg-white/15 text-white font-semibold px-8 py-4 rounded-2xl text-base transition-colors border border-white/10">
-                <MessageCircle className="size-4" /> Ver demonstração ao vivo
-              </a>
-            </div>
+          {/* Direita — ação única */}
+          <div className="bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-sm flex flex-col gap-5">
+            <Link to="/auth"
+              className="flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 text-white font-bold px-8 py-4 rounded-2xl text-base transition-all hover:scale-[1.01] shadow-xl shadow-orange-500/25">
+              Criar minha conta grátis <ArrowRight className="size-5" />
+            </Link>
 
-            <div className="space-y-2.5 mb-6">
+            <div className="space-y-2.5">
               {["7 dias grátis, sem cartão de crédito", "Sem comissão por pedido, sem contrato", "Suporte na configuração sem custo"].map((t) => (
                 <div key={t} className="flex items-center gap-2.5 text-sm text-zinc-300">
                   <Check className="size-4 text-green-400 shrink-0" /> {t}
@@ -649,10 +639,13 @@ function CTA() {
               ))}
             </div>
 
-            <div className="border-t border-white/10 pt-5 text-center">
-              <Link to="/auth" className="text-sm text-zinc-300 hover:text-orange-400 transition-colors font-medium">
-                Já tem uma conta? Acesse aqui →
+            <div className="border-t border-white/10 pt-4 flex items-center justify-between text-sm">
+              <Link to="/auth" className="text-zinc-400 hover:text-orange-400 transition-colors">
+                Já tem conta? Entrar →
               </Link>
+              <a href={WA_LINK} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-zinc-400 hover:text-green-400 transition-colors">
+                <MessageCircle className="size-3.5" /> Falar no WhatsApp
+              </a>
             </div>
           </div>
         </div>
