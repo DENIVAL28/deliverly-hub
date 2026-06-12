@@ -37,5 +37,6 @@ export function traduzirErro(msg: string | undefined | null): string {
   for (const [chave, texto] of MAPA) {
     if (typeof chave === "string" ? msg.includes(chave) : chave.test(msg)) return texto;
   }
-  return "Ocorreu um erro. Tente novamente.";
+  // Exibe a mensagem original quando não há tradução (ajuda a diagnosticar erros novos)
+  return msg.length <= 150 ? msg : "Ocorreu um erro. Tente novamente.";
 }
