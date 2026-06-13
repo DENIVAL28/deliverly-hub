@@ -39,8 +39,10 @@ function MesasPage() {
   const [novaNumero, setNovaNumero] = useState("");
   const [novaNome, setNovaNome] = useState("");
   const [novaCapacidade, setNovaCapacidade] = useState("4");
+  const [loteAte, setLoteAte] = useState("");
   const [adicionando, setAdicionando] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [modoLote, setModoLote] = useState(false);
   const [pedidosPorMesa, setPedidosPorMesa] = useState<Record<string, PedidoMesa[]>>({});
   const [slug, setSlug] = useState<string>("");
 
@@ -100,6 +102,30 @@ function MesasPage() {
   async function adicionarMesa() {
     if (!novaNumero || !empresaId) return;
     setAdicionando(true);
+
+    if (modoLote && loteAte) {
+      const de  = parseInt(novaNumero);
+      const ate = parseInt(loteAte);
+      if (isNaN(de) || isNaN(ate) || de > ate || ate - de > 49) {
+        toast.error("Intervalo inválido (máx. 50 mesas por vez).");
+        setAdicionando(false);
+        return;
+      }
+      const rows = Array.from({ length: ate - de + 1 }, (_, i) => ({
+        empresa_id: empresaId,
+        numero: de + i,
+        nome: null,
+        capacidade: parseInt(novaCapacidade) || 4,
+      }));
+      const { error } = await (supabase as any).from("mesas").insert(rows);
+      setAdicionando(false);
+      if (error) { toast.error(error.message); return; }
+      toast.success(`${rows.length} mesas adicionadas (${de} até ${ate})!`);
+      setNovaNumero(""); setLoteAte(""); setNovaCapacidade("4"); setShowForm(false);
+      qc.invalidateQueries({ queryKey: ["mesas"] });
+      return;
+    }
+
     const { error } = await (supabase as any).from("mesas").insert({
       empresa_id: empresaId,
       numero: parseInt(novaNumero),
@@ -163,27 +189,60 @@ function MesasPage() {
       {/* Form nova mesa */}
       {showForm && (
         <div className="bg-white rounded-2xl ring-1 ring-zinc-200 p-5 mb-6">
-          <h3 className="text-sm font-semibold text-zinc-800 mb-4">Adicionar mesa</h3>
-          <div className="grid grid-cols-3 gap-3 mb-4">
-            <div>
-              <label className="text-xs text-zinc-500 mb-1 block">Número *</label>
-              <input type="number" min="1" value={novaNumero} onChange={e => setNovaNumero(e.target.value)}
-                className="w-full border border-zinc-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/50" placeholder="1" />
-            </div>
-            <div>
-              <label className="text-xs text-zinc-500 mb-1 block">Nome (opcional)</label>
-              <input type="text" value={novaNome} onChange={e => setNovaNome(e.target.value)}
-                className="w-full border border-zinc-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/50" placeholder="Ex: Varanda" />
-            </div>
-            <div>
-              <label className="text-xs text-zinc-500 mb-1 block">Capacidade</label>
-              <input type="number" min="1" value={novaCapacidade} onChange={e => setNovaCapacidade(e.target.value)}
-                className="w-full border border-zinc-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/50" placeholder="4" />
-            </div>
+          {/* Tabs individual / lote */}
+          <div className="flex gap-1 bg-zinc-100 rounded-xl p-1 mb-4 w-fit">
+            <button onClick={() => setModoLote(false)}
+              className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-colors ${!modoLote ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500"}`}>
+              Mesa individual
+            </button>
+            <button onClick={() => setModoLote(true)}
+              className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-colors ${modoLote ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500"}`}>
+              Adicionar em lote
+            </button>
           </div>
+
+          {modoLote ? (
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              <div>
+                <label className="text-xs text-zinc-500 mb-1 block">De (número) *</label>
+                <input type="number" min="1" value={novaNumero} onChange={e => setNovaNumero(e.target.value)}
+                  className="w-full border border-zinc-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/50" placeholder="1" />
+              </div>
+              <div>
+                <label className="text-xs text-zinc-500 mb-1 block">Até (número) *</label>
+                <input type="number" min="1" value={loteAte} onChange={e => setLoteAte(e.target.value)}
+                  className="w-full border border-zinc-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/50" placeholder="10" />
+              </div>
+              <div>
+                <label className="text-xs text-zinc-500 mb-1 block">Capacidade cada</label>
+                <input type="number" min="1" value={novaCapacidade} onChange={e => setNovaCapacidade(e.target.value)}
+                  className="w-full border border-zinc-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/50" placeholder="4" />
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              <div>
+                <label className="text-xs text-zinc-500 mb-1 block">Número *</label>
+                <input type="number" min="1" value={novaNumero} onChange={e => setNovaNumero(e.target.value)}
+                  className="w-full border border-zinc-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/50" placeholder="1" />
+              </div>
+              <div>
+                <label className="text-xs text-zinc-500 mb-1 block">Nome (opcional)</label>
+                <input type="text" value={novaNome} onChange={e => setNovaNome(e.target.value)}
+                  className="w-full border border-zinc-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/50" placeholder="Ex: Varanda" />
+              </div>
+              <div>
+                <label className="text-xs text-zinc-500 mb-1 block">Capacidade</label>
+                <input type="number" min="1" value={novaCapacidade} onChange={e => setNovaCapacidade(e.target.value)}
+                  className="w-full border border-zinc-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/50" placeholder="4" />
+              </div>
+            </div>
+          )}
+
           <div className="flex gap-2">
-            <Button onClick={adicionarMesa} disabled={adicionando || !novaNumero} className="bg-brand hover:bg-brand/90 text-white">
-              {adicionando ? "Salvando…" : "Salvar mesa"}
+            <Button onClick={adicionarMesa} disabled={adicionando || !novaNumero || (modoLote && !loteAte)}
+              className="bg-brand hover:bg-brand/90 text-white">
+              {adicionando ? "Salvando…" : modoLote ? `Criar mesas ${novaNumero || "?"} até ${loteAte || "?"}` : "Salvar mesa"}
             </Button>
             <Button variant="outline" onClick={() => setShowForm(false)}>Cancelar</Button>
           </div>

@@ -23,7 +23,7 @@ export const Route = createFileRoute("/loja/$slug")({
     if (!empresa) throw notFound();
     const [{ data: categorias }, { data: produtos }, { data: avs }] = await Promise.all([
       supabase.from("categorias").select("*").eq("empresa_id", empresa.id).eq("ativo", true).order("ordem"),
-      supabase.from("produtos").select("*").eq("empresa_id", empresa.id).eq("ativo", true),
+      (supabase.from("produtos") as any).select("*, grupos_opcoes(id)").eq("empresa_id", empresa.id).eq("ativo", true),
       supabase.from("avaliacoes").select("nota").eq("empresa_id", empresa.id),
     ]);
     const notas = (avs ?? []) as any[];
@@ -978,9 +978,10 @@ function ProductCard({ p, cart, onOpen, onAdd, onDec, fmt, last }: {
   onOpen: () => void; onAdd: () => void; onDec: () => void;
   fmt: (v: number) => string; last: boolean;
 }) {
-  const preco    = Number(p.preco_promocional ?? p.preco);
-  const qty      = cart[p.id]?.qty ?? 0;
-  const esgotado = p.controlar_estoque && p.estoque === 0;
+  const preco      = Number(p.preco_promocional ?? p.preco);
+  const qty        = cart[p.id]?.qty ?? 0;
+  const esgotado   = p.controlar_estoque && p.estoque === 0;
+  const temOpcoes  = (p.grupos_opcoes?.length ?? 0) > 0;
 
   return (
     <div
@@ -1004,6 +1005,9 @@ function ProductCard({ p, cart, onOpen, onAdd, onDec, fmt, last }: {
           {!esgotado && p.controlar_estoque && p.estoque <= 5 && p.estoque > 0 && (
             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-600">Últimas {p.estoque}</span>
           )}
+          {temOpcoes && !esgotado && (
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-zinc-100 text-zinc-500">✦ Personalizável</span>
+          )}
         </div>
       </div>
 
@@ -1013,17 +1017,24 @@ function ProductCard({ p, cart, onOpen, onAdd, onDec, fmt, last }: {
           <img src={p.foto_url} alt={p.nome} className="w-24 h-24 rounded-xl object-cover" />
         )}
         {!esgotado && (qty === 0 ? (
-          <button onClick={onAdd}
-            className="h-10 px-4 rounded-xl b-btn text-white text-sm font-semibold flex items-center gap-1.5 shadow-sm transition-colors active:opacity-80">
-            <Plus className="size-4" /> Adicionar
-          </button>
+          temOpcoes ? (
+            <button onClick={onOpen}
+              className="h-10 px-4 rounded-xl b-btn text-white text-sm font-semibold flex items-center gap-1.5 shadow-sm transition-colors active:opacity-80">
+              <Plus className="size-4" /> Personalizar
+            </button>
+          ) : (
+            <button onClick={onAdd}
+              className="h-10 px-4 rounded-xl b-btn text-white text-sm font-semibold flex items-center gap-1.5 shadow-sm transition-colors active:opacity-80">
+              <Plus className="size-4" /> Adicionar
+            </button>
+          )
         ) : (
           <div className="flex items-center gap-1 bg-white rounded-xl shadow-md border border-zinc-100 px-1.5 py-1">
             <button onClick={onDec} className="size-8 flex items-center justify-center b-text rounded-lg active:bg-zinc-100">
               <Minus className="size-4" />
             </button>
             <span className="text-sm font-bold b-text min-w-[20px] text-center">{qty}</span>
-            <button onClick={onAdd} className="size-8 flex items-center justify-center b-text rounded-lg active:bg-zinc-100">
+            <button onClick={temOpcoes ? onOpen : onAdd} className="size-8 flex items-center justify-center b-text rounded-lg active:bg-zinc-100">
               <Plus className="size-4" />
             </button>
           </div>

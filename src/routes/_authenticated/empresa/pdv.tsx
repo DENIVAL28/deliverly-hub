@@ -22,7 +22,8 @@ const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", curren
 
 // ── Produto card ───────────────────────────────────────────────────────────────
 function ProdCard({ p, onAdd }: { p: any; onAdd: (p: any) => void }) {
-  const esgotado = p.controlar_estoque && p.estoque === 0;
+  const esgotado  = p.controlar_estoque && p.estoque === 0;
+  const temOpcoes = (p.grupos_opcoes?.length ?? 0) > 0;
   return (
     <button disabled={esgotado} onClick={() => onAdd(p)}
       className={`bg-white rounded-2xl ring-1 ring-zinc-200 p-3 text-left flex flex-col gap-2 transition-all ${
@@ -40,10 +41,17 @@ function ProdCard({ p, onAdd }: { p: any; onAdd: (p: any) => void }) {
         <p className="text-sm font-black text-brand">{fmt(Number(p.preco_promocional ?? p.preco))}</p>
       )}
       {!esgotado && (
-        <div className="flex items-center justify-center gap-1 bg-brand/10 rounded-xl py-1.5">
-          <Plus className="size-3.5 text-brand" />
-          <span className="text-xs font-bold text-brand">Adicionar</span>
-        </div>
+        temOpcoes ? (
+          <div className="flex items-center justify-center gap-1 bg-orange-500 rounded-xl py-1.5">
+            <Plus className="size-3.5 text-white" />
+            <span className="text-xs font-bold text-white">Personalizar</span>
+          </div>
+        ) : (
+          <div className="flex items-center justify-center gap-1 bg-brand/10 rounded-xl py-1.5">
+            <Plus className="size-3.5 text-brand" />
+            <span className="text-xs font-bold text-brand">Adicionar</span>
+          </div>
+        )
       )}
     </button>
   );
