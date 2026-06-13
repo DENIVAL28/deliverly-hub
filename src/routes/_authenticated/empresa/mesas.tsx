@@ -118,28 +118,31 @@ function MesasPage() {
         capacidade: parseInt(novaCapacidade) || 4,
         ativa: true,
       }));
-      const { error } = await (supabase as any)
-        .from("mesas")
-        .upsert(rows, { onConflict: "empresa_id,numero" });
+      const { error } = await (supabase as any).from("mesas").insert(rows);
       setAdicionando(false);
-      if (error) { toast.error(error.message); return; }
+      if (error) {
+        if (error.code === "23505") toast.error("Algumas mesas nesse intervalo já existem. Tente um intervalo diferente ou remova as existentes primeiro.");
+        else toast.error(error.message);
+        return;
+      }
       toast.success(`${rows.length} mesas criadas (${de} até ${ate})!`);
       setNovaNumero(""); setLoteAte(""); setNovaCapacidade("4"); setShowForm(false);
       qc.invalidateQueries({ queryKey: ["mesas"] });
       return;
     }
 
-    const { error } = await (supabase as any)
-      .from("mesas")
-      .upsert({
-        empresa_id: empresaId,
-        numero: parseInt(novaNumero),
-        nome: novaNome || null,
-        capacidade: parseInt(novaCapacidade) || 4,
-        ativa: true,
-      }, { onConflict: "empresa_id,numero" });
+    const { error } = await (supabase as any).from("mesas").insert({
+      empresa_id: empresaId,
+      numero: parseInt(novaNumero),
+      nome: novaNome || null,
+      capacidade: parseInt(novaCapacidade) || 4,
+      ativa: true,
+    });
     setAdicionando(false);
-    if (error) { toast.error(error.message); return; }
+    if (error) {
+      toast.error(error.code === "23505" ? `Mesa ${novaNumero} já existe.` : error.message);
+      return;
+    }
     toast.success(`Mesa ${novaNumero} adicionada!`);
     setNovaNumero(""); setNovaNome(""); setNovaCapacidade("4"); setShowForm(false);
     qc.invalidateQueries({ queryKey: ["mesas"] });
@@ -147,7 +150,7 @@ function MesasPage() {
 
   async function removerMesa(id: string, numero: number) {
     if (!confirm(`Remover Mesa ${numero}?`)) return;
-    await (supabase as any).from("mesas").update({ ativa: false }).eq("id", id);
+    await (supabase as any).from("mesas").delete().eq("id", id);
     toast.success(`Mesa ${numero} removida.`);
     qc.invalidateQueries({ queryKey: ["mesas"] });
   }
