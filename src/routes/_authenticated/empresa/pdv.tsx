@@ -68,11 +68,10 @@ function OpcoesModal({ produto, onConfirm, onClose }: {
   const { data: grupos = [] } = useQuery({
     queryKey: ["grupos-pdv", produto.id],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("grupos_opcoes" as any)
+      const { data } = await (supabase as any)
+        .from("grupos_opcoes")
         .select("*, opcoes(*)")
         .eq("produto_id", produto.id)
-        .eq("ativo", true)
         .order("ordem");
       return (data ?? []) as any[];
     },
