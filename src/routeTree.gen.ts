@@ -36,12 +36,15 @@ import { Route as AuthenticatedEmpresaProdutosRouteImport } from './routes/_auth
 import { Route as AuthenticatedEmpresaPlanosRouteImport } from './routes/_authenticated/empresa/planos'
 import { Route as AuthenticatedEmpresaPedidosRouteImport } from './routes/_authenticated/empresa/pedidos'
 import { Route as AuthenticatedEmpresaPdvRouteImport } from './routes/_authenticated/empresa/pdv'
+import { Route as AuthenticatedEmpresaMesasRouteImport } from './routes/_authenticated/empresa/mesas'
+import { Route as AuthenticatedEmpresaKdsRouteImport } from './routes/_authenticated/empresa/kds'
 import { Route as AuthenticatedEmpresaEntregadoresRouteImport } from './routes/_authenticated/empresa/entregadores'
 import { Route as AuthenticatedEmpresaCuponsRouteImport } from './routes/_authenticated/empresa/cupons'
 import { Route as AuthenticatedEmpresaConfiguracoesRouteImport } from './routes/_authenticated/empresa/configuracoes'
 import { Route as AuthenticatedEmpresaClientesRouteImport } from './routes/_authenticated/empresa/clientes'
 import { Route as AuthenticatedEmpresaCategoriasRouteImport } from './routes/_authenticated/empresa/categorias'
 import { Route as AuthenticatedEmpresaAvaliacoesRouteImport } from './routes/_authenticated/empresa/avaliacoes'
+import { Route as AuthenticatedEmpresaAnalyticsRouteImport } from './routes/_authenticated/empresa/analytics'
 
 const TermosRoute = TermosRouteImport.update({
   id: '/termos',
@@ -190,6 +193,17 @@ const AuthenticatedEmpresaPdvRoute = AuthenticatedEmpresaPdvRouteImport.update({
   path: '/pdv',
   getParentRoute: () => AuthenticatedEmpresaRouteRoute,
 } as any)
+const AuthenticatedEmpresaMesasRoute =
+  AuthenticatedEmpresaMesasRouteImport.update({
+    id: '/mesas',
+    path: '/mesas',
+    getParentRoute: () => AuthenticatedEmpresaRouteRoute,
+  } as any)
+const AuthenticatedEmpresaKdsRoute = AuthenticatedEmpresaKdsRouteImport.update({
+  id: '/kds',
+  path: '/kds',
+  getParentRoute: () => AuthenticatedEmpresaRouteRoute,
+} as any)
 const AuthenticatedEmpresaEntregadoresRoute =
   AuthenticatedEmpresaEntregadoresRouteImport.update({
     id: '/entregadores',
@@ -226,6 +240,12 @@ const AuthenticatedEmpresaAvaliacoesRoute =
     path: '/avaliacoes',
     getParentRoute: () => AuthenticatedEmpresaRouteRoute,
   } as any)
+const AuthenticatedEmpresaAnalyticsRoute =
+  AuthenticatedEmpresaAnalyticsRouteImport.update({
+    id: '/analytics',
+    path: '/analytics',
+    getParentRoute: () => AuthenticatedEmpresaRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -242,12 +262,15 @@ export interface FileRoutesByFullPath {
   '/entregador/$id': typeof EntregadorIdRoute
   '/loja/$slug': typeof LojaSlugRoute
   '/pedido/$id': typeof PedidoIdRoute
+  '/empresa/analytics': typeof AuthenticatedEmpresaAnalyticsRoute
   '/empresa/avaliacoes': typeof AuthenticatedEmpresaAvaliacoesRoute
   '/empresa/categorias': typeof AuthenticatedEmpresaCategoriasRoute
   '/empresa/clientes': typeof AuthenticatedEmpresaClientesRoute
   '/empresa/configuracoes': typeof AuthenticatedEmpresaConfiguracoesRoute
   '/empresa/cupons': typeof AuthenticatedEmpresaCuponsRoute
   '/empresa/entregadores': typeof AuthenticatedEmpresaEntregadoresRoute
+  '/empresa/kds': typeof AuthenticatedEmpresaKdsRoute
+  '/empresa/mesas': typeof AuthenticatedEmpresaMesasRoute
   '/empresa/pdv': typeof AuthenticatedEmpresaPdvRoute
   '/empresa/pedidos': typeof AuthenticatedEmpresaPedidosRoute
   '/empresa/planos': typeof AuthenticatedEmpresaPlanosRoute
@@ -274,12 +297,15 @@ export interface FileRoutesByTo {
   '/entregador/$id': typeof EntregadorIdRoute
   '/loja/$slug': typeof LojaSlugRoute
   '/pedido/$id': typeof PedidoIdRoute
+  '/empresa/analytics': typeof AuthenticatedEmpresaAnalyticsRoute
   '/empresa/avaliacoes': typeof AuthenticatedEmpresaAvaliacoesRoute
   '/empresa/categorias': typeof AuthenticatedEmpresaCategoriasRoute
   '/empresa/clientes': typeof AuthenticatedEmpresaClientesRoute
   '/empresa/configuracoes': typeof AuthenticatedEmpresaConfiguracoesRoute
   '/empresa/cupons': typeof AuthenticatedEmpresaCuponsRoute
   '/empresa/entregadores': typeof AuthenticatedEmpresaEntregadoresRoute
+  '/empresa/kds': typeof AuthenticatedEmpresaKdsRoute
+  '/empresa/mesas': typeof AuthenticatedEmpresaMesasRoute
   '/empresa/pdv': typeof AuthenticatedEmpresaPdvRoute
   '/empresa/pedidos': typeof AuthenticatedEmpresaPedidosRoute
   '/empresa/planos': typeof AuthenticatedEmpresaPlanosRoute
@@ -310,12 +336,15 @@ export interface FileRoutesById {
   '/entregador/$id': typeof EntregadorIdRoute
   '/loja/$slug': typeof LojaSlugRoute
   '/pedido/$id': typeof PedidoIdRoute
+  '/_authenticated/empresa/analytics': typeof AuthenticatedEmpresaAnalyticsRoute
   '/_authenticated/empresa/avaliacoes': typeof AuthenticatedEmpresaAvaliacoesRoute
   '/_authenticated/empresa/categorias': typeof AuthenticatedEmpresaCategoriasRoute
   '/_authenticated/empresa/clientes': typeof AuthenticatedEmpresaClientesRoute
   '/_authenticated/empresa/configuracoes': typeof AuthenticatedEmpresaConfiguracoesRoute
   '/_authenticated/empresa/cupons': typeof AuthenticatedEmpresaCuponsRoute
   '/_authenticated/empresa/entregadores': typeof AuthenticatedEmpresaEntregadoresRoute
+  '/_authenticated/empresa/kds': typeof AuthenticatedEmpresaKdsRoute
+  '/_authenticated/empresa/mesas': typeof AuthenticatedEmpresaMesasRoute
   '/_authenticated/empresa/pdv': typeof AuthenticatedEmpresaPdvRoute
   '/_authenticated/empresa/pedidos': typeof AuthenticatedEmpresaPedidosRoute
   '/_authenticated/empresa/planos': typeof AuthenticatedEmpresaPlanosRoute
@@ -346,12 +375,15 @@ export interface FileRouteTypes {
     | '/entregador/$id'
     | '/loja/$slug'
     | '/pedido/$id'
+    | '/empresa/analytics'
     | '/empresa/avaliacoes'
     | '/empresa/categorias'
     | '/empresa/clientes'
     | '/empresa/configuracoes'
     | '/empresa/cupons'
     | '/empresa/entregadores'
+    | '/empresa/kds'
+    | '/empresa/mesas'
     | '/empresa/pdv'
     | '/empresa/pedidos'
     | '/empresa/planos'
@@ -378,12 +410,15 @@ export interface FileRouteTypes {
     | '/entregador/$id'
     | '/loja/$slug'
     | '/pedido/$id'
+    | '/empresa/analytics'
     | '/empresa/avaliacoes'
     | '/empresa/categorias'
     | '/empresa/clientes'
     | '/empresa/configuracoes'
     | '/empresa/cupons'
     | '/empresa/entregadores'
+    | '/empresa/kds'
+    | '/empresa/mesas'
     | '/empresa/pdv'
     | '/empresa/pedidos'
     | '/empresa/planos'
@@ -413,12 +448,15 @@ export interface FileRouteTypes {
     | '/entregador/$id'
     | '/loja/$slug'
     | '/pedido/$id'
+    | '/_authenticated/empresa/analytics'
     | '/_authenticated/empresa/avaliacoes'
     | '/_authenticated/empresa/categorias'
     | '/_authenticated/empresa/clientes'
     | '/_authenticated/empresa/configuracoes'
     | '/_authenticated/empresa/cupons'
     | '/_authenticated/empresa/entregadores'
+    | '/_authenticated/empresa/kds'
+    | '/_authenticated/empresa/mesas'
     | '/_authenticated/empresa/pdv'
     | '/_authenticated/empresa/pedidos'
     | '/_authenticated/empresa/planos'
@@ -638,6 +676,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEmpresaPdvRouteImport
       parentRoute: typeof AuthenticatedEmpresaRouteRoute
     }
+    '/_authenticated/empresa/mesas': {
+      id: '/_authenticated/empresa/mesas'
+      path: '/mesas'
+      fullPath: '/empresa/mesas'
+      preLoaderRoute: typeof AuthenticatedEmpresaMesasRouteImport
+      parentRoute: typeof AuthenticatedEmpresaRouteRoute
+    }
+    '/_authenticated/empresa/kds': {
+      id: '/_authenticated/empresa/kds'
+      path: '/kds'
+      fullPath: '/empresa/kds'
+      preLoaderRoute: typeof AuthenticatedEmpresaKdsRouteImport
+      parentRoute: typeof AuthenticatedEmpresaRouteRoute
+    }
     '/_authenticated/empresa/entregadores': {
       id: '/_authenticated/empresa/entregadores'
       path: '/entregadores'
@@ -680,16 +732,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEmpresaAvaliacoesRouteImport
       parentRoute: typeof AuthenticatedEmpresaRouteRoute
     }
+    '/_authenticated/empresa/analytics': {
+      id: '/_authenticated/empresa/analytics'
+      path: '/analytics'
+      fullPath: '/empresa/analytics'
+      preLoaderRoute: typeof AuthenticatedEmpresaAnalyticsRouteImport
+      parentRoute: typeof AuthenticatedEmpresaRouteRoute
+    }
   }
 }
 
 interface AuthenticatedEmpresaRouteRouteChildren {
+  AuthenticatedEmpresaAnalyticsRoute: typeof AuthenticatedEmpresaAnalyticsRoute
   AuthenticatedEmpresaAvaliacoesRoute: typeof AuthenticatedEmpresaAvaliacoesRoute
   AuthenticatedEmpresaCategoriasRoute: typeof AuthenticatedEmpresaCategoriasRoute
   AuthenticatedEmpresaClientesRoute: typeof AuthenticatedEmpresaClientesRoute
   AuthenticatedEmpresaConfiguracoesRoute: typeof AuthenticatedEmpresaConfiguracoesRoute
   AuthenticatedEmpresaCuponsRoute: typeof AuthenticatedEmpresaCuponsRoute
   AuthenticatedEmpresaEntregadoresRoute: typeof AuthenticatedEmpresaEntregadoresRoute
+  AuthenticatedEmpresaKdsRoute: typeof AuthenticatedEmpresaKdsRoute
+  AuthenticatedEmpresaMesasRoute: typeof AuthenticatedEmpresaMesasRoute
   AuthenticatedEmpresaPdvRoute: typeof AuthenticatedEmpresaPdvRoute
   AuthenticatedEmpresaPedidosRoute: typeof AuthenticatedEmpresaPedidosRoute
   AuthenticatedEmpresaPlanosRoute: typeof AuthenticatedEmpresaPlanosRoute
@@ -700,6 +762,7 @@ interface AuthenticatedEmpresaRouteRouteChildren {
 
 const AuthenticatedEmpresaRouteRouteChildren: AuthenticatedEmpresaRouteRouteChildren =
   {
+    AuthenticatedEmpresaAnalyticsRoute: AuthenticatedEmpresaAnalyticsRoute,
     AuthenticatedEmpresaAvaliacoesRoute: AuthenticatedEmpresaAvaliacoesRoute,
     AuthenticatedEmpresaCategoriasRoute: AuthenticatedEmpresaCategoriasRoute,
     AuthenticatedEmpresaClientesRoute: AuthenticatedEmpresaClientesRoute,
@@ -708,6 +771,8 @@ const AuthenticatedEmpresaRouteRouteChildren: AuthenticatedEmpresaRouteRouteChil
     AuthenticatedEmpresaCuponsRoute: AuthenticatedEmpresaCuponsRoute,
     AuthenticatedEmpresaEntregadoresRoute:
       AuthenticatedEmpresaEntregadoresRoute,
+    AuthenticatedEmpresaKdsRoute: AuthenticatedEmpresaKdsRoute,
+    AuthenticatedEmpresaMesasRoute: AuthenticatedEmpresaMesasRoute,
     AuthenticatedEmpresaPdvRoute: AuthenticatedEmpresaPdvRoute,
     AuthenticatedEmpresaPedidosRoute: AuthenticatedEmpresaPedidosRoute,
     AuthenticatedEmpresaPlanosRoute: AuthenticatedEmpresaPlanosRoute,
