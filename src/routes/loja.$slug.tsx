@@ -10,6 +10,7 @@ import { Plus, Minus, MessageCircle, Store, X, ShoppingBag, ImageIcon, Clock, Sh
 import { toast } from "sonner";
 import QRCode from "qrcode";
 import { copiarTexto } from "@/lib/validacoes";
+import { trackEvento } from "@/lib/analytics";
 
 export const Route = createFileRoute("/loja/$slug")({
   ssr: false,
@@ -72,6 +73,9 @@ function LojaPage() {
   const [buscandoPedidos, setBuscandoPedidos] = useState(false);
   const catRefs = useRef<Record<string, HTMLElement | null>>({});
 
+  // Analytics: visita ao cardápio
+  useEffect(() => { trackEvento(empresa.id, "visita"); }, []);
+
   const totalQty   = useMemo(() => Object.values(cart).reduce((s, i) => s + i.qty, 0), [cart]);
   const totalPrice = useMemo(
     () => Object.values(cart).reduce((s, i) => s + Math.round(i.preco * 100) * i.qty, 0) / 100,
@@ -103,6 +107,7 @@ function LojaPage() {
   }
 
   function addToCart(p: any, qty = 1, opcoes?: OpcaoSelecionada[]) {
+    trackEvento(empresa.id, "adicionado_carrinho", { produto_id: p.id, metadata: { nome: p.nome } });
     setCart((c) => {
       const cur   = c[p.id];
       const precoBase = Number(p.preco_promocional ?? p.preco);
@@ -165,6 +170,7 @@ function LojaPage() {
     if (!mesa && !isRetirada && (!cliente_endereco || cliente_endereco.length < 5)) { setCheckoutErro("Informe o endereço de entrega."); return; }
     if (!["Dinheiro", "Cartão", "PIX"].includes(forma_pagamento)) { setCheckoutErro("Selecione a forma de pagamento."); return; }
 
+    trackEvento(empresa.id, "checkout_iniciado");
     setCheckoutLoading(true);
     try {
       const itensRpc = items.map((i) => ({
@@ -196,6 +202,7 @@ function LojaPage() {
         return;
       }
 
+      trackEvento(empresa.id, "pedido_finalizado");
       const pedido = pedidoJson as { id: string; numero: number; subtotal: number; taxa_entrega: number; desconto: number; total: number };
       const subtotal = pedido.subtotal;
       const taxa     = pedido.taxa_entrega;

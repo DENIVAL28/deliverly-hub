@@ -74,9 +74,33 @@ serve(async (req) => {
       return new Response("ok", { status: 200, headers: SECURITY_HEADERS });
     }
 
-    const [empresaId, plano] = (payment.external_reference ?? "").split("|");
+    const ref = (payment.external_reference ?? "");
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    // Pagamento de PEDIDO DO CARDÁPIO
+    if (ref.startsWith("pedido|")) {
+      const pedidoId = ref.split("|")[1];
+      if (!pedidoId) return new Response("ok", { status: 200, headers: SECURITY_HEADERS });
+
+      const novoStatus = payment.status === "approved" ? "aprovado"
+        : payment.status === "rejected" || payment.status === "cancelled" ? "recusado"
+        : "pendente";
+
+      await supabase.from("pedidos")
+        .update({ pagamento_online_status: novoStatus } as any)
+        .eq("id", pedidoId);
+
+      console.log(`[webhook-mp] Pedido ${pedidoId} pagamento: ${novoStatus}`);
+      return new Response("ok", { status: 200, headers: SECURITY_HEADERS });
+    }
+
+    // Pagamento de PLANO (fluxo original)
+    const [empresaId, plano] = ref.split("|");
     if (!empresaId || !plano) {
-      console.error("[webhook-mp] external_reference inválido:", payment.external_reference);
+      console.error("[webhook-mp] external_reference inválido:", ref);
       return new Response("ok", { status: 200, headers: SECURITY_HEADERS });
     }
 
@@ -85,11 +109,6 @@ serve(async (req) => {
       console.error("[webhook-mp] Plano inválido:", plano);
       return new Response("ok", { status: 200, headers: SECURITY_HEADERS });
     }
-
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
 
     // Evita processar o mesmo pagamento duas vezes
     const { data: jaProcessado } = await supabase

@@ -502,6 +502,15 @@ function PedidosPage() {
                 <div className="text-right">
                   <div className="text-lg font-semibold text-ink">{fmt(Number(p.total))}</div>
                   <div className="text-xs text-zinc-500">{p.forma_pagamento ?? "—"}</div>
+                  {(p as any).pagamento_online_status === "aprovado" && (
+                    <span className="inline-block mt-1 px-2 py-0.5 text-[10px] font-bold rounded bg-green-100 text-green-700 uppercase tracking-wide">✓ Pago online</span>
+                  )}
+                  {(p as any).pagamento_online_status === "pendente" && (
+                    <span className="inline-block mt-1 px-2 py-0.5 text-[10px] font-bold rounded bg-amber-100 text-amber-700 uppercase tracking-wide">⏳ Aguard. pagto</span>
+                  )}
+                  {(p as any).pagamento_online_status === "recusado" && (
+                    <span className="inline-block mt-1 px-2 py-0.5 text-[10px] font-bold rounded bg-red-100 text-red-700 uppercase tracking-wide">✗ Pagto recusado</span>
+                  )}
                   {Number(p.taxa_entrega) > 0 && (
                     <div className="text-xs text-zinc-400">+ {fmt(Number(p.taxa_entrega))} entrega</div>
                   )}

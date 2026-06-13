@@ -2,7 +2,7 @@ import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useAuth } from "@/lib/use-auth";
 import { AppShell } from "@/components/AppShell";
-import { LayoutDashboard, ShoppingBag, UtensilsCrossed, FolderTree, Users, Settings, BarChart2, Tag, Bike, Star, ReceiptText, CreditCard } from "lucide-react";
+import { LayoutDashboard, ShoppingBag, UtensilsCrossed, FolderTree, Users, Settings, BarChart2, Tag, Bike, Star, ReceiptText, CreditCard, ChefHat, Grid2x2, TrendingUp } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/empresa")({
   component: EmpresaLayout,
@@ -25,18 +25,21 @@ function EmpresaLayout() {
     <AppShell
       title="Estabelecimento"
       items={[
-        { to: "/empresa",               label: "Dashboard",                          icon: LayoutDashboard },
-        { to: "/empresa/pedidos",       label: "Pedidos",                            icon: ShoppingBag },
-        { to: "/empresa/pdv",           label: "Caixa / PDV",                        icon: ReceiptText },
-        { to: "/empresa/produtos",      label: "Produtos",                           icon: UtensilsCrossed },
-        { to: "/empresa/categorias",    label: "Categorias",                         icon: FolderTree },
-        { to: "/empresa/clientes",      label: "Clientes",                           icon: Users },
-        { to: "/empresa/cupons",        label: "Cupons",                             icon: Tag },
-        { to: "/empresa/entregadores",  label: basico ? "Entregadores 🔒" : "Entregadores", icon: Bike },
-        { to: "/empresa/avaliacoes",    label: basico ? "Avaliações 🔒"   : "Avaliações",   icon: Star },
-        { to: "/empresa/relatorios",    label: basico ? "Relatórios 🔒"   : "Relatórios",   icon: BarChart2 },
-        { to: "/empresa/planos",         label: "Plano & Cobrança",                   icon: CreditCard },
-        { to: "/empresa/configuracoes", label: "Configurações",                      icon: Settings },
+        { to: "/empresa",               label: "Dashboard",                                    icon: LayoutDashboard },
+        { to: "/empresa/pedidos",       label: "Pedidos",                                      icon: ShoppingBag },
+        { to: "/empresa/kds",           label: "Cozinha / KDS",                                icon: ChefHat },
+        { to: "/empresa/mesas",         label: "Mesas",                                        icon: Grid2x2 },
+        { to: "/empresa/pdv",           label: "Caixa / PDV",                                  icon: ReceiptText },
+        { to: "/empresa/produtos",      label: "Produtos",                                     icon: UtensilsCrossed },
+        { to: "/empresa/categorias",    label: "Categorias",                                   icon: FolderTree },
+        { to: "/empresa/clientes",      label: "Clientes",                                     icon: Users },
+        { to: "/empresa/cupons",        label: "Cupons",                                       icon: Tag },
+        { to: "/empresa/entregadores",  label: basico ? "Entregadores 🔒" : "Entregadores",    icon: Bike },
+        { to: "/empresa/avaliacoes",    label: basico ? "Avaliações 🔒"   : "Avaliações",      icon: Star },
+        { to: "/empresa/relatorios",    label: basico ? "Relatórios 🔒"   : "Relatórios",      icon: BarChart2 },
+        { to: "/empresa/analytics",     label: basico ? "Analytics 🔒"    : "Analytics",       icon: TrendingUp },
+        { to: "/empresa/planos",        label: "Plano & Cobrança",                             icon: CreditCard },
+        { to: "/empresa/configuracoes", label: "Configurações",                                icon: Settings },
       ]}
     >
       <Outlet />
