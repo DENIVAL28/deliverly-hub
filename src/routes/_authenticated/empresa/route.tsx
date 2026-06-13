@@ -2,7 +2,7 @@ import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useAuth } from "@/lib/use-auth";
 import { AppShell } from "@/components/AppShell";
-import { LayoutDashboard, ShoppingBag, UtensilsCrossed, FolderTree, Users, Settings, BarChart2, Tag, Bike, Star, ReceiptText, CreditCard, TrendingUp } from "lucide-react";
+import { LayoutDashboard, ShoppingBag, UtensilsCrossed, FolderTree, Users, Settings, BarChart2, Tag, Bike, Star, ReceiptText, CreditCard, TrendingUp, Grid2x2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/empresa")({
   component: EmpresaLayout,
@@ -27,6 +27,7 @@ function EmpresaLayout() {
       items={[
         { to: "/empresa",               label: "Dashboard",                                    icon: LayoutDashboard },
         { to: "/empresa/pedidos",       label: "Pedidos",                                      icon: ShoppingBag },
+        { to: "/empresa/mesas",         label: "Mesas",                                        icon: Grid2x2 },
         { to: "/empresa/pdv",           label: "Caixa / PDV",                                  icon: ReceiptText },
         { to: "/empresa/produtos",      label: "Produtos",                                     icon: UtensilsCrossed },
         { to: "/empresa/categorias",    label: "Categorias",                                   icon: FolderTree },
