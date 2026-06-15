@@ -1,7 +1,7 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Bike, CheckCircle2, Clock, MapPin, Navigation, Package, Phone } from "lucide-react";
+import { Bike, CheckCircle2, Clock, MapPin, Navigation, Package, Phone, PackageSearch } from "lucide-react";
 
 const MapaEntrega = lazy(() => import("@/components/MapaEntrega"));
 
@@ -16,7 +16,19 @@ interface Entregador {
   lat: number | null;
   lng: number | null;
   ultima_localizacao: string | null;
+  tipo: string | null;
+  aprovado: boolean | null;
   empresas: { nome_fantasia: string; logo_url: string | null; cor_primaria: string | null } | null;
+}
+
+interface PedidoDisponivel {
+  id: string;
+  numero: number;
+  cliente_nome: string;
+  cliente_endereco: string | null;
+  taxa_entrega: number;
+  status: string;
+  created_at: string;
 }
 
 interface PedidoEntregador {
@@ -37,7 +49,7 @@ export const Route = createFileRoute("/entregador/$id")({
     if (!UUID_RE.test(params.id)) throw notFound();
     const { data } = await supabase
       .from("entregadores")
-      .select("id, public_token, nome, telefone, status, lat, lng, ultima_localizacao, empresas(nome_fantasia, logo_url, cor_primaria)")
+      .select("id, public_token, nome, telefone, status, lat, lng, ultima_localizacao, tipo, aprovado, empresas(nome_fantasia, logo_url, cor_primaria)")
       .eq("public_token" as never, params.id)
       .maybeSingle();
     if (!data) throw notFound();
@@ -67,6 +79,9 @@ function EntregadorPage() {
   const [entregador, setEntregador] = useState<Entregador>(entregadorInicial);
   const [pedidos, setPedidos] = useState<PedidoEntregador[]>([]);
   const [atualizando, setAtualizando] = useState(false);
+  const [disponiveis, setDisponiveis] = useState<PedidoDisponivel[]>([]);
+  const [pegando, setPegando] = useState<string | null>(null);
+  const isFreelancer = entregador.tipo === "freelancer";
 
   // GPS tracking
   const [tracking, setTracking]   = useState(false);
@@ -134,6 +149,28 @@ function EntregadorPage() {
     setPedidos((data ?? []) as PedidoEntregador[]);
   }
 
+  async function carregarDisponiveis() {
+    if (!isFreelancer) return;
+    const { data } = await (supabase as any).rpc("freelancer_pedidos_disponiveis", { p_token: entregador.public_token });
+    setDisponiveis((data ?? []) as PedidoDisponivel[]);
+  }
+
+  async function pegarEntrega(pedidoId: string) {
+    setPegando(pedidoId);
+    const { data } = await (supabase as any).rpc("freelancer_pegar_entrega", {
+      p_token: entregador.public_token,
+      p_pedido_id: pedidoId,
+    });
+    setPegando(null);
+    if (!data?.ok) {
+      alert(data?.erro ?? "Não foi possível aceitar. Tente novamente.");
+      carregarDisponiveis();
+      return;
+    }
+    await carregarPedidos();
+    await carregarDisponiveis();
+  }
+
   async function mudarStatus(novoStatus: string) {
     setAtualizando(true);
     await (supabase as any).rpc("entregador_atualizar_status", { p_token: entregador.public_token, p_status: novoStatus });
@@ -143,10 +180,12 @@ function EntregadorPage() {
 
   useEffect(() => {
     carregarPedidos();
+    if (isFreelancer) carregarDisponiveis();
+
     const ch = supabase.channel(`entregador-pedidos-${entregador.id}`)
       .on("postgres_changes",
-        { event: "*", schema: "public", table: "pedidos", filter: `entregador_id=eq.${entregador.id}` },
-        () => carregarPedidos()
+        { event: "*", schema: "public", table: "pedidos" },
+        () => { carregarPedidos(); if (isFreelancer) carregarDisponiveis(); }
       ).subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [entregador.id]);
@@ -254,6 +293,62 @@ function EntregadorPage() {
             <div className="text-xs text-zinc-400 mt-0.5">Total entregue</div>
           </div>
         </div>
+
+        {/* Freelancer — aviso aguardando aprovação */}
+        {isFreelancer && entregador.aprovado === false && (
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 text-center">
+            <Clock className="size-8 text-amber-400 mx-auto mb-2" />
+            <p className="text-sm font-bold text-amber-800">Cadastro em análise</p>
+            <p className="text-xs text-amber-600 mt-1">Aguarde a aprovação do estabelecimento para começar a receber entregas.</p>
+          </div>
+        )}
+
+        {/* Pedidos disponíveis para freelancer pegar */}
+        {isFreelancer && entregador.aprovado === true && (
+          <div>
+            <h2 className="font-bold text-zinc-900 mb-3 flex items-center gap-2">
+              <span className="size-2 rounded-full bg-green-500 animate-pulse" />
+              Pedidos disponíveis ({disponiveis.length})
+            </h2>
+            {disponiveis.length === 0 ? (
+              <div className="bg-white rounded-2xl shadow-sm p-6 text-center">
+                <Package className="size-8 text-zinc-200 mx-auto mb-2" />
+                <p className="text-sm text-zinc-400">Nenhum pedido disponível agora.</p>
+                <p className="text-xs text-zinc-300 mt-1">Novos pedidos aparecem aqui em tempo real.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {disponiveis.map((p) => (
+                  <div key={p.id} className="bg-white rounded-2xl shadow-sm p-4 border-2 border-green-100">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-bold text-zinc-900">Pedido #{p.numero}</span>
+                      <span className="text-xs font-bold px-2 py-1 rounded-full bg-green-100 text-green-700">Disponível</span>
+                    </div>
+                    <div className="text-sm font-semibold text-zinc-800">{p.cliente_nome}</div>
+                    {p.cliente_endereco && (
+                      <div className="flex items-start gap-1.5 text-xs text-zinc-500 mt-1">
+                        <MapPin className="size-3 mt-0.5 shrink-0" />
+                        {p.cliente_endereco}
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-zinc-100">
+                      <span className="text-sm font-black text-green-600">Taxa: {fmt(Number(p.taxa_entrega ?? 0))}</span>
+                      <button
+                        onClick={() => pegarEntrega(p.id)}
+                        disabled={pegando === p.id}
+                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-green-500 text-white text-sm font-bold hover:bg-green-600 disabled:opacity-60 transition-colors">
+                        {pegando === p.id
+                          ? <><span className="size-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" /> Aceitando…</>
+                          : <><Bike className="size-3.5" /> Aceitar entrega</>
+                        }
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Pedidos em entrega agora */}
         {pedidosAtivos.length > 0 && (
