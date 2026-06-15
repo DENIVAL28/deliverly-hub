@@ -192,8 +192,13 @@ function EntregadorPage() {
 
   const pedidosAtivos    = pedidos.filter((p) => p.status === "entrega");
   const pedidosHistorico = pedidos.filter((p) => p.status === "finalizado");
-  const totalEntregue    = pedidosHistorico.reduce((s, p) => s + Number(p.taxa_entrega ?? 0), 0);
   const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+  const agora = new Date();
+  const inicioMes = new Date(agora.getFullYear(), agora.getMonth(), 1);
+  const doMes    = pedidosHistorico.filter(p => new Date(p.created_at) >= inicioMes);
+  const ganhosMes   = doMes.reduce((s, p) => s + Number(p.taxa_entrega ?? 0), 0);
+  const ganhosTotal = pedidosHistorico.reduce((s, p) => s + Number(p.taxa_entrega ?? 0), 0);
 
   return (
     <div className="min-h-screen bg-zinc-100">
@@ -283,14 +288,18 @@ function EntregadorPage() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           <div className="bg-white rounded-2xl shadow-sm p-4 text-center">
-            <div className="text-2xl font-bold text-zinc-900">{pedidosHistorico.length}</div>
-            <div className="text-xs text-zinc-400 mt-0.5">Entregas realizadas</div>
+            <div className="text-2xl font-bold text-zinc-900">{doMes.length}</div>
+            <div className="text-xs text-zinc-400 mt-0.5">Entregas este mês</div>
           </div>
           <div className="bg-white rounded-2xl shadow-sm p-4 text-center">
-            <div className="text-xl font-bold text-zinc-900">{fmt(totalEntregue)}</div>
-            <div className="text-xs text-zinc-400 mt-0.5">Total entregue</div>
+            <div className="text-base font-bold text-green-600">{fmt(ganhosMes)}</div>
+            <div className="text-xs text-zinc-400 mt-0.5">Ganhos este mês</div>
+          </div>
+          <div className="bg-white rounded-2xl shadow-sm p-4 text-center">
+            <div className="text-base font-bold text-zinc-700">{fmt(ganhosTotal)}</div>
+            <div className="text-xs text-zinc-400 mt-0.5">Total geral</div>
           </div>
         </div>
 
@@ -414,20 +423,56 @@ function EntregadorPage() {
         {/* Histórico */}
         {pedidosHistorico.length > 0 && (
           <div>
-            <h2 className="font-bold text-zinc-900 mb-3">Histórico de entregas</h2>
-            <div className="bg-white rounded-2xl shadow-sm divide-y divide-zinc-50">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-bold text-zinc-900">Histórico de entregas</h2>
+              <span className="text-xs text-zinc-400">{pedidosHistorico.length} no total</span>
+            </div>
+
+            {/* Resumo do mês */}
+            {doMes.length > 0 && (
+              <div className="bg-green-50 border border-green-200 rounded-2xl p-4 mb-4 flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-bold text-green-700">Este mês</p>
+                  <p className="text-xs text-green-600 mt-0.5">{doMes.length} entrega{doMes.length !== 1 ? "s" : ""} realizadas</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-lg font-black text-green-700">{fmt(ganhosMes)}</p>
+                  <p className="text-xs text-green-500">em taxas de entrega</p>
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-3">
               {pedidosHistorico.map((p) => (
-                <div key={p.id} className="flex items-center justify-between px-4 py-3">
-                  <div>
-                    <div className="text-sm font-semibold text-zinc-900">#{p.numero} — {p.cliente_nome}</div>
-                    <div className="text-xs text-zinc-400 mt-0.5 flex items-center gap-1">
-                      <Clock className="size-3" />
-                      {new Date(p.created_at).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                <div key={p.id} className="bg-white rounded-2xl shadow-sm p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-3 flex-1 min-w-0">
+                      <div className="size-9 rounded-xl bg-green-50 border border-green-100 flex items-center justify-center shrink-0 mt-0.5">
+                        <CheckCircle2 className="size-4 text-green-500" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-sm font-bold text-zinc-900">
+                          #{p.numero} — {p.cliente_nome}
+                        </div>
+                        {p.cliente_endereco && (
+                          <div className="flex items-start gap-1 text-xs text-zinc-500 mt-1">
+                            <MapPin className="size-3 mt-0.5 shrink-0 text-zinc-400" />
+                            <span className="leading-relaxed">{p.cliente_endereco}</span>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-1 text-xs text-zinc-400 mt-1.5">
+                          <Clock className="size-3" />
+                          {new Date(p.created_at).toLocaleString("pt-BR", {
+                            day: "2-digit", month: "2-digit", year: "2-digit",
+                            hour: "2-digit", minute: "2-digit"
+                          })}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-bold text-green-600">{fmt(Number(p.taxa_entrega ?? 0))}</span>
-                    <CheckCircle2 className="size-4 text-green-500" />
+                    <div className="text-right shrink-0">
+                      <span className="text-base font-black text-green-600">{fmt(Number(p.taxa_entrega ?? 0))}</span>
+                      <p className="text-[10px] text-zinc-400 mt-0.5">taxa recebida</p>
+                    </div>
                   </div>
                 </div>
               ))}
