@@ -5,6 +5,7 @@ ALTER TABLE public.entregadores
   ADD COLUMN IF NOT EXISTS veiculo  TEXT;
 
 -- Anon pode se auto-cadastrar como freelancer (link de convite)
+DROP POLICY IF EXISTS "Freelancer auto-cadastro" ON public.entregadores;
 CREATE POLICY "Freelancer auto-cadastro"
   ON public.entregadores FOR INSERT TO anon
   WITH CHECK (tipo = 'freelancer' AND aprovado = false);

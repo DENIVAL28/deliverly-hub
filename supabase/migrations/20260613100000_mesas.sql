@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS public.mesas (
 
 ALTER TABLE public.mesas ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Empresa gerencia suas mesas" ON public.mesas;
 CREATE POLICY "Empresa gerencia suas mesas"
   ON public.mesas FOR ALL TO authenticated
   USING  (public.get_user_empresa_id(auth.uid()) = empresa_id OR public.is_master(auth.uid()))

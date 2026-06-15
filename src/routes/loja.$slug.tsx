@@ -17,7 +17,7 @@ export const Route = createFileRoute("/loja/$slug")({
   loader: async ({ params }) => {
     const { data: empresa } = await supabase
       .from("empresas")
-      .select("id,nome_fantasia,slug,whatsapp,cor_primaria,taxa_entrega,status,aberto,logo_url,banner_url,tempo_entrega,pedido_minimo,horario_abertura,horario_fechamento,dias_semana,chave_pix,nome_recebedor,cidade_recebedor,retirada_ativa")
+      .select("id,nome_fantasia,slug,whatsapp,cor_primaria,taxa_entrega,status,aberto,logo_url,banner_url,tempo_entrega,pedido_minimo,horario_abertura,horario_fechamento,dias_semana,chave_pix,nome_recebedor,cidade_recebedor,retirada_ativa,taxa_entrega_tipo,taxa_entrega_por_km,taxa_entrega_base,empresa_lat,empresa_lng")
       .eq("slug", params.slug)
       .maybeSingle();
     if (!empresa) throw notFound();
@@ -82,6 +82,20 @@ function LojaPage() {
     [cart]
   );
   const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+  const taxaEntrega = useMemo(() => {
+    if (tipoEntrega === "retirada") return 0;
+    const emp = empresa as any;
+    if (emp.taxa_entrega_tipo === "km" && emp.empresa_lat && emp.empresa_lng && clienteLat && clienteLng) {
+      const R = 6371;
+      const dLat = (clienteLat - emp.empresa_lat) * Math.PI / 180;
+      const dLng = (clienteLng - emp.empresa_lng) * Math.PI / 180;
+      const a = Math.sin(dLat/2)**2 + Math.cos(emp.empresa_lat * Math.PI/180) * Math.cos(clienteLat * Math.PI/180) * Math.sin(dLng/2)**2;
+      const distKm = R * 2 * Math.asin(Math.sqrt(a));
+      return Math.round(((emp.taxa_entrega_base ?? 0) + distKm * (emp.taxa_entrega_por_km ?? 2)) * 100) / 100;
+    }
+    return Number(emp.taxa_entrega ?? 0);
+  }, [tipoEntrega, empresa, clienteLat, clienteLng]);
 
   const desconto = useMemo(() => {
     if (!cupomAplicado) return 0;
@@ -388,7 +402,12 @@ function LojaPage() {
                     </span>
                   )}
                   {/* Taxa de entrega */}
-                  {Number(empresa.taxa_entrega) > 0 ? (
+                  {(empresa as any).taxa_entrega_tipo === "km" ? (
+                    <span className="flex items-center gap-1 text-zinc-500">
+                      <ShoppingCart className="size-3 text-zinc-400" />
+                      Entrega <strong className="text-zinc-700">por km</strong>
+                    </span>
+                  ) : Number(empresa.taxa_entrega) > 0 ? (
                     <span className="flex items-center gap-1">
                       <ShoppingCart className="size-3 text-zinc-400" />
                       Entrega <strong className="text-zinc-700">{fmt(Number(empresa.taxa_entrega))}</strong>
@@ -899,14 +918,17 @@ function LojaPage() {
                   )}
                   <div className="flex justify-between text-sm">
                     <span className="text-zinc-500">Taxa de entrega</span>
-                    {tipoEntrega === "retirada"
-                      ? <span className="text-green-600 font-semibold">Grátis</span>
-                      : <span>{fmt(Number(empresa.taxa_entrega ?? 0))}</span>
-                    }
+                    {tipoEntrega === "retirada" ? (
+                      <span className="text-green-600 font-semibold">Grátis</span>
+                    ) : (empresa as any).taxa_entrega_tipo === "km" && !clienteLat ? (
+                      <span className="text-amber-500 text-xs">Informe o endereço</span>
+                    ) : (
+                      <span>{fmt(taxaEntrega)}</span>
+                    )}
                   </div>
                   <div className="flex justify-between font-bold text-base pt-1.5 border-t border-zinc-200">
                     <span>Total</span>
-                    <span>{fmt(Math.max(0, totalPrice - desconto + (tipoEntrega === "retirada" ? 0 : Number(empresa.taxa_entrega ?? 0))))}</span>
+                    <span>{fmt(Math.max(0, totalPrice - desconto + taxaEntrega))}</span>
                   </div>
                 </div>
                 <FormField name="nome" label="Seu nome" required />

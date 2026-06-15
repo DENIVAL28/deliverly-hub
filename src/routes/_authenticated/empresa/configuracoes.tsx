@@ -7,7 +7,7 @@ import { PageHeader } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ImagePlus, Store, ExternalLink, CheckCircle2, Palette, QrCode, Bot, FlaskConical, XCircle } from "lucide-react";
+import { ImagePlus, Store, ExternalLink, CheckCircle2, Palette, QrCode, Bot, FlaskConical, XCircle, MapPin } from "lucide-react";
 import { mascaraCNPJ, cnpjStatus, copiarTexto } from "@/lib/validacoes";
 import { toast } from "sonner";
 
@@ -60,6 +60,12 @@ function ConfiguracoesPage() {
   const [segmento,       setSegmento]       = useState("");
   const [retiradaAtiva,  setRetiradaAtiva]  = useState(false);
   const [zapiTestando,   setZapiTestando]   = useState(false);
+  const [taxaTipo,       setTaxaTipo]       = useState<"fixo" | "km">("fixo");
+  const [taxaPorKm,      setTaxaPorKm]      = useState("2");
+  const [taxaBase,       setTaxaBase]       = useState("0");
+  const [empresaLat,     setEmpresaLat]     = useState("");
+  const [empresaLng,     setEmpresaLng]     = useState("");
+  const [detectandoLoc,  setDetectandoLoc]  = useState(false);
 
   const [synced, setSynced] = useState(false);
   if (empresa && !synced) {
@@ -83,6 +89,11 @@ function ConfiguracoesPage() {
     setCnpj(emp.cnpj ?? "");
     setSegmento(emp.segmento ?? "");
     setRetiradaAtiva(emp.retirada_ativa ?? false);
+    setTaxaTipo(emp.taxa_entrega_tipo ?? "fixo");
+    setTaxaPorKm(String(emp.taxa_entrega_por_km ?? 2));
+    setTaxaBase(String(emp.taxa_entrega_base ?? 0));
+    setEmpresaLat(emp.empresa_lat != null ? String(emp.empresa_lat) : "");
+    setEmpresaLng(emp.empresa_lng != null ? String(emp.empresa_lng) : "");
     setSynced(true);
   }
 
@@ -132,6 +143,11 @@ function ConfiguracoesPage() {
       cnpj: cnpj.replace(/\D/g, "").length === 14 ? cnpj.trim() : (cnpj.trim() || null),
       segmento: segmento || null,
       retirada_ativa: retiradaAtiva,
+      taxa_entrega_tipo: taxaTipo,
+      taxa_entrega_por_km: Number(taxaPorKm) || 2,
+      taxa_entrega_base: Number(taxaBase) || 0,
+      empresa_lat: empresaLat ? Number(empresaLat) : null,
+      empresa_lng: empresaLng ? Number(empresaLng) : null,
     };
 
     const logoFile   = logoRef.current?.files?.[0];
@@ -371,19 +387,95 @@ function ConfiguracoesPage() {
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="taxa">Taxa de entrega (R$)</Label>
-                <Input id="taxa" type="number" step="0.01" value={taxa}
-                  onChange={(e) => setTaxa(e.target.value)} className="h-10 rounded-xl"
-                  placeholder="0 = grátis" />
+            {/* Taxa de entrega */}
+            <div className="space-y-3 border border-zinc-100 rounded-2xl p-4">
+              <div className="flex items-center justify-between">
+                <Label>Taxa de entrega</Label>
+                <div className="flex gap-1 bg-zinc-100 rounded-xl p-0.5">
+                  {(["fixo", "km"] as const).map(t => (
+                    <button key={t} type="button" onClick={() => setTaxaTipo(t)}
+                      className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors ${
+                        taxaTipo === t ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500"
+                      }`}>
+                      {t === "fixo" ? "Fixa" : "Por km"}
+                    </button>
+                  ))}
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="minimo">Pedido mínimo (R$)</Label>
-                <Input id="minimo" type="number" step="0.01" value={minimo}
-                  onChange={(e) => setMinimo(e.target.value)} className="h-10 rounded-xl"
-                  placeholder="0 = sem mínimo" />
-              </div>
+
+              {taxaTipo === "fixo" ? (
+                <div className="space-y-1.5">
+                  <Label htmlFor="taxa" className="text-xs text-zinc-500">Valor fixo (R$)</Label>
+                  <Input id="taxa" type="number" step="0.01" value={taxa}
+                    onChange={(e) => setTaxa(e.target.value)} className="h-10 rounded-xl"
+                    placeholder="0 = grátis" />
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-zinc-500">Taxa mínima (R$)</Label>
+                      <Input type="number" step="0.01" value={taxaBase}
+                        onChange={e => setTaxaBase(e.target.value)} className="h-10 rounded-xl" placeholder="0" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-zinc-500">Valor por km (R$)</Label>
+                      <Input type="number" step="0.01" value={taxaPorKm}
+                        onChange={e => setTaxaPorKm(e.target.value)} className="h-10 rounded-xl" placeholder="2" />
+                    </div>
+                  </div>
+                  <p className="text-xs text-zinc-400">
+                    Ex: taxa mínima R${taxaBase || "0"} + R${taxaPorKm || "2"}/km → cliente a 5km paga{" "}
+                    <strong>R${((Number(taxaBase) || 0) + 5 * (Number(taxaPorKm) || 2)).toFixed(2)}</strong>
+                  </p>
+
+                  {/* Localização da loja */}
+                  <div className="space-y-2 pt-1 border-t border-zinc-100">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs text-zinc-500 flex items-center gap-1">
+                        <MapPin className="size-3" /> Localização da loja
+                      </Label>
+                      <button type="button" disabled={detectandoLoc}
+                        onClick={() => {
+                          if (!navigator.geolocation) return;
+                          setDetectandoLoc(true);
+                          navigator.geolocation.getCurrentPosition(
+                            pos => {
+                              setEmpresaLat(String(pos.coords.latitude));
+                              setEmpresaLng(String(pos.coords.longitude));
+                              setDetectandoLoc(false);
+                            },
+                            () => setDetectandoLoc(false),
+                            { enableHighAccuracy: true, timeout: 10000 }
+                          );
+                        }}
+                        className="text-xs font-semibold text-brand hover:underline disabled:opacity-50">
+                        {detectandoLoc ? "Detectando…" : "Usar minha localização"}
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Input value={empresaLat} onChange={e => setEmpresaLat(e.target.value)}
+                        placeholder="Latitude" className="h-9 rounded-xl text-xs font-mono" />
+                      <Input value={empresaLng} onChange={e => setEmpresaLng(e.target.value)}
+                        placeholder="Longitude" className="h-9 rounded-xl text-xs font-mono" />
+                    </div>
+                    {empresaLat && empresaLng ? (
+                      <p className="text-xs text-green-600 flex items-center gap-1">
+                        <CheckCircle2 className="size-3" /> Localização configurada
+                      </p>
+                    ) : (
+                      <p className="text-xs text-amber-600">⚠️ Configure a localização para calcular por distância</p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="minimo">Pedido mínimo (R$)</Label>
+              <Input id="minimo" type="number" step="0.01" value={minimo}
+                onChange={(e) => setMinimo(e.target.value)} className="h-10 rounded-xl"
+                placeholder="0 = sem mínimo" />
             </div>
 
             <div className="space-y-1.5">

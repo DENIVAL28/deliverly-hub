@@ -108,6 +108,83 @@ function CadastroEntregadorPage() {
       </div>
 
       <div className="max-w-md mx-auto px-4 py-8">
+        {/* Como funciona */}
+        <div className="bg-white rounded-3xl shadow-sm p-6 mb-4">
+          <h2 className="text-sm font-bold text-zinc-500 uppercase tracking-wider mb-5">Como funciona</h2>
+          <div className="space-y-5">
+
+            <div className="flex items-start gap-4">
+              <div className="size-8 rounded-full flex items-center justify-center shrink-0 text-sm font-black text-white" style={{ backgroundColor: brand }}>1</div>
+              <div>
+                <p className="text-sm font-bold text-zinc-900">Faça seu cadastro</p>
+                <p className="text-xs text-zinc-500 mt-1 leading-relaxed">
+                  Preencha o formulário abaixo com seu nome, WhatsApp e tipo de veículo. O cadastro é gratuito e leva menos de 1 minuto.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-4">
+              <div className="size-8 rounded-full flex items-center justify-center shrink-0 text-sm font-black text-white" style={{ backgroundColor: brand }}>2</div>
+              <div>
+                <p className="text-sm font-bold text-zinc-900">Aguarde a aprovação</p>
+                <p className="text-xs text-zinc-500 mt-1 leading-relaxed">
+                  O <strong>{(empresa as any).nome_fantasia}</strong> vai analisar seu cadastro. Quando aprovado, você receberá um link pessoal pelo WhatsApp — salve-o no celular, pois é o seu acesso.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-4">
+              <div className="size-8 rounded-full flex items-center justify-center shrink-0 text-sm font-black text-white" style={{ backgroundColor: brand }}>3</div>
+              <div>
+                <p className="text-sm font-bold text-zinc-900">Veja os pedidos disponíveis</p>
+                <p className="text-xs text-zinc-500 mt-1 leading-relaxed">
+                  Abra seu link pessoal a qualquer hora. Os pedidos prontos para entrega aparecem em tempo real com o nome e endereço do cliente. Você escolhe qual quer pegar.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-4">
+              <div className="size-8 rounded-full flex items-center justify-center shrink-0 text-sm font-black text-white" style={{ backgroundColor: brand }}>4</div>
+              <div>
+                <p className="text-sm font-bold text-zinc-900">Aceite e saia para entregar</p>
+                <p className="text-xs text-zinc-500 mt-1 leading-relaxed">
+                  Clique em <strong>"Aceitar entrega"</strong> para pegar o pedido — ele sai da lista para os outros entregadores. Seu link pessoal abre o Google Maps direto para o endereço do cliente.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-4">
+              <div className="size-8 rounded-full flex items-center justify-center shrink-0 text-sm font-black text-white" style={{ backgroundColor: brand }}>5</div>
+              <div>
+                <p className="text-sm font-bold text-zinc-900">Receba sua taxa de entrega</p>
+                <p className="text-xs text-zinc-500 mt-1 leading-relaxed">
+                  A taxa de entrega cobrada do cliente é o seu ganho por corrida. O combinado de repasse é feito diretamente com o <strong>{(empresa as any).nome_fantasia}</strong>.
+                </p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        {/* Dúvidas frequentes */}
+        <div className="bg-white rounded-3xl shadow-sm p-6 mb-4">
+          <h2 className="text-sm font-bold text-zinc-500 uppercase tracking-wider mb-4">Dúvidas frequentes</h2>
+          <div className="space-y-4">
+            {[
+              { p: "Preciso pagar algo?", r: "Não. O cadastro é 100% gratuito." },
+              { p: "Posso trabalhar no meu horário?", r: "Sim. Você escolhe quando quer estar disponível — não há horário fixo nem obrigação de aceitar pedidos." },
+              { p: "Como sei que um pedido apareceu?", r: "Deixe seu link pessoal aberto no celular. Os pedidos aparecem automaticamente em tempo real, sem precisar atualizar a página." },
+              { p: "O que acontece se eu não pegar o pedido?", r: "Nada. O pedido fica disponível para outros entregadores. Você só aceita o que quiser." },
+              { p: "Como recebo o pagamento?", r: "Você combina diretamente com o estabelecimento. Geralmente o repasse é feito ao final do dia ou semana." },
+            ].map((faq, i) => (
+              <div key={i} className="border-b border-zinc-50 last:border-0 pb-4 last:pb-0">
+                <p className="text-sm font-bold text-zinc-800">❓ {faq.p}</p>
+                <p className="text-xs text-zinc-500 mt-1 leading-relaxed">{faq.r}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Card principal */}
         <div className="bg-white rounded-3xl shadow-sm p-6">
           <div className="flex items-center gap-3 mb-6">

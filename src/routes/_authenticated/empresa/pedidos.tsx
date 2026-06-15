@@ -290,7 +290,7 @@ function PedidosPage() {
     queryKey: ["entregadores", empresaId],
     enabled: !!empresaId,
     queryFn: async () =>
-      (await supabase.from("entregadores").select("id,nome").eq("empresa_id", empresaId!).eq("ativo", true).order("nome")).data ?? [],
+      (await supabase.from("entregadores").select("id,nome").eq("empresa_id", empresaId!).eq("ativo", true).eq("tipo", "fixo").order("nome")).data ?? [],
   });
 
   const filtered    = tab === "ativos" ? pedidosAtivos : (pedidosPag?.items ?? []);

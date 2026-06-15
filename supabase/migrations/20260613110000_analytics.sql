@@ -18,11 +18,13 @@ CREATE INDEX IF NOT EXISTS analytics_eventos_empresa_evento
 ALTER TABLE public.analytics_eventos ENABLE ROW LEVEL SECURITY;
 
 -- Qualquer um pode inserir (cardápio é público)
+DROP POLICY IF EXISTS "Inserir evento público" ON public.analytics_eventos;
 CREATE POLICY "Inserir evento público"
   ON public.analytics_eventos FOR INSERT TO anon, authenticated
   WITH CHECK (true);
 
 -- Apenas a empresa dona lê seus eventos
+DROP POLICY IF EXISTS "Empresa lê seus eventos" ON public.analytics_eventos;
 CREATE POLICY "Empresa lê seus eventos"
   ON public.analytics_eventos FOR SELECT TO authenticated
   USING (public.get_user_empresa_id(auth.uid()) = empresa_id OR public.is_master(auth.uid()));
