@@ -36,6 +36,8 @@ function CadastroEntregadorPage() {
   const [nome,      setNome]      = useState("");
   const [telefone,  setTelefone]  = useState("");
   const [veiculo,   setVeiculo]   = useState("");
+  const [chavePix,  setChavePix]  = useState("");
+  const [tipoPix,   setTipoPix]   = useState("aleatoria");
   const [salvando,  setSalvando]  = useState(false);
   const [erro,      setErro]      = useState("");
   const [enviado,   setEnviado]   = useState(false);
@@ -51,12 +53,14 @@ function CadastroEntregadorPage() {
 
     setSalvando(true);
     const { error } = await (supabase as any).from("entregadores").insert({
-      empresa_id: (empresa as any).id,
-      nome:       nome.trim(),
-      telefone:   telefone.trim(),
+      empresa_id:     (empresa as any).id,
+      nome:           nome.trim(),
+      telefone:       telefone.trim(),
       veiculo,
-      tipo:       "freelancer",
-      aprovado:   false,
+      tipo:           "freelancer",
+      aprovado:       false,
+      chave_pix:      chavePix.trim() || null,
+      tipo_chave_pix: chavePix.trim() ? tipoPix : null,
     });
     setSalvando(false);
 
@@ -249,6 +253,42 @@ function CadastroEntregadorPage() {
                     {v.label}
                   </button>
                 ))}
+              </div>
+            </div>
+
+            {/* PIX */}
+            <div className="border-t border-zinc-100 pt-4">
+              <label className="text-sm font-semibold text-zinc-700 mb-1.5 block">
+                Chave PIX <span className="text-zinc-400 font-normal">(opcional)</span>
+              </label>
+              <p className="text-xs text-zinc-400 mb-3">
+                Para receber sua taxa de entrega diretamente no seu banco, sem complicação.
+              </p>
+              <div className="space-y-2">
+                <select
+                  value={tipoPix}
+                  onChange={e => setTipoPix(e.target.value)}
+                  className="w-full h-12 rounded-2xl border border-zinc-200 px-4 text-sm bg-white focus:outline-none focus:ring-2 focus:border-transparent"
+                  style={{ "--tw-ring-color": brand } as any}
+                >
+                  <option value="aleatoria">Chave aleatória</option>
+                  <option value="cpf">CPF</option>
+                  <option value="telefone">Telefone</option>
+                  <option value="email">E-mail</option>
+                </select>
+                <input
+                  type="text"
+                  value={chavePix}
+                  onChange={e => setChavePix(e.target.value)}
+                  placeholder={
+                    tipoPix === "aleatoria" ? "Cole sua chave aleatória"
+                    : tipoPix === "cpf" ? "000.000.000-00"
+                    : tipoPix === "telefone" ? "(66) 99999-9999"
+                    : "seu@email.com"
+                  }
+                  className="w-full h-12 rounded-2xl border border-zinc-200 px-4 text-sm focus:outline-none focus:ring-2 focus:border-transparent"
+                  style={{ "--tw-ring-color": brand } as any}
+                />
               </div>
             </div>
 
