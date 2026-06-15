@@ -1,7 +1,9 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Bike, CheckCircle2, Clock, MapPin, Navigation, Package, Phone, PackageSearch } from "lucide-react";
+import { Bike, CheckCircle2, Clock, MapPin, Navigation, Package, Phone, PackageSearch, QrCode, Copy } from "lucide-react";
+import { copiarTexto } from "@/lib/validacoes";
+import { toast } from "sonner";
 
 const MapaEntrega = lazy(() => import("@/components/MapaEntrega"));
 
@@ -18,6 +20,8 @@ interface Entregador {
   ultima_localizacao: string | null;
   tipo: string | null;
   aprovado: boolean | null;
+  chave_pix: string | null;
+  tipo_chave_pix: string | null;
   empresas: { nome_fantasia: string; logo_url: string | null; cor_primaria: string | null } | null;
 }
 
@@ -49,7 +53,7 @@ export const Route = createFileRoute("/entregador/$id")({
     if (!UUID_RE.test(params.id)) throw notFound();
     const { data } = await supabase
       .from("entregadores")
-      .select("id, public_token, nome, telefone, status, lat, lng, ultima_localizacao, tipo, aprovado, empresas(nome_fantasia, logo_url, cor_primaria)")
+      .select("id, public_token, nome, telefone, status, lat, lng, ultima_localizacao, tipo, aprovado, chave_pix, tipo_chave_pix, empresas(nome_fantasia, logo_url, cor_primaria)")
       .eq("public_token" as never, params.id)
       .maybeSingle();
     if (!data) throw notFound();
@@ -82,6 +86,23 @@ function EntregadorPage() {
   const [disponiveis, setDisponiveis] = useState<PedidoDisponivel[]>([]);
   const [pegando, setPegando] = useState<string | null>(null);
   const isFreelancer = entregador.tipo === "freelancer";
+
+  const [pixKey,     setPixKey]     = useState(entregador.chave_pix ?? "");
+  const [pixTipo,    setPixTipo]    = useState(entregador.tipo_chave_pix ?? "aleatoria");
+  const [salvandoPix, setSalvandoPix] = useState(false);
+  const [pixSalvo,    setPixSalvo]    = useState(false);
+
+  async function salvarPix() {
+    if (!pixKey.trim()) { toast.error("Digite sua chave PIX."); return; }
+    setSalvandoPix(true);
+    await (supabase as any).from("entregadores")
+      .update({ chave_pix: pixKey.trim(), tipo_chave_pix: pixTipo })
+      .eq("public_token", entregador.public_token);
+    setSalvandoPix(false);
+    setPixSalvo(true);
+    setTimeout(() => setPixSalvo(false), 3000);
+    toast.success("Chave PIX salva!");
+  }
 
   // GPS tracking
   const [tracking, setTracking]   = useState(false);
@@ -285,6 +306,59 @@ function EntregadorPage() {
             </div>
           )}
           {gpsErro && <p className="text-xs text-red-500 mt-2">{gpsErro}</p>}
+        </div>
+
+        {/* Meu PIX */}
+        <div className="bg-white rounded-2xl shadow-sm p-5">
+          <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+            <QrCode className="size-4" /> Minha chave PIX
+          </h2>
+          <p className="text-xs text-zinc-400 mb-4 leading-relaxed">
+            Cadastre sua chave PIX para que o estabelecimento pague sua taxa de entrega diretamente para você.
+          </p>
+          <div className="space-y-3">
+            <select
+              value={pixTipo}
+              onChange={e => setPixTipo(e.target.value)}
+              className="w-full h-10 rounded-xl border border-zinc-200 px-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-400/40">
+              <option value="aleatoria">Chave aleatória</option>
+              <option value="cpf">CPF</option>
+              <option value="telefone">Telefone</option>
+              <option value="email">E-mail</option>
+            </select>
+            <input
+              type="text"
+              value={pixKey}
+              onChange={e => setPixKey(e.target.value)}
+              placeholder={
+                pixTipo === "aleatoria" ? "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                : pixTipo === "cpf" ? "000.000.000-00"
+                : pixTipo === "telefone" ? "(66) 99999-9999"
+                : "seu@email.com"
+              }
+              className="w-full h-10 rounded-xl border border-zinc-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-400/40"
+            />
+            <button
+              onClick={salvarPix}
+              disabled={salvandoPix}
+              className={`w-full h-10 rounded-xl text-sm font-bold transition-all ${
+                pixSalvo ? "bg-green-500 text-white" : "bg-green-500 hover:bg-green-600 text-white"
+              } disabled:opacity-60`}>
+              {pixSalvo ? "✓ PIX salvo!" : salvandoPix ? "Salvando…" : "Salvar chave PIX"}
+            </button>
+          </div>
+          {entregador.chave_pix && (
+            <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-xl flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-[10px] text-green-600 font-bold uppercase">PIX atual</p>
+                <p className="text-xs text-zinc-700 font-mono truncate mt-0.5">{entregador.chave_pix}</p>
+              </div>
+              <button onClick={() => copiarTexto(entregador.chave_pix!).then(() => toast.success("Chave copiada!"))}
+                className="shrink-0 size-8 rounded-lg bg-green-100 hover:bg-green-200 flex items-center justify-center transition-colors">
+                <Copy className="size-3.5 text-green-600" />
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Stats */}

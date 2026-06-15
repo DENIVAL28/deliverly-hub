@@ -333,6 +333,17 @@ function EntregadoresPage() {
                       {e.veiculo && (
                         <p className="text-xs text-zinc-400 mt-0.5">{VEICULO_LABEL[e.veiculo] ?? e.veiculo}</p>
                       )}
+                      {e.chave_pix && (
+                        <div className="flex items-center gap-2 mt-1.5">
+                          <span className="text-[10px] font-bold text-green-600 bg-green-50 border border-green-200 px-1.5 py-0.5 rounded-full uppercase">PIX</span>
+                          <span className="text-xs font-mono text-zinc-500 truncate max-w-[160px]">{e.chave_pix}</span>
+                          <button
+                            onClick={() => copiarTexto(e.chave_pix).then(ok => ok ? toast.success(`PIX de ${e.nome} copiado!`) : toast.error("Falha ao copiar"))}
+                            className="size-5 rounded flex items-center justify-center text-zinc-400 hover:text-green-600 transition-colors shrink-0">
+                            <Copy className="size-3" />
+                          </button>
+                        </div>
+                      )}
                       <div className="flex gap-4 mt-2 text-xs text-zinc-500">
                         <span>🛵 {stat?.qtd ?? 0} entrega{(stat?.qtd ?? 0) !== 1 ? "s" : ""} este mês</span>
                         <span>💰 {fmt(stat?.ganhos ?? 0)}</span>
