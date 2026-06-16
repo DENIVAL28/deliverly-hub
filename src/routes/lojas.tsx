@@ -82,16 +82,24 @@ function LojasPage() {
     setBusca("");
   }
 
-  const cidades = Array.from(
-    new Set(lojas.map((l) => l.cidade).filter(Boolean))
-  ).sort() as string[];
+  // Agrupa por cidade normalizada (case-insensitive, trim) mas exibe o valor mais curto/limpo
+  const cidadeMap = new Map<string, string>(); // key normalizada → display
+  lojas.forEach((l) => {
+    const raw = (l.cidade ?? "").trim();
+    if (!raw) return;
+    const key = raw.toLowerCase();
+    const existing = cidadeMap.get(key);
+    // Prefere o valor mais curto (menos provável de ser um endereço completo)
+    if (!existing || raw.length < existing.length) cidadeMap.set(key, raw);
+  });
+  const cidades = Array.from(cidadeMap.values()).sort() as string[];
 
   const cidadesFiltradas = cidades.filter((c) =>
     c.toLowerCase().includes(buscaCidade.toLowerCase())
   );
 
   const lojasDaCidade = cidade
-    ? lojas.filter((l) => (l.cidade ?? "").toLowerCase() === cidade.toLowerCase())
+    ? lojas.filter((l) => (l.cidade ?? "").trim().toLowerCase() === cidade.trim().toLowerCase())
     : [];
 
   const filtradas = lojasDaCidade.filter((l) => {
