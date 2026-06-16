@@ -134,14 +134,25 @@ function EmpresasPage() {
     e.preventDefault();
     if (!empresaUsuarios) return;
     const fd = new FormData(e.currentTarget);
-    const email = String(fd.get("email"));
+    const email = String(fd.get("email")).trim().toLowerCase();
     const role = String(fd.get("role")) as "empresa_owner" | "empresa_staff";
-    const { data: profile } = await supabase.from("profiles").select("id").eq("email", email).maybeSingle();
-    if (!profile) { toast.error("Usuário não encontrado. Verifique se ele já criou uma conta."); return; }
-    const { error } = await supabase.from("user_roles").insert({ user_id: profile.id, role, empresa_id: empresaUsuarios.id });
-    if (error) { toast.error(error.message); return; }
-    await supabase.from("profiles").update({ empresa_id: empresaUsuarios.id }).eq("id", profile.id);
-    toast.success("Usuário associado com sucesso");
+    if (!email) { toast.error("Digite o e-mail do usuário."); return; }
+
+    const { data, error } = await supabase.functions.invoke("invite-user", {
+      body: { email, role, empresa_id: empresaUsuarios.id },
+    });
+
+    if (error || data?.error) {
+      toast.error(data?.error ?? error?.message ?? "Erro ao associar usuário");
+      return;
+    }
+
+    if (data?.invited) {
+      toast.success(`Convite enviado para ${email} — ele receberá um e-mail para criar a senha.`);
+    } else {
+      toast.success("Usuário associado com sucesso.");
+    }
+
     (e.target as HTMLFormElement).reset();
     qc.invalidateQueries({ queryKey: ["empresa-usuarios", empresaUsuarios.id] });
   }
@@ -437,7 +448,13 @@ function EmpresasPage() {
             </table>
           </div>
           <form onSubmit={addUsuario} className="space-y-3">
-            <p className="text-xs font-semibold text-zinc-500 uppercase tracking-widest">Associar usuário</p>
+            <div>
+              <p className="text-xs font-semibold text-zinc-500 uppercase tracking-widest mb-1">Convidar / Associar usuário</p>
+              <p className="text-xs text-zinc-400">
+                Se o e-mail ainda não tiver conta, um convite será enviado automaticamente.
+                Se já tiver conta, ele será associado diretamente.
+              </p>
+            </div>
             <Field name="email" label="E-mail do usuário" type="email" required />
             <div className="space-y-2">
               <Label>Papel</Label>
@@ -449,7 +466,7 @@ function EmpresasPage() {
                 </SelectContent>
               </Select>
             </div>
-            <Button type="submit" className="w-full bg-brand hover:bg-brand/90">Associar</Button>
+            <Button type="submit" className="w-full bg-brand hover:bg-brand/90">Enviar convite / Associar</Button>
           </form>
         </DialogContent>
       </Dialog>

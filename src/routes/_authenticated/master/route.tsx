@@ -2,7 +2,7 @@ import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useAuth } from "@/lib/use-auth";
 import { AppShell } from "@/components/AppShell";
-import { LayoutDashboard, Building2, Package, Receipt, BarChart2, ShieldCheck } from "lucide-react";
+import { LayoutDashboard, Building2, Package, Receipt, BarChart2, ShieldCheck, Users } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/master")({
   component: MasterLayout,
@@ -34,6 +34,7 @@ function MasterLayout() {
       items={[
         { to: "/master", label: "Dashboard", icon: LayoutDashboard },
         { to: "/master/empresas", label: "Empresas", icon: Building2 },
+        { to: "/master/usuarios", label: "Usuários", icon: Users },
         { to: "/master/planos", label: "Planos", icon: Package },
         { to: "/master/mensalidades", label: "Mensalidades", icon: Receipt },
         { to: "/master/relatorios", label: "Relatórios", icon: BarChart2 },
