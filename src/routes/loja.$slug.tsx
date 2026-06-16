@@ -249,7 +249,9 @@ function LojaPage() {
         `Pagamento: ${forma_pagamento}${observacao ? `\nObs: ${observacao}` : ""}`
       );
 
-      const waUrl = empresa.whatsapp ? `https://wa.me/${empresa.whatsapp.replace(/\D/g, "")}?text=${msg}` : null;
+      const waNum = empresa.whatsapp ? empresa.whatsapp.replace(/\D/g, "") : null;
+      const waNumFull = waNum ? (waNum.startsWith("55") ? waNum : `55${waNum}`) : null;
+      const waUrl = waNumFull ? `https://wa.me/${waNumFull}?text=${msg}` : null;
 
       setCart({}); setCheckoutOpen(false); setCupomAplicado(null); setCodigoCupom("");
 
@@ -791,10 +793,12 @@ function LojaPage() {
 
             <button
               onClick={() => {
+                const link = pixModal.waLink;
+                const num  = pixModal.pedidoNum;
                 setPixModal(null);
-                if (pixModal.waLink) window.open(pixModal.waLink, "_blank");
                 setPedidoFeito(null);
-                toast.success(`Pedido #${pixModal.pedidoNum} confirmado!`);
+                toast.success(`Pedido #${num} confirmado!`);
+                if (link) window.open(link, "_blank");
               }}
               className="w-full h-12 rounded-2xl bg-green-500 hover:bg-green-600 text-white font-semibold text-base flex items-center justify-center gap-2 mb-3 transition-colors"
             >
