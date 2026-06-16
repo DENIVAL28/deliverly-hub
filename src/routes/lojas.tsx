@@ -177,7 +177,7 @@ function LojasPage() {
             ) : cidadesFiltradas.length > 0 ? (
               <div className="space-y-2">
                 {cidadesFiltradas.map((c) => {
-                  const qtd = lojas.filter((l) => (l.cidade ?? "").toLowerCase() === c.toLowerCase()).length;
+                  const qtd = lojas.filter((l) => normCidade(l.cidade ?? "") === c).length;
                   return (
                     <button
                       key={c}
