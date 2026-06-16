@@ -956,6 +956,14 @@ function LojaPage() {
                 <FormField name="nome" label="Seu nome" required />
                 {!mesa && <TelField />}
                 {!mesa && tipoEntrega === "delivery" && (
+                  <CepField
+                    cep={clienteCep}
+                    onCepChange={setClienteCep}
+                    onCidadeChange={setClienteCidade}
+                    brandColor={brandColor}
+                  />
+                )}
+                {!mesa && tipoEntrega === "delivery" && (
                   <AddressField
                     brandColor={brandColor}
                     onCapture={(lat, lng) => { setClienteLat(lat); setClienteLng(lng); }}
@@ -982,7 +990,7 @@ function LojaPage() {
                     <p className="text-xs text-zinc-400">Pagamento feito no momento da entrega</p>
                   )}
                 </div>
-                {/* CPF removido do fluxo — cliente de delivery não precisa informar CPF */}
+                <CpfField value={clienteCpf} onChange={setClienteCpf} />
                 <div className="space-y-1.5">
                   <Label>Observação (opcional)</Label>
                   <Textarea name="observacao" rows={2} className="rounded-xl resize-none" />
