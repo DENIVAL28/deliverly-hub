@@ -23,7 +23,7 @@ export const Route = createFileRoute("/loja/$slug")({
     if (!empresa) throw notFound();
     const [{ data: categorias }, { data: produtos }, { data: avs }] = await Promise.all([
       supabase.from("categorias").select("*").eq("empresa_id", empresa.id).eq("ativo", true).order("ordem"),
-      (supabase.from("produtos") as any).select("*, grupos_opcoes(id)").eq("empresa_id", empresa.id).eq("ativo", true),
+      (supabase.from("produtos") as any).select("*, grupos_opcoes(id, nome, opcoes(id, nome, ativo))").eq("empresa_id", empresa.id).eq("ativo", true),
       supabase.from("avaliacoes").select("nota").eq("empresa_id", empresa.id),
     ]);
     const notas = (avs ?? []) as any[];
@@ -39,7 +39,7 @@ export const Route = createFileRoute("/loja/$slug")({
 interface OpcaoSelecionada {
   grupoId: string; grupoNome: string; opcaoId: string; opcaoNome: string; precoAdicional: number;
 }
-interface CartItem { id: string; nome: string; preco: number; qty: number; opcoes?: OpcaoSelecionada[]; }
+interface CartItem { id: string; cartKey: string; nome: string; preco: number; qty: number; opcoes?: OpcaoSelecionada[]; }
 
 function LojaPage() {
   const { empresa, categorias, produtos, mediaAval, totalAval } = Route.useLoaderData();
@@ -123,16 +123,14 @@ function LojaPage() {
   function addToCart(p: any, qty = 1, opcoes?: OpcaoSelecionada[]) {
     trackEvento(empresa.id, "adicionado_carrinho", { produto_id: p.id, metadata: { nome: p.nome } });
     setCart((c) => {
-      const cur   = c[p.id];
       const precoBase = Number(p.preco_promocional ?? p.preco);
-      const extra = opcoes ? opcoes.reduce((s, o) => s + o.precoAdicional, 0) : 0;
+      const extra = opcoes?.length ? opcoes.reduce((s, o) => s + o.precoAdicional, 0) : 0;
       const preco = precoBase + extra;
-      // If adding via modal with options, replace the cart entry (new config replaces old)
-      if (opcoes !== undefined) {
-        const existing = cur ? cur.qty + qty : qty;
-        return { ...c, [p.id]: { id: p.id, nome: p.nome, preco, qty: existing, opcoes } };
-      }
-      return { ...c, [p.id]: cur ? { ...cur, qty: cur.qty + qty } : { id: p.id, nome: p.nome, preco, qty } };
+      const cartKey = opcoes?.length
+        ? `${p.id}_${opcoes.map(o => o.opcaoId).sort().join("|")}`
+        : p.id;
+      const cur = c[cartKey];
+      return { ...c, [cartKey]: cur ? { ...cur, qty: cur.qty + qty } : { id: p.id, cartKey, nome: p.nome, preco, qty, opcoes } };
     });
   }
   function decCart(id: string) {
@@ -140,6 +138,16 @@ function LojaPage() {
       const cur = c[id]; if (!cur) return c;
       if (cur.qty <= 1) { const { [id]: _, ...rest } = c; return rest; }
       return { ...c, [id]: { ...cur, qty: cur.qty - 1 } };
+    });
+  }
+
+  function decCartProduto(produtoId: string) {
+    setCart((c) => {
+      const key = Object.keys(c).find(k => k === produtoId || k.startsWith(produtoId + "_"));
+      if (!key) return c;
+      const cur = c[key];
+      if (cur.qty <= 1) { const { [key]: _, ...rest } = c; return rest; }
+      return { ...c, [key]: { ...cur, qty: cur.qty - 1 } };
     });
   }
 
@@ -529,7 +537,7 @@ function LojaPage() {
                   <ProductCard key={p.id} p={p} cart={cart}
                     onOpen={() => setSelectedProduct(p)}
                     onAdd={() => addToCart(p)}
-                    onDec={() => decCart(p.id)}
+                    onDec={() => decCartProduto(p.id)}
                     fmt={fmt}
                     last={i === arr.length - 1}
                   />
@@ -561,7 +569,7 @@ function LojaPage() {
                         <ProductCard key={p.id} p={p} cart={cart}
                           onOpen={() => setSelectedProduct(p)}
                           onAdd={() => addToCart(p)}
-                          onDec={() => decCart(p.id)}
+                          onDec={() => decCartProduto(p.id)}
                           fmt={fmt}
                           last={i === arr.length - 1}
                         />
@@ -591,7 +599,7 @@ function LojaPage() {
                           <ProductCard key={p.id} p={p} cart={cart}
                             onOpen={() => setSelectedProduct(p)}
                             onAdd={() => addToCart(p)}
-                            onDec={() => decCart(p.id)}
+                            onDec={() => decCartProduto(p.id)}
                             fmt={fmt}
                             last={i === arr.length - 1}
                           />
@@ -608,7 +616,7 @@ function LojaPage() {
                         <ProductCard key={p.id} p={p} cart={cart}
                           onOpen={() => setSelectedProduct(p)}
                           onAdd={() => addToCart(p)}
-                          onDec={() => decCart(p.id)}
+                          onDec={() => decCartProduto(p.id)}
                           fmt={fmt}
                           last={i === arr.length - 1}
                         />
@@ -833,7 +841,7 @@ function LojaPage() {
 
               <div className="space-y-3 mb-4">
                 {Object.values(cart).map((i) => (
-                  <div key={i.id} className="flex items-start gap-3">
+                  <div key={i.cartKey} className="flex items-start gap-3">
                     <div className="flex-1 min-w-0">
                       <span className="text-sm text-zinc-700 font-medium">{i.nome}</span>
                       {i.opcoes && i.opcoes.length > 0 && (
@@ -843,12 +851,12 @@ function LojaPage() {
                       )}
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <button onClick={() => decCart(i.id)}
+                      <button onClick={() => decCart(i.cartKey)}
                         className="size-8 rounded-full border border-zinc-200 flex items-center justify-center hover:border-orange-400">
                         <Minus className="size-3.5" />
                       </button>
                       <span className="text-sm font-semibold w-5 text-center">{i.qty}</span>
-                      <button onClick={() => addToCart({ id: i.id, nome: i.nome, preco: i.preco })}
+                      <button onClick={() => setCart(c => ({ ...c, [i.cartKey]: { ...i, qty: i.qty + 1 } }))}
                         className="size-8 rounded-full bg-orange-500 text-white flex items-center justify-center">
                         <Plus className="size-3.5" />
                       </button>
@@ -1023,9 +1031,16 @@ function ProductCard({ p, cart, onOpen, onAdd, onDec, fmt, last }: {
   fmt: (v: number) => string; last: boolean;
 }) {
   const preco      = Number(p.preco_promocional ?? p.preco);
-  const qty        = cart[p.id]?.qty ?? 0;
+  const qty        = Object.entries(cart)
+    .filter(([k]) => k === p.id || k.startsWith(p.id + "_"))
+    .reduce((s, [, v]) => s + v.qty, 0);
   const esgotado   = p.controlar_estoque && p.estoque === 0;
   const temOpcoes  = (p.grupos_opcoes?.length ?? 0) > 0;
+  const saboresDisponiveis: string[] = temOpcoes
+    ? (p.grupos_opcoes[0]?.opcoes ?? [])
+        .filter((o: any) => o.ativo !== false)
+        .map((o: any) => o.nome as string)
+    : [];
 
   return (
     <div
@@ -1049,7 +1064,17 @@ function ProductCard({ p, cart, onOpen, onAdd, onDec, fmt, last }: {
           {!esgotado && p.controlar_estoque && p.estoque <= 5 && p.estoque > 0 && (
             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-600">Últimas {p.estoque}</span>
           )}
-          {temOpcoes && !esgotado && (
+          {temOpcoes && !esgotado && saboresDisponiveis.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-1 w-full">
+              {saboresDisponiveis.slice(0, 4).map((s) => (
+                <span key={s} className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-zinc-100 text-zinc-500">{s}</span>
+              ))}
+              {saboresDisponiveis.length > 4 && (
+                <span className="text-[10px] text-zinc-400 self-center">+{saboresDisponiveis.length - 4}</span>
+              )}
+            </div>
+          )}
+          {temOpcoes && !esgotado && saboresDisponiveis.length === 0 && (
             <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-zinc-100 text-zinc-500">✦ Personalizável</span>
           )}
         </div>
