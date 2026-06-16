@@ -187,7 +187,7 @@ function EntregadorPage() {
     });
     setPegando(null);
     if (!data?.ok) {
-      alert(data?.erro ?? "Não foi possível aceitar. Tente novamente.");
+      toast.error(data?.erro ?? "Não foi possível aceitar. Tente novamente.");
       carregarDisponiveis();
       return;
     }
@@ -197,9 +197,10 @@ function EntregadorPage() {
 
   async function mudarStatus(novoStatus: string) {
     setAtualizando(true);
-    await (supabase as any).rpc("entregador_atualizar_status", { p_token: entregador.public_token, p_status: novoStatus });
-    setEntregador((e) => ({ ...e, status: novoStatus }));
+    const { error } = await (supabase as any).rpc("entregador_atualizar_status", { p_token: entregador.public_token, p_status: novoStatus });
     setAtualizando(false);
+    if (error) { toast.error("Erro ao atualizar status. Tente novamente."); return; }
+    setEntregador((e) => ({ ...e, status: novoStatus }));
   }
 
   useEffect(() => {

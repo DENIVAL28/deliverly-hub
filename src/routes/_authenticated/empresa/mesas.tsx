@@ -26,7 +26,8 @@ const STATUS_MESA = {
 function statusDaMesa(pedidos: PedidoMesa[]): keyof typeof STATUS_MESA {
   const ativos = pedidos.filter(p => !["finalizado", "cancelado"].includes(p.status));
   if (!ativos.length) return "livre";
-  if (ativos.every(p => ["preparo", "entrega"].includes(p.status))) return "aguardando";
+  // "Aguard. pgto" só quando todos os pedidos já foram entregues à mesa (status entrega)
+  if (ativos.every(p => p.status === "entrega")) return "aguardando";
   return "ocupada";
 }
 

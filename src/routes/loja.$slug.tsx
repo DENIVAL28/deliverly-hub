@@ -165,6 +165,12 @@ function LojaPage() {
     const items = Object.values(cart);
     if (items.length === 0) { setCheckoutErro("Carrinho vazio."); return; }
 
+    const isKmDelivery = tipoEntrega === "delivery" && (empresa as any).taxa_entrega_tipo === "km";
+    if (isKmDelivery && !clienteLat) {
+      setCheckoutErro("Informe o endereço para calcularmos a taxa de entrega.");
+      return;
+    }
+
     const pedidoMin = Number((empresa as any).pedido_minimo ?? 0);
     if (pedidoMin > 0 && totalPrice < pedidoMin) {
       setCheckoutErro(`Pedido mínimo de ${fmt(pedidoMin)}. Faltam ${fmt(pedidoMin - totalPrice)}.`);
@@ -928,7 +934,11 @@ function LojaPage() {
                   </div>
                   <div className="flex justify-between font-bold text-base pt-1.5 border-t border-zinc-200">
                     <span>Total</span>
-                    <span>{fmt(Math.max(0, totalPrice - desconto + taxaEntrega))}</span>
+                    {tipoEntrega !== "retirada" && (empresa as any).taxa_entrega_tipo === "km" && !clienteLat ? (
+                      <span className="text-amber-500 text-sm font-semibold">{fmt(Math.max(0, totalPrice - desconto))} + taxa</span>
+                    ) : (
+                      <span>{fmt(Math.max(0, totalPrice - desconto + taxaEntrega))}</span>
+                    )}
                   </div>
                 </div>
                 <FormField name="nome" label="Seu nome" required />
