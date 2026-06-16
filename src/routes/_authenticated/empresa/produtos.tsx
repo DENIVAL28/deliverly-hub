@@ -79,7 +79,7 @@ function ProdutosPage() {
     if (error || !produto) { toast.error(parsarErroSupabase(error)); setUploading(false); return; }
     if (file) {
       const ext = file.name.split(".").pop();
-      const url = await uploadFoto(file, `${empresaId}/${produto.id}.${ext}`);
+      const url = await uploadFoto(file, `${empresaId}/${produto.id}_${Date.now()}.${ext}`);
       if (url) await supabase.from("produtos").update({ foto_url: url }).eq("id", produto.id);
     }
     toast.success("Produto criado");
@@ -96,7 +96,7 @@ function ProdutosPage() {
     let foto_url = editProduto.foto_url;
     if (file) {
       const ext = file.name.split(".").pop();
-      const url = await uploadFoto(file, `${empresaId}/${editProduto.id}.${ext}`);
+      const url = await uploadFoto(file, `${empresaId}/${editProduto.id}_${Date.now()}.${ext}`);
       if (url) foto_url = url;
     }
     const { error } = await supabase.from("produtos").update({
