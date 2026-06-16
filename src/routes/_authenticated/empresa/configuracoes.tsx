@@ -42,6 +42,7 @@ function ConfiguracoesPage() {
 
   const [nome,       setNome]       = useState("");
   const [whatsapp,   setWhatsapp]   = useState("");
+  const [cidade,     setCidade]     = useState("");
   const [taxa,       setTaxa]       = useState("");
   const [tempo,      setTempo]      = useState("");
   const [minimo,     setMinimo]     = useState("");
@@ -72,6 +73,7 @@ function ConfiguracoesPage() {
     const emp = empresa as any;
     setNome(empresa.nome_fantasia ?? "");
     setWhatsapp(empresa.whatsapp ?? "");
+    setCidade((emp as any).cidade ?? "");
     setTaxa(String(empresa.taxa_entrega ?? 0));
     setTempo(emp.tempo_entrega ?? "30-45 min");
     setMinimo(String(emp.pedido_minimo ?? 0));
@@ -126,6 +128,7 @@ function ConfiguracoesPage() {
     const updates: any = {
       nome_fantasia: nome.trim(),
       whatsapp: whatsapp.replace(/\D/g, ""),
+      cidade: cidade.trim() || null,
       taxa_entrega: Number(taxa) || 0,
       tempo_entrega: tempo.trim() || "30-45 min",
       pedido_minimo: Number(minimo) || 0,
@@ -356,6 +359,13 @@ function ConfiguracoesPage() {
               <Label htmlFor="whatsapp">WhatsApp (com DDD, sem espaços)</Label>
               <Input id="whatsapp" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)}
                 placeholder="Ex: 66981289787" className="h-10 rounded-xl" />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="cidade">Cidade</Label>
+              <Input id="cidade" value={cidade} onChange={(e) => setCidade(e.target.value)}
+                placeholder="Ex: Santa Terezinha MT" className="h-10 rounded-xl" />
+              <p className="text-[11px] text-zinc-400">Usado para agrupar o estabelecimento na página de lojas</p>
             </div>
 
             <div className="space-y-1.5">
