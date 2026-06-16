@@ -82,15 +82,20 @@ function LojasPage() {
     setBusca("");
   }
 
-  // Agrupa por cidade normalizada (case-insensitive, trim) mas exibe o valor mais curto/limpo
+  // Normaliza cidade: remove hífens/acentos, uppercase, trim
+  function normCidade(c: string) {
+    return c.trim().toUpperCase()
+      .normalize("NFD").replace(/[̀-ͯ]/g, "")
+      .replace(/-/g, " ").replace(/\s+/g, " ").trim();
+  }
+
+  // Agrupa por cidade normalizada, exibe o primeiro valor encontrado em uppercase
   const cidadeMap = new Map<string, string>(); // key normalizada → display
   lojas.forEach((l) => {
     const raw = (l.cidade ?? "").trim();
     if (!raw) return;
-    const key = raw.toLowerCase();
-    const existing = cidadeMap.get(key);
-    // Prefere o valor mais curto (menos provável de ser um endereço completo)
-    if (!existing || raw.length < existing.length) cidadeMap.set(key, raw);
+    const key = normCidade(raw);
+    if (!cidadeMap.has(key)) cidadeMap.set(key, key); // sempre exibe normalizado
   });
   const cidades = Array.from(cidadeMap.values()).sort() as string[];
 
@@ -99,7 +104,7 @@ function LojasPage() {
   );
 
   const lojasDaCidade = cidade
-    ? lojas.filter((l) => (l.cidade ?? "").trim().toLowerCase() === cidade.trim().toLowerCase())
+    ? lojas.filter((l) => normCidade(l.cidade ?? "") === normCidade(cidade))
     : [];
 
   const filtradas = lojasDaCidade.filter((l) => {
