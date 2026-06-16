@@ -72,32 +72,6 @@ const comparisonRows = [
   { label: "Custo mensal",          them: "R$0 + comissão variável",     us: "A partir de R$99 fixos" },
 ];
 
-const testimonials = [
-  {
-    nome: "Marcos Oliveira",
-    cargo: "Dono — Pizzaria Dom Marcos",
-    cidade: "Cuiabá, MT",
-    avatar: "MO",
-    texto: "Antes eu pagava mais de R$2.000 por mês só de comissão pro iFood. Agora pago R$99 fixos e tenho o contato direto de todos os meus clientes. Valeu muito a troca.",
-    stars: 5,
-  },
-  {
-    nome: "Fernanda Lima",
-    cargo: "Sócia — Hamburgeria La Femme",
-    cidade: "Várzea Grande, MT",
-    avatar: "FL",
-    texto: "O cardápio ficou lindo e em menos de 24h já estava recebendo pedidos. O caixa PDV foi a parte que mais me surpreendeu — tudo numa tela só, sem precisar de outro sistema.",
-    stars: 5,
-  },
-  {
-    nome: "Ricardo Santos",
-    cargo: "Gerente — Marmitex do Ricardo",
-    cidade: "Rondonópolis, MT",
-    avatar: "RS",
-    texto: "Simples, rápido e sem complicação. Meus clientes adoraram porque não precisam baixar app nenhum. Só compartilho o link e pronto.",
-    stars: 5,
-  },
-];
 
 export function Landing() {
   return (
@@ -113,7 +87,6 @@ export function Landing() {
       <Segments />
       <Features />
       <SejaEntregador />
-      <Testimonials />
       <Pricing />
       <CTA />
       <FAQ />
@@ -960,47 +933,6 @@ function Comparison() {
   );
 }
 
-/* ─── Testimonials ─── */
-function Testimonials() {
-  return (
-    <section className="py-24 bg-zinc-50 border-t border-zinc-100">
-      <div className="mx-auto max-w-7xl px-6">
-        <div className="text-center mb-14">
-          <span className="text-xs font-bold uppercase tracking-widest text-orange-500 mb-3 block">Depoimentos</span>
-          <h2 className="text-3xl md:text-4xl font-bold text-zinc-900 mb-3">
-            Restaurantes que largaram o marketplace
-          </h2>
-          <p className="text-zinc-500 max-w-[48ch] mx-auto text-sm">
-            Donos de restaurante que criaram o próprio canal e pararam de pagar comissão.
-          </p>
-        </div>
-
-        <div className="grid md:grid-cols-3 gap-6">
-          {testimonials.map((t) => (
-            <div key={t.nome} className="bg-white rounded-2xl p-6 ring-1 ring-zinc-200 hover:ring-orange-200 hover:shadow-lg transition-all flex flex-col gap-4">
-              <div className="flex gap-0.5">
-                {Array.from({ length: t.stars }).map((_, i) => (
-                  <span key={i} className="text-orange-400 text-lg leading-none">★</span>
-                ))}
-              </div>
-              <p className="text-sm text-zinc-600 leading-relaxed flex-grow">"{t.texto}"</p>
-              <div className="flex items-center gap-3 border-t border-zinc-100 pt-4">
-                <div className="size-10 rounded-full bg-orange-100 flex items-center justify-center text-sm font-bold text-orange-600 shrink-0">
-                  {t.avatar}
-                </div>
-                <div>
-                  <div className="text-sm font-bold text-zinc-900">{t.nome}</div>
-                  <div className="text-xs text-zinc-500">{t.cargo}</div>
-                  <div className="text-xs text-zinc-400">{t.cidade}</div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
 
 /* ─── WhatsApp Flutuante ─── */
 function WhatsAppFlutuante() {
