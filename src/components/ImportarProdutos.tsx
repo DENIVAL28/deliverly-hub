@@ -166,8 +166,11 @@ export function ImportarProdutos({ open, onClose, empresaId, categoriasExistente
     };
   }
 
-  const produtosPreview = linhas.slice(0, 5).map(linhaParaProduto);
-  const totalValido = linhas.map(linhaParaProduto).filter((p) => p.nome && p.preco !== null).length;
+  const todasMapeadas = linhas.map(linhaParaProduto);
+  const produtosPreview = todasMapeadas.slice(0, 5);
+  const totalProdutos = todasMapeadas.filter((p) => !p.grupo_de && p.nome && p.preco !== null).length;
+  const totalOpcoes   = todasMapeadas.filter((p) => !!p.grupo_de && p.nome && p.preco !== null).length;
+  const totalValido   = totalProdutos + totalOpcoes;
   const totalInvalido = linhas.length - totalValido;
 
   async function importar() {
@@ -226,6 +229,17 @@ export function ImportarProdutos({ open, onClose, empresaId, categoriasExistente
         criados += lote.length;
         (criados_data ?? []).forEach((p: any) => { produtoNomeParaId[p.nome.toLowerCase()] = p.id; });
       }
+    }
+
+    // Inclui produtos já existentes no banco para permitir linkar opcoes a eles
+    if (linhasOpcao.length > 0) {
+      const { data: existentes } = await (supabase.from("produtos") as any)
+        .select("id, nome")
+        .eq("empresa_id", empresaId);
+      (existentes ?? []).forEach((p: any) => {
+        const k = p.nome.toLowerCase();
+        if (!produtoNomeParaId[k]) produtoNomeParaId[k] = p.id;
+      });
     }
 
     // Cria grupos de opções e suas opções
@@ -391,12 +405,21 @@ export function ImportarProdutos({ open, onClose, empresaId, categoriasExistente
         {/* ── STEP 3: Preview ── */}
         {step === "preview" && (
           <div className="flex flex-col gap-4 overflow-y-auto">
-            <div className="flex items-center gap-3">
-              <div className="flex-1 bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-sm text-green-700 font-medium">
-                ✅ {totalValido} produto{totalValido !== 1 ? "s" : ""} prontos para importar
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-3">
+                {totalProdutos > 0 && (
+                  <div className="flex-1 bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-sm text-green-700 font-medium">
+                    ✅ {totalProdutos} produto{totalProdutos !== 1 ? "s" : ""}
+                  </div>
+                )}
+                {totalOpcoes > 0 && (
+                  <div className="flex-1 bg-violet-50 border border-violet-200 rounded-xl px-4 py-3 text-sm text-violet-700 font-medium">
+                    ✦ {totalOpcoes} adicionai{totalOpcoes !== 1 ? "s" : "s"} (opções)
+                  </div>
+                )}
               </div>
               {totalInvalido > 0 && (
-                <div className="flex-1 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-700 font-medium">
+                <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-700 font-medium">
                   ⚠️ {totalInvalido} linha{totalInvalido !== 1 ? "s" : ""} sem nome/preço (serão ignoradas)
                 </div>
               )}
@@ -428,7 +451,11 @@ export function ImportarProdutos({ open, onClose, empresaId, categoriasExistente
             <div className="flex gap-2 pt-2 shrink-0">
               <Button variant="outline" onClick={() => setStep("mapear")}>← Voltar</Button>
               <Button onClick={importar} className="flex-1 bg-brand hover:bg-brand/90 gap-2 font-bold">
-                Importar {totalValido} produto{totalValido !== 1 ? "s" : ""}
+                Importar {totalProdutos > 0 && totalOpcoes > 0
+                  ? `${totalProdutos} produto${totalProdutos !== 1 ? "s" : ""} + ${totalOpcoes} adicional${totalOpcoes !== 1 ? "is" : ""}`
+                  : totalOpcoes > 0
+                  ? `${totalOpcoes} adicional${totalOpcoes !== 1 ? "is" : ""}`
+                  : `${totalProdutos} produto${totalProdutos !== 1 ? "s" : ""}`}
               </Button>
             </div>
           </div>
