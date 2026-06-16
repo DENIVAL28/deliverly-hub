@@ -20,12 +20,14 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as PedidoIdRouteImport } from './routes/pedido.$id'
 import { Route as LojaSlugRouteImport } from './routes/loja.$slug'
 import { Route as EntregadorIdRouteImport } from './routes/entregador.$id'
+import { Route as EntrarEntregadorSlugRouteImport } from './routes/entrar-entregador.$slug'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
 import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/app'
 import { Route as AuthenticatedMasterRouteRouteImport } from './routes/_authenticated/master/route'
 import { Route as AuthenticatedEmpresaRouteRouteImport } from './routes/_authenticated/empresa/route'
 import { Route as AuthenticatedMasterIndexRouteImport } from './routes/_authenticated/master/index'
 import { Route as AuthenticatedEmpresaIndexRouteImport } from './routes/_authenticated/empresa/index'
+import { Route as AuthenticatedMasterUsuariosRouteImport } from './routes/_authenticated/master/usuarios'
 import { Route as AuthenticatedMasterSegurancaRouteImport } from './routes/_authenticated/master/seguranca'
 import { Route as AuthenticatedMasterRelatoriosRouteImport } from './routes/_authenticated/master/relatorios'
 import { Route as AuthenticatedMasterPlanosRouteImport } from './routes/_authenticated/master/planos'
@@ -37,7 +39,6 @@ import { Route as AuthenticatedEmpresaPlanosRouteImport } from './routes/_authen
 import { Route as AuthenticatedEmpresaPedidosRouteImport } from './routes/_authenticated/empresa/pedidos'
 import { Route as AuthenticatedEmpresaPdvRouteImport } from './routes/_authenticated/empresa/pdv'
 import { Route as AuthenticatedEmpresaMesasRouteImport } from './routes/_authenticated/empresa/mesas'
-import { Route as AuthenticatedEmpresaKdsRouteImport } from './routes/_authenticated/empresa/kds'
 import { Route as AuthenticatedEmpresaEntregadoresRouteImport } from './routes/_authenticated/empresa/entregadores'
 import { Route as AuthenticatedEmpresaCuponsRouteImport } from './routes/_authenticated/empresa/cupons'
 import { Route as AuthenticatedEmpresaConfiguracoesRouteImport } from './routes/_authenticated/empresa/configuracoes'
@@ -100,6 +101,11 @@ const EntregadorIdRoute = EntregadorIdRouteImport.update({
   path: '/entregador/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EntrarEntregadorSlugRoute = EntrarEntregadorSlugRouteImport.update({
+  id: '/entrar-entregador/$slug',
+  path: '/entrar-entregador/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedOnboardingRoute = AuthenticatedOnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
@@ -133,6 +139,12 @@ const AuthenticatedEmpresaIndexRoute =
     id: '/',
     path: '/',
     getParentRoute: () => AuthenticatedEmpresaRouteRoute,
+  } as any)
+const AuthenticatedMasterUsuariosRoute =
+  AuthenticatedMasterUsuariosRouteImport.update({
+    id: '/usuarios',
+    path: '/usuarios',
+    getParentRoute: () => AuthenticatedMasterRouteRoute,
   } as any)
 const AuthenticatedMasterSegurancaRoute =
   AuthenticatedMasterSegurancaRouteImport.update({
@@ -199,11 +211,6 @@ const AuthenticatedEmpresaMesasRoute =
     path: '/mesas',
     getParentRoute: () => AuthenticatedEmpresaRouteRoute,
   } as any)
-const AuthenticatedEmpresaKdsRoute = AuthenticatedEmpresaKdsRouteImport.update({
-  id: '/kds',
-  path: '/kds',
-  getParentRoute: () => AuthenticatedEmpresaRouteRoute,
-} as any)
 const AuthenticatedEmpresaEntregadoresRoute =
   AuthenticatedEmpresaEntregadoresRouteImport.update({
     id: '/entregadores',
@@ -259,6 +266,7 @@ export interface FileRoutesByFullPath {
   '/master': typeof AuthenticatedMasterRouteRouteWithChildren
   '/app': typeof AuthenticatedAppRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
+  '/entrar-entregador/$slug': typeof EntrarEntregadorSlugRoute
   '/entregador/$id': typeof EntregadorIdRoute
   '/loja/$slug': typeof LojaSlugRoute
   '/pedido/$id': typeof PedidoIdRoute
@@ -269,7 +277,6 @@ export interface FileRoutesByFullPath {
   '/empresa/configuracoes': typeof AuthenticatedEmpresaConfiguracoesRoute
   '/empresa/cupons': typeof AuthenticatedEmpresaCuponsRoute
   '/empresa/entregadores': typeof AuthenticatedEmpresaEntregadoresRoute
-  '/empresa/kds': typeof AuthenticatedEmpresaKdsRoute
   '/empresa/mesas': typeof AuthenticatedEmpresaMesasRoute
   '/empresa/pdv': typeof AuthenticatedEmpresaPdvRoute
   '/empresa/pedidos': typeof AuthenticatedEmpresaPedidosRoute
@@ -281,6 +288,7 @@ export interface FileRoutesByFullPath {
   '/master/planos': typeof AuthenticatedMasterPlanosRoute
   '/master/relatorios': typeof AuthenticatedMasterRelatoriosRoute
   '/master/seguranca': typeof AuthenticatedMasterSegurancaRoute
+  '/master/usuarios': typeof AuthenticatedMasterUsuariosRoute
   '/empresa/': typeof AuthenticatedEmpresaIndexRoute
   '/master/': typeof AuthenticatedMasterIndexRoute
 }
@@ -294,6 +302,7 @@ export interface FileRoutesByTo {
   '/termos': typeof TermosRoute
   '/app': typeof AuthenticatedAppRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
+  '/entrar-entregador/$slug': typeof EntrarEntregadorSlugRoute
   '/entregador/$id': typeof EntregadorIdRoute
   '/loja/$slug': typeof LojaSlugRoute
   '/pedido/$id': typeof PedidoIdRoute
@@ -304,7 +313,6 @@ export interface FileRoutesByTo {
   '/empresa/configuracoes': typeof AuthenticatedEmpresaConfiguracoesRoute
   '/empresa/cupons': typeof AuthenticatedEmpresaCuponsRoute
   '/empresa/entregadores': typeof AuthenticatedEmpresaEntregadoresRoute
-  '/empresa/kds': typeof AuthenticatedEmpresaKdsRoute
   '/empresa/mesas': typeof AuthenticatedEmpresaMesasRoute
   '/empresa/pdv': typeof AuthenticatedEmpresaPdvRoute
   '/empresa/pedidos': typeof AuthenticatedEmpresaPedidosRoute
@@ -316,6 +324,7 @@ export interface FileRoutesByTo {
   '/master/planos': typeof AuthenticatedMasterPlanosRoute
   '/master/relatorios': typeof AuthenticatedMasterRelatoriosRoute
   '/master/seguranca': typeof AuthenticatedMasterSegurancaRoute
+  '/master/usuarios': typeof AuthenticatedMasterUsuariosRoute
   '/empresa': typeof AuthenticatedEmpresaIndexRoute
   '/master': typeof AuthenticatedMasterIndexRoute
 }
@@ -333,6 +342,7 @@ export interface FileRoutesById {
   '/_authenticated/master': typeof AuthenticatedMasterRouteRouteWithChildren
   '/_authenticated/app': typeof AuthenticatedAppRoute
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
+  '/entrar-entregador/$slug': typeof EntrarEntregadorSlugRoute
   '/entregador/$id': typeof EntregadorIdRoute
   '/loja/$slug': typeof LojaSlugRoute
   '/pedido/$id': typeof PedidoIdRoute
@@ -343,7 +353,6 @@ export interface FileRoutesById {
   '/_authenticated/empresa/configuracoes': typeof AuthenticatedEmpresaConfiguracoesRoute
   '/_authenticated/empresa/cupons': typeof AuthenticatedEmpresaCuponsRoute
   '/_authenticated/empresa/entregadores': typeof AuthenticatedEmpresaEntregadoresRoute
-  '/_authenticated/empresa/kds': typeof AuthenticatedEmpresaKdsRoute
   '/_authenticated/empresa/mesas': typeof AuthenticatedEmpresaMesasRoute
   '/_authenticated/empresa/pdv': typeof AuthenticatedEmpresaPdvRoute
   '/_authenticated/empresa/pedidos': typeof AuthenticatedEmpresaPedidosRoute
@@ -355,6 +364,7 @@ export interface FileRoutesById {
   '/_authenticated/master/planos': typeof AuthenticatedMasterPlanosRoute
   '/_authenticated/master/relatorios': typeof AuthenticatedMasterRelatoriosRoute
   '/_authenticated/master/seguranca': typeof AuthenticatedMasterSegurancaRoute
+  '/_authenticated/master/usuarios': typeof AuthenticatedMasterUsuariosRoute
   '/_authenticated/empresa/': typeof AuthenticatedEmpresaIndexRoute
   '/_authenticated/master/': typeof AuthenticatedMasterIndexRoute
 }
@@ -372,6 +382,7 @@ export interface FileRouteTypes {
     | '/master'
     | '/app'
     | '/onboarding'
+    | '/entrar-entregador/$slug'
     | '/entregador/$id'
     | '/loja/$slug'
     | '/pedido/$id'
@@ -382,7 +393,6 @@ export interface FileRouteTypes {
     | '/empresa/configuracoes'
     | '/empresa/cupons'
     | '/empresa/entregadores'
-    | '/empresa/kds'
     | '/empresa/mesas'
     | '/empresa/pdv'
     | '/empresa/pedidos'
@@ -394,6 +404,7 @@ export interface FileRouteTypes {
     | '/master/planos'
     | '/master/relatorios'
     | '/master/seguranca'
+    | '/master/usuarios'
     | '/empresa/'
     | '/master/'
   fileRoutesByTo: FileRoutesByTo
@@ -407,6 +418,7 @@ export interface FileRouteTypes {
     | '/termos'
     | '/app'
     | '/onboarding'
+    | '/entrar-entregador/$slug'
     | '/entregador/$id'
     | '/loja/$slug'
     | '/pedido/$id'
@@ -417,7 +429,6 @@ export interface FileRouteTypes {
     | '/empresa/configuracoes'
     | '/empresa/cupons'
     | '/empresa/entregadores'
-    | '/empresa/kds'
     | '/empresa/mesas'
     | '/empresa/pdv'
     | '/empresa/pedidos'
@@ -429,6 +440,7 @@ export interface FileRouteTypes {
     | '/master/planos'
     | '/master/relatorios'
     | '/master/seguranca'
+    | '/master/usuarios'
     | '/empresa'
     | '/master'
   id:
@@ -445,6 +457,7 @@ export interface FileRouteTypes {
     | '/_authenticated/master'
     | '/_authenticated/app'
     | '/_authenticated/onboarding'
+    | '/entrar-entregador/$slug'
     | '/entregador/$id'
     | '/loja/$slug'
     | '/pedido/$id'
@@ -455,7 +468,6 @@ export interface FileRouteTypes {
     | '/_authenticated/empresa/configuracoes'
     | '/_authenticated/empresa/cupons'
     | '/_authenticated/empresa/entregadores'
-    | '/_authenticated/empresa/kds'
     | '/_authenticated/empresa/mesas'
     | '/_authenticated/empresa/pdv'
     | '/_authenticated/empresa/pedidos'
@@ -467,6 +479,7 @@ export interface FileRouteTypes {
     | '/_authenticated/master/planos'
     | '/_authenticated/master/relatorios'
     | '/_authenticated/master/seguranca'
+    | '/_authenticated/master/usuarios'
     | '/_authenticated/empresa/'
     | '/_authenticated/master/'
   fileRoutesById: FileRoutesById
@@ -480,6 +493,7 @@ export interface RootRouteChildren {
   PrivacidadeRoute: typeof PrivacidadeRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   TermosRoute: typeof TermosRoute
+  EntrarEntregadorSlugRoute: typeof EntrarEntregadorSlugRoute
   EntregadorIdRoute: typeof EntregadorIdRoute
   LojaSlugRoute: typeof LojaSlugRoute
   PedidoIdRoute: typeof PedidoIdRoute
@@ -564,6 +578,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EntregadorIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/entrar-entregador/$slug': {
+      id: '/entrar-entregador/$slug'
+      path: '/entrar-entregador/$slug'
+      fullPath: '/entrar-entregador/$slug'
+      preLoaderRoute: typeof EntrarEntregadorSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/onboarding': {
       id: '/_authenticated/onboarding'
       path: '/onboarding'
@@ -605,6 +626,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/empresa/'
       preLoaderRoute: typeof AuthenticatedEmpresaIndexRouteImport
       parentRoute: typeof AuthenticatedEmpresaRouteRoute
+    }
+    '/_authenticated/master/usuarios': {
+      id: '/_authenticated/master/usuarios'
+      path: '/usuarios'
+      fullPath: '/master/usuarios'
+      preLoaderRoute: typeof AuthenticatedMasterUsuariosRouteImport
+      parentRoute: typeof AuthenticatedMasterRouteRoute
     }
     '/_authenticated/master/seguranca': {
       id: '/_authenticated/master/seguranca'
@@ -683,13 +711,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEmpresaMesasRouteImport
       parentRoute: typeof AuthenticatedEmpresaRouteRoute
     }
-    '/_authenticated/empresa/kds': {
-      id: '/_authenticated/empresa/kds'
-      path: '/kds'
-      fullPath: '/empresa/kds'
-      preLoaderRoute: typeof AuthenticatedEmpresaKdsRouteImport
-      parentRoute: typeof AuthenticatedEmpresaRouteRoute
-    }
     '/_authenticated/empresa/entregadores': {
       id: '/_authenticated/empresa/entregadores'
       path: '/entregadores'
@@ -750,7 +771,6 @@ interface AuthenticatedEmpresaRouteRouteChildren {
   AuthenticatedEmpresaConfiguracoesRoute: typeof AuthenticatedEmpresaConfiguracoesRoute
   AuthenticatedEmpresaCuponsRoute: typeof AuthenticatedEmpresaCuponsRoute
   AuthenticatedEmpresaEntregadoresRoute: typeof AuthenticatedEmpresaEntregadoresRoute
-  AuthenticatedEmpresaKdsRoute: typeof AuthenticatedEmpresaKdsRoute
   AuthenticatedEmpresaMesasRoute: typeof AuthenticatedEmpresaMesasRoute
   AuthenticatedEmpresaPdvRoute: typeof AuthenticatedEmpresaPdvRoute
   AuthenticatedEmpresaPedidosRoute: typeof AuthenticatedEmpresaPedidosRoute
@@ -771,7 +791,6 @@ const AuthenticatedEmpresaRouteRouteChildren: AuthenticatedEmpresaRouteRouteChil
     AuthenticatedEmpresaCuponsRoute: AuthenticatedEmpresaCuponsRoute,
     AuthenticatedEmpresaEntregadoresRoute:
       AuthenticatedEmpresaEntregadoresRoute,
-    AuthenticatedEmpresaKdsRoute: AuthenticatedEmpresaKdsRoute,
     AuthenticatedEmpresaMesasRoute: AuthenticatedEmpresaMesasRoute,
     AuthenticatedEmpresaPdvRoute: AuthenticatedEmpresaPdvRoute,
     AuthenticatedEmpresaPedidosRoute: AuthenticatedEmpresaPedidosRoute,
@@ -792,6 +811,7 @@ interface AuthenticatedMasterRouteRouteChildren {
   AuthenticatedMasterPlanosRoute: typeof AuthenticatedMasterPlanosRoute
   AuthenticatedMasterRelatoriosRoute: typeof AuthenticatedMasterRelatoriosRoute
   AuthenticatedMasterSegurancaRoute: typeof AuthenticatedMasterSegurancaRoute
+  AuthenticatedMasterUsuariosRoute: typeof AuthenticatedMasterUsuariosRoute
   AuthenticatedMasterIndexRoute: typeof AuthenticatedMasterIndexRoute
 }
 
@@ -802,6 +822,7 @@ const AuthenticatedMasterRouteRouteChildren: AuthenticatedMasterRouteRouteChildr
     AuthenticatedMasterPlanosRoute: AuthenticatedMasterPlanosRoute,
     AuthenticatedMasterRelatoriosRoute: AuthenticatedMasterRelatoriosRoute,
     AuthenticatedMasterSegurancaRoute: AuthenticatedMasterSegurancaRoute,
+    AuthenticatedMasterUsuariosRoute: AuthenticatedMasterUsuariosRoute,
     AuthenticatedMasterIndexRoute: AuthenticatedMasterIndexRoute,
   }
 
@@ -836,6 +857,7 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacidadeRoute: PrivacidadeRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   TermosRoute: TermosRoute,
+  EntrarEntregadorSlugRoute: EntrarEntregadorSlugRoute,
   EntregadorIdRoute: EntregadorIdRoute,
   LojaSlugRoute: LojaSlugRoute,
   PedidoIdRoute: PedidoIdRoute,
