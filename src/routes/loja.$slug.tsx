@@ -454,9 +454,9 @@ function LojaPage() {
         </div>
       </div>
 
-      {/* Botão acompanhar pedido */}
+      {/* Botão acompanhar pedido + contato WhatsApp */}
       <div className="bg-white border-t border-zinc-100">
-        <div className="max-w-2xl mx-auto px-4 py-2">
+        <div className="max-w-2xl mx-auto px-4 py-2 flex items-center justify-between gap-4">
           <button
             onClick={() => { setAcompanharOpen(true); setTelBusca(""); setPedidosBusca(null); }}
             className="flex items-center gap-2 text-sm font-semibold text-zinc-600 hover:text-zinc-900 transition-colors"
@@ -464,6 +464,20 @@ function LojaPage() {
             <PackageSearch className="size-4" style={{ color: brandColor }} />
             Acompanhar meu pedido
           </button>
+          {empresa.whatsapp && (() => {
+            const num = empresa.whatsapp.replace(/\D/g, "");
+            const numFull = num.startsWith("55") ? num : `55${num}`;
+            return (
+              <a
+                href={`https://wa.me/${numFull}`}
+                target="_blank" rel="noreferrer"
+                className="flex items-center gap-1.5 text-sm font-semibold text-green-600 hover:text-green-700 transition-colors"
+              >
+                <MessageCircle className="size-4" />
+                Falar com a loja
+              </a>
+            );
+          })()}
         </div>
       </div>
 
