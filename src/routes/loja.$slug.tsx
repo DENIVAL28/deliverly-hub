@@ -248,10 +248,12 @@ function LojaPage() {
       if (forma_pagamento === "PIX") {
         const { data: pixData } = await supabase
           .from("empresas")
-          .select("chave_pix,nome_recebedor,cidade_recebedor")
+          .select("chave_pix,nome_recebedor,cidade_recebedor,tipo_chave_pix")
           .eq("id", empresa.id)
           .single();
-        const chave = (pixData as any)?.chave_pix;
+        const chaveRaw  = (pixData as any)?.chave_pix;
+        const tipoChave = (pixData as any)?.tipo_chave_pix ?? "aleatoria";
+        const chave = chaveRaw ? normalizarChavePix(chaveRaw.trim(), tipoChave) : null;
         if (chave) {
           const nomeRec   = ((pixData as any)?.nome_recebedor  || empresa.nome_fantasia || "Loja").normalize("NFD").replace(/[̀-ͯ]/g, "").substring(0, 25);
           const cidadeRec = ((pixData as any)?.cidade_recebedor || "Brasil").normalize("NFD").replace(/[̀-ͯ]/g, "").substring(0, 15);
@@ -1536,6 +1538,14 @@ function AddressField({ brandColor, onCapture }: {
 }
 
 /* ─── PIX BR Code (EMV) ─── */
+function normalizarChavePix(chave: string, tipo: string): string {
+  if (tipo === "telefone") {
+    const d = chave.replace(/\D/g, "");
+    return d.startsWith("55") ? `+${d}` : `+55${d}`;
+  }
+  if (tipo === "cpf" || tipo === "cnpj") return chave.replace(/\D/g, "");
+  return chave.toLowerCase().trim();
+}
 function crc16(str: string): number {
   let crc = 0xFFFF;
   for (let i = 0; i < str.length; i++) {
