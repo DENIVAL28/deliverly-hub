@@ -956,9 +956,6 @@ function LojaPage() {
                 <FormField name="nome" label="Seu nome" required />
                 {!mesa && <TelField />}
                 {!mesa && tipoEntrega === "delivery" && (
-                  {/* CEP removido do fluxo principal — estava confundindo clientes */}
-                )}
-                {!mesa && tipoEntrega === "delivery" && (
                   <AddressField
                     brandColor={brandColor}
                     onCapture={(lat, lng) => { setClienteLat(lat); setClienteLng(lng); }}
