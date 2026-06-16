@@ -57,7 +57,8 @@ function ProdutosPage() {
     if (file.size > 5 * 1024 * 1024) { toast.error("A imagem deve ter no máximo 5 MB."); return null; }
     const { error } = await supabase.storage.from("produtos").upload(path, file, { upsert: true });
     if (error) { toast.error("Erro no upload da imagem."); return null; }
-    return supabase.storage.from("produtos").getPublicUrl(path).data.publicUrl;
+    const { publicUrl } = supabase.storage.from("produtos").getPublicUrl(path).data;
+    return `${publicUrl}?t=${Date.now()}`;
   }
 
   async function create(e: React.FormEvent<HTMLFormElement>) {
