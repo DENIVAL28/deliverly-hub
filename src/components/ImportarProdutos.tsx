@@ -65,11 +65,12 @@ function autoMapear(col: string): CampoDestino {
   if (/^(nome|produto|item|name|titulo|title)/.test(c))         return "nome";
   if (/^(preco|valor|price|custo|venda|preco_normal|precovenda)/.test(c)) return "preco";
   if (/^(preco_promo|promocional|promo|oferta|desconto)/.test(c)) return "preco_promocional";
-  if (/^(categoria|category|tipo|tipo_produto|grupo|secao|seção)/.test(c)) return "categoria";
+  // grupo_de e grupo_nome ANTES de categoria, pois "grupo" está no padrão de categoria
+  if (/^(grupode|produtopai|produtopai|paraproduto|opcaopara)/.test(c)) return "grupo_de";
+  if (/^(gruponome|grupoopcoes|nomegrupo)/.test(c))             return "grupo_nome";
+  if (/^(categoria|category|tipo|tipoproduto|secao)/.test(c))   return "categoria";
   if (/^(descricao|descri|description|desc|detalhe|observacao)/.test(c)) return "descricao";
   if (/^(estoque|stock|qtd|quantidade)/.test(c))                return "estoque";
-  if (/^(grupo_de|grupode|produtopai|produto_pai|para_produto|opcaopara|opcao_para)/.test(c)) return "grupo_de";
-  if (/^(grupo_nome|gruponome|grupoopcoes|grupo_opcoes|nomegrupo|nome_grupo)/.test(c)) return "grupo_nome";
   return "ignorar";
 }
 
