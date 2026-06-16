@@ -223,11 +223,11 @@ function LojaPage() {
       }
 
       trackEvento(empresa.id, "pedido_finalizado");
-      const pedido = pedidoJson as { id: string; numero: number; subtotal: number; taxa_entrega: number; desconto: number; total: number };
-      const subtotal = pedido.subtotal;
-      const taxa     = pedido.taxa_entrega;
-      const desconto = pedido.desconto;
-      const total    = pedido.total;
+      const pedido = pedidoJson as { id: string; numero: number; subtotal: number | string; taxa_entrega: number | string; desconto: number | string; total: number | string };
+      const subtotal = Number(pedido.subtotal ?? 0);
+      const taxa     = Number(pedido.taxa_entrega ?? 0);
+      const desconto = Number(pedido.desconto ?? 0);
+      const total    = Number(pedido.total ?? Math.max(0, subtotal + taxa - desconto));
       const msg = encodeURIComponent(
         `*Pedido #${pedido.numero}*\n\n` +
         (mesa ? `📍 Mesa ${mesa}\nCliente: ${cliente_nome}\n` : isRetirada ? `🏪 *Retirada no balcão*\nCliente: ${cliente_nome}\nTelefone: ${cliente_telefone}\n` : `Cliente: ${cliente_nome}\nTelefone: ${cliente_telefone}\nEndereço: ${cliente_endereco}\n`) + `\n` +
@@ -267,8 +267,13 @@ function LojaPage() {
           return;
         }
       }
-
       setPedidoFeito({ id: pedido.id, numero: pedido.numero, waUrl });
+    } catch (err) {
+      console.error("Erro ao finalizar pedido", err);
+      const message = err instanceof Error && err.message
+        ? err.message
+        : "Não foi possível finalizar o pedido. Tente novamente.";
+      setCheckoutErro(message);
     } finally {
       setCheckoutLoading(false);
     }
