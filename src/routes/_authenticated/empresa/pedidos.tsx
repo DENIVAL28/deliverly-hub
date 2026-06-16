@@ -578,7 +578,7 @@ function PedidosPage() {
                   </>
                 )}
 
-                {p.status === "cancelado" && (
+                {(p.status === "cancelado" || p.status === "finalizado") && (
                   <Button size="sm" variant="outline" onClick={() => excluir(p.id)} className="text-red-500 hover:text-red-600 border-red-200 hover:bg-red-50 gap-1.5">
                     🗑 Excluir
                   </Button>
