@@ -8,13 +8,15 @@ import { toast } from "sonner";
 
 // Campos destino disponíveis para mapeamento
 const CAMPOS_DESTINO = [
-  { value: "nome",              label: "Nome do produto",    required: true  },
-  { value: "preco",             label: "Preço",              required: true  },
-  { value: "categoria",         label: "Categoria",          required: false },
-  { value: "descricao",         label: "Descrição",          required: false },
-  { value: "preco_promocional", label: "Preço promocional",  required: false },
-  { value: "estoque",           label: "Estoque inicial",    required: false },
-  { value: "ignorar",           label: "— Ignorar coluna —", required: false },
+  { value: "nome",              label: "Nome do produto",           required: true  },
+  { value: "preco",             label: "Preço",                     required: true  },
+  { value: "categoria",         label: "Categoria",                 required: false },
+  { value: "descricao",         label: "Descrição",                 required: false },
+  { value: "preco_promocional", label: "Preço promocional",         required: false },
+  { value: "estoque",           label: "Estoque inicial",           required: false },
+  { value: "grupo_de",          label: "Opção para produto(s)",     required: false },
+  { value: "grupo_nome",        label: "Nome do grupo de opções",   required: false },
+  { value: "ignorar",           label: "— Ignorar coluna —",        required: false },
 ] as const;
 
 type CampoDestino = typeof CAMPOS_DESTINO[number]["value"];
@@ -66,6 +68,8 @@ function autoMapear(col: string): CampoDestino {
   if (/^(categoria|category|tipo|tipo_produto|grupo|secao|seção)/.test(c)) return "categoria";
   if (/^(descricao|descri|description|desc|detalhe|observacao)/.test(c)) return "descricao";
   if (/^(estoque|stock|qtd|quantidade)/.test(c))                return "estoque";
+  if (/^(grupo_de|grupode|produtopai|produto_pai|para_produto|opcaopara|opcao_para)/.test(c)) return "grupo_de";
+  if (/^(grupo_nome|gruponome|grupoopcoes|grupo_opcoes|nomegrupo|nome_grupo)/.test(c)) return "grupo_nome";
   return "ignorar";
 }
 
@@ -93,7 +97,7 @@ export function ImportarProdutos({ open, onClose, empresaId, categoriasExistente
   const [colunas, setColunas] = useState<string[]>([]);
   const [linhas, setLinhas] = useState<Record<string, string>[]>([]);
   const [mapeamento, setMapeamento] = useState<Record<string, CampoDestino>>({});
-  const [resultado, setResultado] = useState({ criados: 0, categoriasCriadas: 0, erros: 0 });
+  const [resultado, setResultado] = useState({ criados: 0, categoriasCriadas: 0, opcoesCriadas: 0, erros: 0 });
 
   function resetar() {
     setStep("upload");
@@ -101,7 +105,7 @@ export function ImportarProdutos({ open, onClose, empresaId, categoriasExistente
     setColunas([]);
     setLinhas([]);
     setMapeamento({});
-    setResultado({ criados: 0, categoriasCriadas: 0, erros: 0 });
+    setResultado({ criados: 0, categoriasCriadas: 0, opcoesCriadas: 0, erros: 0 });
     if (fileRef.current) fileRef.current.value = "";
   }
 
@@ -157,6 +161,8 @@ export function ImportarProdutos({ open, onClose, empresaId, categoriasExistente
       categoria:         get("categoria") ?? "",
       descricao:         get("descricao") ?? "",
       estoque:           get("estoque") ? parseInt(get("estoque")!) || 0 : null,
+      grupo_de:          get("grupo_de")?.trim() ?? "",
+      grupo_nome:        get("grupo_nome")?.trim() ?? "",
     };
   }
 
@@ -166,20 +172,22 @@ export function ImportarProdutos({ open, onClose, empresaId, categoriasExistente
 
   async function importar() {
     setStep("importando");
-    let criados = 0, categoriasCriadas = 0, erros = 0;
+    let criados = 0, categoriasCriadas = 0, opcoesCriadas = 0, erros = 0;
 
-    // Mapeia categorias existentes (minúsculas para comparação case-insensitive)
+    const todas = linhas.map(linhaParaProduto);
+
+    // Separa: produtos normais vs linhas de opção (têm grupo_de preenchido)
+    const linhasProduto = todas.filter((p) => !p.grupo_de && p.nome && p.preco !== null);
+    const linhasOpcao   = todas.filter((p) => !!p.grupo_de && p.nome && p.preco !== null);
+
+    // Mapeia categorias existentes
     const catMap: Record<string, string> = {};
     categoriasExistentes.forEach((c) => { catMap[c.nome.toLowerCase()] = c.id; });
 
-    // Coleta categorias novas necessárias
+    // Cria categorias novas necessárias (apenas para produtos, não para opções)
     const categoriasNecessarias = new Set<string>();
-    linhas.forEach((l) => {
-      const p = linhaParaProduto(l);
-      if (p.categoria) categoriasNecessarias.add(p.categoria.trim());
-    });
+    linhasProduto.forEach((p) => { if (p.categoria) categoriasNecessarias.add(p.categoria.trim()); });
 
-    // Cria categorias que não existem
     let ordemCat = categoriasExistentes.length;
     for (const nomeCat of categoriasNecessarias) {
       if (catMap[nomeCat.toLowerCase()]) continue;
@@ -195,14 +203,11 @@ export function ImportarProdutos({ open, onClose, empresaId, categoriasExistente
       }
     }
 
-    // Cria os produtos em lotes de 20
-    const produtos = linhas
-      .map(linhaParaProduto)
-      .filter((p) => p.nome && p.preco !== null);
-
+    // Cria produtos em lotes de 20 e constrói mapa nome → id para os grupos
+    const produtoNomeParaId: Record<string, string> = {};
     const LOTE = 20;
-    for (let i = 0; i < produtos.length; i += LOTE) {
-      const lote = produtos.slice(i, i + LOTE).map((p) => ({
+    for (let i = 0; i < linhasProduto.length; i += LOTE) {
+      const lote = linhasProduto.slice(i, i + LOTE).map((p) => ({
         empresa_id:        empresaId,
         nome:              p.nome.trim(),
         descricao:         p.descricao?.trim() || "",
@@ -213,18 +218,67 @@ export function ImportarProdutos({ open, onClose, empresaId, categoriasExistente
         estoque:           p.estoque ?? 0,
       }));
 
-      const { error } = await supabase.from("produtos").insert(lote as any);
+      const { data: criados_data, error } = await (supabase.from("produtos") as any).insert(lote).select("id,nome");
       if (error) {
         console.error("Erro ao importar lote:", error.message);
         erros += lote.length;
       } else {
         criados += lote.length;
+        (criados_data ?? []).forEach((p: any) => { produtoNomeParaId[p.nome.toLowerCase()] = p.id; });
       }
     }
 
-    setResultado({ criados, categoriasCriadas, erros });
+    // Cria grupos de opções e suas opções
+    if (linhasOpcao.length > 0) {
+      const grupoCache: Record<string, string> = {}; // "produtoId:grupoNome" → grupoId
+
+      for (const opcao of linhasOpcao) {
+        const produtosAlvo = opcao.grupo_de
+          .split(/[;,]/)
+          .map((s) => s.trim().toLowerCase())
+          .filter(Boolean);
+        const grupoNome = opcao.grupo_nome.trim() || "Adicionais";
+
+        for (const nomeProduto of produtosAlvo) {
+          const produtoId = produtoNomeParaId[nomeProduto];
+          if (!produtoId) { erros++; continue; }
+
+          const cacheKey = `${produtoId}:${grupoNome}`;
+          let grupoId = grupoCache[cacheKey];
+
+          if (!grupoId) {
+            const { data: g, error: ge } = await (supabase.from("grupos_opcoes") as any)
+              .insert({
+                produto_id:  produtoId,
+                nome:        grupoNome,
+                obrigatorio: false,
+                multiplo:    true,
+                max_escolhas: 10,
+                ordem:       0,
+              })
+              .select("id")
+              .single();
+            if (ge || !g) { erros++; continue; }
+            grupoId = g.id;
+            grupoCache[cacheKey] = grupoId;
+          }
+
+          const { error: oe } = await (supabase.from("opcoes") as any).insert({
+            grupo_id:        grupoId,
+            nome:            opcao.nome.trim(),
+            preco_adicional: opcao.preco ?? 0,
+            ativo:           true,
+            ordem:           0,
+          });
+          if (oe) erros++;
+          else opcoesCriadas++;
+        }
+      }
+    }
+
+    setResultado({ criados, categoriasCriadas, opcoesCriadas, erros });
     setStep("concluido");
-    if (criados > 0) onImportado();
+    if (criados > 0 || opcoesCriadas > 0) onImportado();
   }
 
   const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -272,6 +326,12 @@ export function ImportarProdutos({ open, onClose, empresaId, categoriasExistente
                 <span>• descricao, desc</span>
                 <span>• preco_promo, promocional</span>
                 <span>• estoque, stock, qtd</span>
+                <span>• grupo_de (para adicionais)</span>
+                <span>• grupo_nome</span>
+              </div>
+              <div className="border-t border-zinc-200 pt-2 bg-amber-50 rounded-lg px-3 py-2 text-amber-700">
+                <p className="font-semibold mb-1">Para importar adicionais (opções de produto):</p>
+                <p>Use a coluna <strong>grupo_de</strong> com o nome do produto ao qual o adicional pertence. Separe vários produtos com ponto-e-vírgula. Use <strong>grupo_nome</strong> para nomear o grupo (ex: Adicionais).</p>
               </div>
               <div className="border-t border-zinc-200 pt-2 text-zinc-400">
                 <p className="font-semibold text-zinc-600 mb-1">Tem planilha Excel (.xlsx)?</p>
@@ -395,11 +455,14 @@ export function ImportarProdutos({ open, onClose, empresaId, categoriasExistente
               <p className="text-xl font-black text-zinc-900 mb-1">Importação concluída!</p>
               <div className="space-y-1 text-sm text-zinc-500">
                 <p>✅ <strong>{resultado.criados}</strong> produto{resultado.criados !== 1 ? "s" : ""} criado{resultado.criados !== 1 ? "s" : ""}</p>
+                {resultado.opcoesCriadas > 0 && (
+                  <p>✦ <strong>{resultado.opcoesCriadas}</strong> opção{resultado.opcoesCriadas !== 1 ? "ões" : ""} de adicional criada{resultado.opcoesCriadas !== 1 ? "s" : ""}</p>
+                )}
                 {resultado.categoriasCriadas > 0 && (
                   <p>🗂️ <strong>{resultado.categoriasCriadas}</strong> categoria{resultado.categoriasCriadas !== 1 ? "s" : ""} criada{resultado.categoriasCriadas !== 1 ? "s" : ""} automaticamente</p>
                 )}
                 {resultado.erros > 0 && (
-                  <p>⚠️ <strong>{resultado.erros}</strong> produto{resultado.erros !== 1 ? "s" : ""} com erro (verifique o cardápio)</p>
+                  <p>⚠️ <strong>{resultado.erros}</strong> item{resultado.erros !== 1 ? "s" : ""} com erro (verifique o cardápio)</p>
                 )}
               </div>
             </div>
