@@ -5,8 +5,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 async function verificarAssinatura(req: Request, body: string): Promise<boolean> {
   const secret = Deno.env.get("MP_WEBHOOK_SECRET");
   if (!secret) {
-    console.warn("[webhook-mp] MP_WEBHOOK_SECRET não configurado — assinatura ignorada");
-    return true;
+    console.error("[webhook-mp] MP_WEBHOOK_SECRET não configurado — rejeitando requisição");
+    return false;
   }
 
   const xSig = req.headers.get("x-signature") ?? "";

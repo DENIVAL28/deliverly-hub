@@ -1,8 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+const APP_ORIGIN = Deno.env.get("APP_ORIGIN") ?? "https://deliverly-hub.vercel.app";
 const CORS = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin": APP_ORIGIN,
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
@@ -45,13 +46,20 @@ serve(async (req) => {
       });
     }
 
+    const ROLES_PERMITIDOS = ["empresa_owner", "empresa_staff"];
+    if (!ROLES_PERMITIDOS.includes(role)) {
+      return new Response(JSON.stringify({ error: "Role inválido" }), {
+        status: 400, headers: { ...CORS, "Content-Type": "application/json" },
+      });
+    }
+
     // Cliente admin com service role (nunca exposto no client)
     const adminClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    const appOrigin = Deno.env.get("APP_ORIGIN") ?? "https://deliverly-hub.vercel.app";
+    const appOrigin = APP_ORIGIN;
 
     // Tenta convidar — Supabase envia o e-mail automaticamente
     const { data: inviteData, error: inviteErr } = await adminClient.auth.admin.inviteUserByEmail(

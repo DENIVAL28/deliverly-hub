@@ -95,10 +95,13 @@ function EntregadorPage() {
   async function salvarPix() {
     if (!pixKey.trim()) { toast.error("Digite sua chave PIX."); return; }
     setSalvandoPix(true);
-    await (supabase as any).from("entregadores")
-      .update({ chave_pix: pixKey.trim(), tipo_chave_pix: pixTipo })
-      .eq("public_token", entregador.public_token);
+    const { error } = await (supabase as any).rpc("entregador_atualizar_pix", {
+      p_token:          entregador.public_token,
+      p_chave_pix:      pixKey.trim(),
+      p_tipo_chave_pix: pixTipo,
+    });
     setSalvandoPix(false);
+    if (error) { toast.error("Erro ao salvar chave PIX."); return; }
     setPixSalvo(true);
     setTimeout(() => setPixSalvo(false), 3000);
     toast.success("Chave PIX salva!");
