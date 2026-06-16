@@ -1,6 +1,6 @@
 ﻿import { Link } from "@tanstack/react-router";
 import {
-  ArrowRight, Store, Check, MessageCircle, Smartphone, Zap, Shield, BarChart3,
+  ArrowRight, Store, Check, MessageCircle, Smartphone, Zap, BarChart3,
   Menu, X, ChevronDown, Mail, ClipboardList, Utensils, Bike,
 } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -63,6 +63,42 @@ const faqs = [
   { q: "Posso cancelar a qualquer momento?",              a: "Sim, sem multa e sem contrato. Ao cancelar, seu acesso continua até o fim do período já pago. Depois disso, a loja é desativada — e você pode reativar quando quiser." },
 ];
 
+const comparisonRows = [
+  { label: "Comissão por pedido",   them: "Até 30% por venda",          us: "0% — sem comissão" },
+  { label: "App obrigatório",       them: "Cliente precisa baixar",      us: "Funciona no navegador" },
+  { label: "Visibilidade da loja",  them: "Concorre com centenas",       us: "Canal exclusivo da sua marca" },
+  { label: "Dados dos clientes",    them: "Ficam com o marketplace",     us: "100% seus, para fidelizar" },
+  { label: "Caixa PDV",             them: "Não incluso",                 us: "Incluso no mesmo plano" },
+  { label: "Custo mensal",          them: "R$0 + comissão variável",     us: "A partir de R$99 fixos" },
+];
+
+const testimonials = [
+  {
+    nome: "Marcos Oliveira",
+    cargo: "Dono — Pizzaria Dom Marcos",
+    cidade: "Cuiabá, MT",
+    avatar: "MO",
+    texto: "Antes eu pagava mais de R$2.000 por mês só de comissão pro iFood. Agora pago R$99 fixos e tenho o contato direto de todos os meus clientes. Valeu muito a troca.",
+    stars: 5,
+  },
+  {
+    nome: "Fernanda Lima",
+    cargo: "Sócia — Hamburgeria La Femme",
+    cidade: "Várzea Grande, MT",
+    avatar: "FL",
+    texto: "O cardápio ficou lindo e em menos de 24h já estava recebendo pedidos. O caixa PDV foi a parte que mais me surpreendeu — tudo numa tela só, sem precisar de outro sistema.",
+    stars: 5,
+  },
+  {
+    nome: "Ricardo Santos",
+    cargo: "Gerente — Marmitex do Ricardo",
+    cidade: "Rondonópolis, MT",
+    avatar: "RS",
+    texto: "Simples, rápido e sem complicação. Meus clientes adoraram porque não precisam baixar app nenhum. Só compartilho o link e pronto.",
+    stars: 5,
+  },
+];
+
 export function Landing() {
   return (
     <div className="min-h-screen bg-white text-zinc-900 antialiased">
@@ -72,14 +108,17 @@ export function Landing() {
       <Hero />
       <SocialProof />
       <Stats />
+      <Comparison />
       <ComoFunciona />
       <Segments />
       <Features />
       <SejaEntregador />
+      <Testimonials />
       <Pricing />
       <CTA />
       <FAQ />
       <Footer />
+      <WhatsAppFlutuante />
     </div>
   );
 }
@@ -159,62 +198,6 @@ function ConsumerHeroV2() {
   );
 }
 
-function ConsumerHero() {
-  const categorias = [
-    "🍕 Pizzas", "🍔 Hambúrgueres", "🍱 Marmitas", "🍇 Açaí",
-    "🌮 Lanches", "☕ Cafeterias", "🥐 Padarias", "🍝 Restaurantes", "🍢 Espetinhos",
-  ];
-  return (
-    <section className="relative bg-zinc-950 overflow-hidden pt-32 pb-24">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_90%_70%_at_50%_-5%,_rgba(249,115,22,0.28),_transparent)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_40%_40%_at_80%_90%,_rgba(249,115,22,0.08),_transparent)]" />
-
-      <div className="relative mx-auto max-w-4xl px-6 text-center">
-        <div className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 text-orange-400 text-xs font-bold px-4 py-1.5 rounded-full mb-8 uppercase tracking-widest">
-          <span className="size-1.5 rounded-full bg-orange-400 animate-pulse" />
-          Delivery direto do restaurante para você
-        </div>
-
-        <h1 className="text-4xl md:text-6xl font-black text-white mb-5 leading-[1.08]">
-          Peça delivery dos<br />
-          <span className="text-orange-400">seus restaurantes</span><br />
-          favoritos
-        </h1>
-
-        <p className="text-zinc-300 text-lg leading-relaxed mb-10 max-w-[46ch] mx-auto">
-          Cardápios digitais, sem app para baixar. Faça seu pedido diretamente com o estabelecimento — rápido, sem filas e sem intermediários.
-        </p>
-
-        {/* Categorias pill */}
-        <div className="flex flex-wrap justify-center gap-2 mb-12">
-          {categorias.map((c) => (
-            <span key={c}
-              className="bg-white/5 border border-white/10 text-white text-sm font-medium px-4 py-2 rounded-full hover:bg-orange-500/20 hover:border-orange-500/30 transition-colors cursor-default select-none">
-              {c}
-            </span>
-          ))}
-        </div>
-
-        <Link to="/lojas"
-          className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white font-black px-10 py-4 rounded-2xl text-lg transition-all hover:scale-[1.02] shadow-2xl shadow-orange-500/30">
-          🛵 Ver restaurantes disponíveis <ArrowRight className="size-5" />
-        </Link>
-
-        <p className="text-zinc-500 text-sm mt-4">Sem cadastro necessário para fazer seu pedido</p>
-
-        {/* Transição para B2B */}
-        <div className="mt-16 pt-8 border-t border-white/5">
-          <p className="text-zinc-500 text-sm">
-            É dono de restaurante?{" "}
-            <a href="#para-restaurantes" className="text-orange-400 hover:text-orange-300 font-semibold transition-colors">
-              Crie o seu próprio delivery ↓
-            </a>
-          </p>
-        </div>
-      </div>
-    </section>
-  );
-}
 
 /* ─── Nav ─── */
 function Nav() {
@@ -662,7 +645,7 @@ function SejaEntregador() {
   ];
 
   return (
-    <section id="seja-entregador" className="py-24 bg-zinc-950 overflow-hidden">
+    <section id="seja-entregador" className="relative py-24 bg-zinc-950 overflow-hidden">
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_80%_50%,_rgba(249,115,22,0.08),_transparent)]" />
       </div>
@@ -920,6 +903,128 @@ function FAQ() {
         </div>
       </div>
     </section>
+  );
+}
+
+/* ─── Comparison ─── */
+function Comparison() {
+  return (
+    <section className="py-24 bg-zinc-950 overflow-hidden">
+      <div className="mx-auto max-w-5xl px-6">
+        <div className="text-center mb-14">
+          <span className="text-xs font-bold uppercase tracking-widest text-orange-400 mb-3 block">Por que sair do marketplace</span>
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 leading-tight">
+            O marketplace cobra por cada pedido.<br />
+            <span className="text-orange-400">Você não precisa aceitar isso.</span>
+          </h2>
+          <p className="text-zinc-400 max-w-[52ch] mx-auto text-sm leading-relaxed">
+            Em 300 pedidos de R$60, o marketplace retém até{" "}
+            <strong className="text-red-400">R$5.400 em comissões</strong>. Com o Delivery Hub, você paga{" "}
+            <strong className="text-green-400">R$99 fixos</strong>.
+          </p>
+        </div>
+
+        <div className="rounded-2xl overflow-hidden ring-1 ring-white/10">
+          <div className="grid grid-cols-3 bg-zinc-900 border-b border-white/10">
+            <div className="p-4 text-xs font-bold text-zinc-500 uppercase tracking-widest">Recurso</div>
+            <div className="p-4 text-center">
+              <span className="text-xs font-bold text-red-400 uppercase tracking-widest">iFood / Rappi</span>
+            </div>
+            <div className="p-4 text-center bg-orange-500/10 border-l border-orange-500/20">
+              <span className="text-xs font-bold text-orange-400 uppercase tracking-widest">Delivery Hub</span>
+            </div>
+          </div>
+
+          {comparisonRows.map((row, i) => (
+            <div key={row.label} className={`grid grid-cols-3 border-b border-white/5 last:border-0 ${i % 2 === 0 ? "bg-zinc-950" : "bg-zinc-900/40"}`}>
+              <div className="p-4 text-sm text-zinc-300 font-medium flex items-center">{row.label}</div>
+              <div className="p-4 flex items-center justify-center">
+                <span className="text-xs text-red-400 text-center leading-relaxed">{row.them}</span>
+              </div>
+              <div className="p-4 flex items-center justify-center bg-orange-500/5 border-l border-orange-500/10">
+                <span className="text-xs text-green-400 font-semibold text-center leading-relaxed">{row.us}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="text-center mt-10">
+          <Link to="/auth"
+            className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white font-bold px-8 py-4 rounded-2xl text-base transition-all hover:scale-[1.02] shadow-xl shadow-orange-500/25">
+            Criar minha loja sem comissão <ArrowRight className="size-5" />
+          </Link>
+          <p className="text-zinc-600 text-xs mt-3">7 dias grátis · Sem cartão de crédito · Cancele quando quiser</p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─── Testimonials ─── */
+function Testimonials() {
+  return (
+    <section className="py-24 bg-zinc-50 border-t border-zinc-100">
+      <div className="mx-auto max-w-7xl px-6">
+        <div className="text-center mb-14">
+          <span className="text-xs font-bold uppercase tracking-widest text-orange-500 mb-3 block">Depoimentos</span>
+          <h2 className="text-3xl md:text-4xl font-bold text-zinc-900 mb-3">
+            Restaurantes que largaram o marketplace
+          </h2>
+          <p className="text-zinc-500 max-w-[48ch] mx-auto text-sm">
+            Donos de restaurante que criaram o próprio canal e pararam de pagar comissão.
+          </p>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-6">
+          {testimonials.map((t) => (
+            <div key={t.nome} className="bg-white rounded-2xl p-6 ring-1 ring-zinc-200 hover:ring-orange-200 hover:shadow-lg transition-all flex flex-col gap-4">
+              <div className="flex gap-0.5">
+                {Array.from({ length: t.stars }).map((_, i) => (
+                  <span key={i} className="text-orange-400 text-lg leading-none">★</span>
+                ))}
+              </div>
+              <p className="text-sm text-zinc-600 leading-relaxed flex-grow">"{t.texto}"</p>
+              <div className="flex items-center gap-3 border-t border-zinc-100 pt-4">
+                <div className="size-10 rounded-full bg-orange-100 flex items-center justify-center text-sm font-bold text-orange-600 shrink-0">
+                  {t.avatar}
+                </div>
+                <div>
+                  <div className="text-sm font-bold text-zinc-900">{t.nome}</div>
+                  <div className="text-xs text-zinc-500">{t.cargo}</div>
+                  <div className="text-xs text-zinc-400">{t.cidade}</div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─── WhatsApp Flutuante ─── */
+function WhatsAppFlutuante() {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setVisible(window.scrollY > 500);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  return (
+    <a
+      href={WA_LINK}
+      target="_blank"
+      rel="noreferrer"
+      aria-label="Falar no WhatsApp"
+      className={`fixed bottom-6 right-6 z-50 flex items-center gap-2.5 bg-green-500 hover:bg-green-400 text-white font-bold px-4 py-3.5 rounded-2xl shadow-2xl shadow-green-500/30 transition-all duration-300 hover:scale-[1.04] ${
+        visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
+      }`}
+    >
+      <MessageCircle className="size-5 shrink-0" />
+      <span className="text-sm hidden sm:block">Falar no WhatsApp</span>
+    </a>
   );
 }
 

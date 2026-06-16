@@ -707,33 +707,38 @@ function LojaPage() {
 
       {/* Modal pedido confirmado */}
       {pedidoFeito && (
-        <div className="fixed inset-0 z-50 bg-black/60 flex items-end sm:items-center justify-center">
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-end sm:items-center justify-center">
           <div className="bg-white w-full sm:max-w-sm sm:rounded-2xl rounded-t-2xl p-6 text-center">
-            <div className="size-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
-              <MessageCircle className="size-8 text-green-600" />
+            <div className="size-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-3">
+              <CheckCircle2 className="size-8 text-green-600" />
             </div>
-            <h3 className="text-lg font-bold text-zinc-900">Pedido #{pedidoFeito.numero} confirmado!</h3>
-            <p className="text-sm text-zinc-500 mt-1 mb-5">Toque no botão abaixo para enviar seu pedido pelo WhatsApp.</p>
-            {pedidoFeito.waUrl && (
-              <a
-                href={pedidoFeito.waUrl}
-                target="_blank" rel="noreferrer"
-                className="flex items-center justify-center gap-2 w-full bg-green-500 hover:bg-green-600 text-white rounded-2xl h-14 font-bold text-base transition-colors mb-3 shadow-lg"
-              >
-                <MessageCircle className="size-5" /> Enviar pedido pelo WhatsApp
-              </a>
+            <h3 className="text-xl font-black text-zinc-900">Pedido #{pedidoFeito.numero} registrado!</h3>
+
+            {pedidoFeito.waUrl ? (
+              <>
+                <div className="mt-3 mb-5 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+                  <p className="text-sm font-bold text-amber-800">⚠️ Falta um passo!</p>
+                  <p className="text-xs text-amber-700 mt-0.5 leading-relaxed">Toque no botão abaixo para o restaurante receber seu pedido pelo WhatsApp. Sem isso, o pedido não chega.</p>
+                </div>
+                <a
+                  href={pedidoFeito.waUrl}
+                  target="_blank" rel="noreferrer"
+                  className="flex items-center justify-center gap-2 w-full bg-green-500 hover:bg-green-600 text-white rounded-2xl h-14 font-bold text-base transition-colors mb-3 shadow-lg"
+                >
+                  <MessageCircle className="size-5" /> Enviar pedido pelo WhatsApp
+                </a>
+              </>
+            ) : (
+              <p className="text-sm text-zinc-500 mt-2 mb-5">Seu pedido foi registrado com sucesso!</p>
             )}
+
             <a
               href={`/pedido/${pedidoFeito.id}`}
               target="_blank" rel="noreferrer"
-              className="flex items-center justify-center gap-2 w-full border border-zinc-200 text-zinc-600 rounded-2xl h-11 font-medium text-sm transition-colors mb-3 hover:bg-zinc-50"
+              className="flex items-center justify-center gap-2 w-full border border-zinc-200 text-zinc-600 rounded-2xl h-11 font-medium text-sm transition-colors hover:bg-zinc-50"
             >
-              Acompanhar status do pedido →
+              Ver status do pedido →
             </a>
-            <button onClick={() => setPedidoFeito(null)}
-              className="text-sm text-zinc-400 hover:text-zinc-600 transition-colors">
-              Fechar
-            </button>
           </div>
         </div>
       )}
@@ -942,14 +947,9 @@ function LojaPage() {
                   </div>
                 </div>
                 <FormField name="nome" label="Seu nome" required />
-                {!mesa && <FormField name="telefone" label="Telefone (WhatsApp)" required />}
+                {!mesa && <TelField />}
                 {!mesa && tipoEntrega === "delivery" && (
-                  <CepField
-                    cep={clienteCep}
-                    onCepChange={setClienteCep}
-                    onCidadeChange={setClienteCidade}
-                    brandColor={brandColor}
-                  />
+                  {/* CEP removido do fluxo principal — estava confundindo clientes */}
                 )}
                 {!mesa && tipoEntrega === "delivery" && (
                   <AddressField
@@ -978,7 +978,7 @@ function LojaPage() {
                     <p className="text-xs text-zinc-400">Pagamento feito no momento da entrega</p>
                   )}
                 </div>
-                <CpfField value={clienteCpf} onChange={setClienteCpf} />
+                {/* CPF removido do fluxo — cliente de delivery não precisa informar CPF */}
                 <div className="space-y-1.5">
                   <Label>Observação (opcional)</Label>
                   <Textarea name="observacao" rows={2} className="rounded-xl resize-none" />
@@ -1317,6 +1317,36 @@ function FormField({ name, label, required }: { name: string; label: string; req
   );
 }
 
+/* ─── Campo telefone com auto-formatação ─── */
+function TelField() {
+  const [value, setValue] = useState("");
+
+  function format(v: string) {
+    const d = v.replace(/\D/g, "").slice(0, 11);
+    if (d.length <= 2) return d;
+    if (d.length <= 7) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
+    if (d.length <= 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+    return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+  }
+
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor="telefone">Telefone / WhatsApp</Label>
+      <input
+        id="telefone"
+        name="telefone"
+        type="tel"
+        inputMode="numeric"
+        required
+        value={value}
+        onChange={(e) => setValue(format(e.target.value))}
+        placeholder="(11) 99999-9999"
+        className="w-full h-12 rounded-xl border border-zinc-200 bg-white px-3 text-base placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-orange-400/40"
+      />
+    </div>
+  );
+}
+
 /* ─── Campo CEP com auto-fill ViaCEP ─── */
 function CepField({ cep, onCepChange, onCidadeChange, brandColor }: {
   cep: string;
@@ -1482,16 +1512,17 @@ function AddressField({ brandColor, onCapture }: {
           onClick={usarGps}
           disabled={loading}
           title="Usar minha localização GPS"
-          className={`h-12 px-3 rounded-xl border transition-colors disabled:opacity-50 ${
+          className={`h-12 px-3 rounded-xl border transition-colors disabled:opacity-50 flex items-center gap-1.5 text-xs font-semibold whitespace-nowrap ${
             capturado
               ? "bg-green-50 border-green-300 text-green-600"
-              : "border-zinc-200 text-zinc-400 hover:text-orange-500 hover:border-orange-300"
+              : "border-zinc-200 text-zinc-500 hover:text-orange-500 hover:border-orange-300"
           }`}
         >
           {loading
-            ? <span className="size-5 block rounded-full border-2 border-current border-t-transparent animate-spin" />
-            : <LocateFixed className="size-5" />
+            ? <span className="size-4 block rounded-full border-2 border-current border-t-transparent animate-spin" />
+            : <LocateFixed className="size-4" />
           }
+          <span>{capturado ? "✓ GPS" : "📍 GPS"}</span>
         </button>
       </div>
       {capturado && (
