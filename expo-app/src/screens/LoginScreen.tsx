@@ -33,7 +33,7 @@ export default function LoginScreen() {
       <View style={styles.card}>
         <Text style={styles.logo}>🛵</Text>
         <Text style={styles.titulo}>Deliverly Hub</Text>
-        <Text style={styles.subtitulo}>Painel do Lojista</Text>
+        <Text style={styles.subtitulo}>Peça delivery ou gerencie sua loja</Text>
 
         <TextInput
           style={styles.input}
