@@ -116,8 +116,8 @@ function LojaPage() {
             const desc = Number(novo.desconto ?? 0);
             const total = Number(novo.total) - desc;
             if (chave) {
-              const nomeRec   = (emp.nome_recebedor || emp.nome_fantasia || "Loja").normalize("NFD").replace(/[̀-ͯ]/g, "").substring(0, 25);
-              const cidadeRec = (emp.cidade_recebedor || "Brasil").normalize("NFD").replace(/[̀-ͯ]/g, "").substring(0, 15);
+              const nomeRec   = (emp.nome_recebedor || emp.nome_fantasia || "Loja").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^\x20-\x7E]/g, "").substring(0, 25).trim() || "Loja";
+              const cidadeRec = (emp.cidade_recebedor || "Brasil").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^\x20-\x7E]/g, "").substring(0, 15).trim() || "Brasil";
               const payload2  = gerarPixPayload(chave, nomeRec, cidadeRec, total);
               try {
                 const qrUrl = await QRCode.toDataURL(payload2, { width: 240, margin: 2, color: { dark: "#18181b", light: "#ffffff" } });
@@ -331,8 +331,8 @@ function LojaPage() {
         const tipoChave = emp.tipo_chave_pix ?? "aleatoria";
         const chave = chaveRaw ? normalizarChavePix(chaveRaw.trim(), tipoChave) : null;
         if (chave) {
-          const nomeRec   = (emp.nome_recebedor || emp.nome_fantasia || "Loja").normalize("NFD").replace(/[̀-ͯ]/g, "").substring(0, 25);
-          const cidadeRec = (emp.cidade_recebedor || "Brasil").normalize("NFD").replace(/[̀-ͯ]/g, "").substring(0, 15);
+          const nomeRec   = (emp.nome_recebedor || emp.nome_fantasia || "Loja").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^\x20-\x7E]/g, "").substring(0, 25).trim() || "Loja";
+          const cidadeRec = (emp.cidade_recebedor || "Brasil").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^\x20-\x7E]/g, "").substring(0, 15).trim() || "Brasil";
           const payload   = gerarPixPayload(chave, nomeRec, cidadeRec, total);
           try {
             const qrUrl = await QRCode.toDataURL(payload, { width: 240, margin: 2, color: { dark: "#18181b", light: "#ffffff" } });
@@ -1689,12 +1689,14 @@ function AddressField({ brandColor, onCapture }: {
 
 /* ─── PIX BR Code (EMV) ─── */
 function normalizarChavePix(chave: string, tipo: string): string {
+  const c = chave.trim();
   if (tipo === "telefone") {
-    const d = chave.replace(/\D/g, "");
+    const d = c.replace(/\D/g, "");
     return d.startsWith("55") ? `+${d}` : `+55${d}`;
   }
-  if (tipo === "cpf" || tipo === "cnpj") return chave.replace(/\D/g, "");
-  return chave.toLowerCase().trim();
+  if (tipo === "cpf" || tipo === "cnpj") return c.replace(/\D/g, "");
+  if (tipo === "email") return c.toLowerCase();
+  return c; // aleatoria (UUID) — mantém case original
 }
 function crc16(str: string): number {
   let crc = 0xFFFF;

@@ -56,12 +56,14 @@ const MANUAL_STATUSES = ["aguardando_confirmacao", "aguardando_pagamento"];
 
 // ── PIX helpers ──────────────────────────────────────────────────────────────
 function normalizarChavePix(chave: string, tipo: string): string {
+  const c = chave.trim();
   if (tipo === "telefone") {
-    const d = chave.replace(/\D/g, "");
+    const d = c.replace(/\D/g, "");
     return d.startsWith("55") ? `+${d}` : `+55${d}`;
   }
-  if (tipo === "cpf" || tipo === "cnpj") return chave.replace(/\D/g, "");
-  return chave.toLowerCase().trim();
+  if (tipo === "cpf" || tipo === "cnpj") return c.replace(/\D/g, "");
+  if (tipo === "email") return c.toLowerCase();
+  return c; // aleatoria (UUID)
 }
 function crc16(str: string): number {
   let crc = 0xFFFF;
@@ -109,8 +111,8 @@ function PedidoTracking() {
     const chave = normalizarChavePix(chaveRaw.trim(), empresa?.tipo_chave_pix ?? "aleatoria");
     const desc = Number(p.desconto ?? 0);
     const total = Number(p.total) - desc;
-    const nomeRec   = (empresa?.nome_recebedor || empresa?.nome_fantasia || "Loja").normalize("NFD").replace(/[̀-ͯ]/g, "").substring(0, 25);
-    const cidadeRec = (empresa?.cidade_recebedor || "Brasil").normalize("NFD").replace(/[̀-ͯ]/g, "").substring(0, 15);
+    const nomeRec   = (empresa?.nome_recebedor || empresa?.nome_fantasia || "Loja").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^\x20-\x7E]/g, "").substring(0, 25).trim() || "Loja";
+    const cidadeRec = (empresa?.cidade_recebedor || "Brasil").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^\x20-\x7E]/g, "").substring(0, 15).trim() || "Brasil";
     const payload = gerarPixPayload(chave, nomeRec, cidadeRec, total);
     try {
       const qrUrl = await QRCode.toDataURL(payload, { width: 240, margin: 2, color: { dark: "#18181b", light: "#ffffff" } });
