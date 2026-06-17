@@ -10,7 +10,10 @@ function proximoDia(dias: string[], dayMap: string[], now: Date): string {
 }
 
 export function verificarAberto(empresa: any): { aberto: boolean; label: string } {
+  // Override manual: true = forçar aberto, false = forçar fechado, null = automático
   if (empresa.aberto === false) return { aberto: false, label: "Fechado agora" };
+  if (empresa.aberto === true)  return { aberto: true,  label: "Aberto agora" };
+  // null → segue horário configurado
   const { horario_abertura, horario_fechamento, dias_semana } = empresa;
   if (!horario_abertura || !horario_fechamento) return { aberto: true, label: "Aberto" };
 

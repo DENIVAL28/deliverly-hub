@@ -423,8 +423,8 @@ function LojaPage() {
         </div>
       )}
 
-      {/* Banner fechada manualmente */}
-      {(empresa as any).aberto === false && empresa.status !== "bloqueada" && (
+      {/* Banner fechada (manual ou fora do horário) */}
+      {!verificarAberto(empresa).aberto && empresa.status !== "bloqueada" && (
         <div className="bg-zinc-800 text-white text-center py-3 text-sm font-semibold flex items-center justify-center gap-2">
           🔴 Loja fechada no momento — voltamos em breve!
         </div>

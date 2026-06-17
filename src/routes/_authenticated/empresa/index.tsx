@@ -84,7 +84,7 @@ function EmpresaDashboard() {
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const isoToday = today.toISOString();
 
-  const [lojaAberta, setLojaAberta] = useState<boolean | null>(null);
+  const [lojaAberta, setLojaAberta] = useState<boolean | null | "auto">("auto");
   const [toggling, setToggling] = useState(false);
 
   // Dados da empresa (slug + nome + aberto + Z-API)
@@ -96,21 +96,22 @@ function EmpresaDashboard() {
   });
 
   useEffect(() => {
-    if (empresa && lojaAberta === null) {
-      setLojaAberta((empresa as any).aberto !== false);
+    if (empresa) {
+      const v = (empresa as any).aberto;
+      setLojaAberta(v === null || v === undefined ? "auto" : v);
     }
   }, [empresa]);
 
-  async function toggleLoja() {
+  async function setStatusLoja(novoStatus: boolean | null) {
     if (!empresaId || toggling) return;
-    const novoStatus = !lojaAberta;
     setToggling(true);
-    const { error } = await supabase.from("empresas").update({ aberto: novoStatus }).eq("id", empresaId);
+    const { error } = await supabase.from("empresas").update({ aberto: novoStatus } as any).eq("id", empresaId);
     setToggling(false);
     if (error) { toast.error("Erro ao atualizar status da loja."); return; }
-    setLojaAberta(novoStatus);
+    setLojaAberta(novoStatus === null ? "auto" : novoStatus);
     qc.invalidateQueries({ queryKey: ["empresa-info-dash", empresaId] });
-    toast(novoStatus ? "✅ Loja aberta para pedidos!" : "🔴 Loja fechada. Clientes não poderão fazer pedidos.", { duration: 4000 });
+    const msgs = { true: "✅ Loja forçada aberta!", false: "🔴 Loja fechada manualmente.", null: "🔄 Loja em modo automático (segue horário)." };
+    toast(msgs[String(novoStatus) as "true"|"false"|"null"], { duration: 4000 });
   }
 
   // Contagem total de pedidos (para detectar usuário novo)
@@ -320,23 +321,29 @@ function EmpresaDashboard() {
 
         {/* Toggle abrir/fechar loja */}
         <div className={`rounded-2xl ring-1 p-5 flex flex-col justify-between gap-3 transition-colors ${
-          lojaAberta ? "bg-green-50 ring-green-200" : "bg-red-50 ring-red-200"
+          lojaAberta === true ? "bg-green-50 ring-green-200" : lojaAberta === false ? "bg-red-50 ring-red-200" : "bg-zinc-50 ring-zinc-200"
         }`}>
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium uppercase tracking-wider text-zinc-500">Status da loja</span>
-            <Power className={`size-4 ${lojaAberta ? "text-green-600" : "text-red-500"}`} />
+            <Power className={`size-4 ${lojaAberta === true ? "text-green-600" : lojaAberta === false ? "text-red-500" : "text-zinc-400"}`} />
           </div>
-          <button
-            onClick={toggleLoja}
-            disabled={toggling}
-            className={`w-full py-2 rounded-xl text-sm font-bold transition-colors ${
-              lojaAberta
-                ? "bg-green-500 hover:bg-green-600 text-white"
-                : "bg-red-500 hover:bg-red-600 text-white"
-            } disabled:opacity-60`}
-          >
-            {toggling ? "Atualizando…" : lojaAberta ? "🟢 ABERTA — fechar" : "🔴 FECHADA — abrir"}
-          </button>
+          <div className="grid grid-cols-3 gap-1.5">
+            <button onClick={() => setStatusLoja(null)} disabled={toggling}
+              className={`py-2 rounded-xl text-xs font-bold transition-colors ${lojaAberta === "auto" ? "bg-zinc-700 text-white" : "bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-50"} disabled:opacity-60`}>
+              🔄 Auto
+            </button>
+            <button onClick={() => setStatusLoja(true)} disabled={toggling}
+              className={`py-2 rounded-xl text-xs font-bold transition-colors ${lojaAberta === true ? "bg-green-500 text-white" : "bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-50"} disabled:opacity-60`}>
+              🟢 Abrir
+            </button>
+            <button onClick={() => setStatusLoja(false)} disabled={toggling}
+              className={`py-2 rounded-xl text-xs font-bold transition-colors ${lojaAberta === false ? "bg-red-500 text-white" : "bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-50"} disabled:opacity-60`}>
+              🔴 Fechar
+            </button>
+          </div>
+          <p className="text-[10px] text-zinc-400 text-center -mt-1">
+            {lojaAberta === "auto" ? "Seguindo horário configurado" : lojaAberta === true ? "Aberta fora do horário" : "Fechada manualmente"}
+          </p>
           {lojaUrl && (
             <div className="flex gap-2">
               <button
