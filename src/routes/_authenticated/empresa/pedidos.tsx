@@ -181,8 +181,19 @@ function PedidosPage() {
   const [page, setPage] = useState(0);
   const [exportando, setExportando] = useState(false);
   const [dataSel, setDataSel] = useState<Date>(() => { const d = new Date(); d.setHours(0,0,0,0); return d; });
+  const [notifPermissao, setNotifPermissao] = useState<NotificationPermission>(
+    typeof Notification !== "undefined" ? Notification.permission : "denied"
+  );
   const somAtivoRef = useRef(true);
   somAtivoRef.current = somAtivo;
+
+  async function pedirPermissaoNotificacao() {
+    if (typeof Notification === "undefined") return;
+    const result = await Notification.requestPermission();
+    setNotifPermissao(result);
+    if (result === "granted") toast.success("Notificações ativadas! Você será avisado ao receber pedidos.");
+    else toast.error("Permissão negada. Ative nas configurações do navegador.");
+  }
 
   const diaInicio = new Date(dataSel); diaInicio.setHours(0,0,0,0);
   const diaFim    = new Date(dataSel); diaFim.setHours(23,59,59,999);
@@ -209,12 +220,17 @@ function PedidosPage() {
         (payload) => {
           qc.invalidateQueries({ queryKey: ["pedidos-ativos", empresaId] });
           qc.invalidateQueries({ queryKey: ["pedidos-pag", empresaId] });
-          if (somAtivoRef.current) {
-            playBeep();
-            toast(`🛒 Novo pedido #${payload.new.numero} chegou!`, {
-              description: `Cliente: ${payload.new.cliente_nome}`,
-              duration: 10000,
-              action: { label: "Ver", onClick: () => {} },
+          playBeep();
+          toast(`🛒 Novo pedido #${payload.new.numero} chegou!`, {
+            description: `Cliente: ${payload.new.cliente_nome}`,
+            duration: 10000,
+            action: { label: "Ver", onClick: () => {} },
+          });
+          if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+            new Notification("🛒 Novo pedido chegou!", {
+              body: `Pedido #${payload.new.numero} — ${payload.new.cliente_nome}`,
+              icon: "/favicon.ico",
+              tag: `pedido-${payload.new.id}`,
             });
           }
         }
@@ -229,6 +245,13 @@ function PedidosPage() {
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [empresaId, qc]);
+
+  // Título da aba muda com pedidos ativos
+  useEffect(() => {
+    const count = (pedidosAtivos as any[]).length;
+    document.title = count > 0 ? `(${count}) Novo pedido! — Pedidos` : "Pedidos";
+    return () => { document.title = "Pedidos"; };
+  }, [(pedidosAtivos as any[]).length]);
 
   // Query 1 — Ativos (tempo real, sem limite)
   const { data: pedidosAtivos = [] } = useQuery({
@@ -393,6 +416,30 @@ function PedidosPage() {
       />
       {limites.pedidos !== null && (
         <LimiteBanner atual={pedidosMes} limite={limites.pedidos} tipo="pedidos este mês" minPlano="profissional" />
+      )}
+
+      {/* Banner para ativar notificações do navegador */}
+      {notifPermissao === "default" && (
+        <div className="mb-4 flex items-center justify-between gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+          <div className="flex items-center gap-2">
+            <Bell className="size-4 text-amber-600 shrink-0" />
+            <p className="text-sm text-amber-800 font-medium">
+              Ative as notificações para ser avisado ao receber pedidos, mesmo com a aba minimizada.
+            </p>
+          </div>
+          <Button size="sm" onClick={pedirPermissaoNotificacao}
+            className="shrink-0 bg-amber-500 hover:bg-amber-600 text-white border-0">
+            Ativar agora
+          </Button>
+        </div>
+      )}
+      {notifPermissao === "denied" && (
+        <div className="mb-4 flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+          <BellOff className="size-4 text-red-500 shrink-0" />
+          <p className="text-sm text-red-700">
+            Notificações bloqueadas no navegador. Para ativar: clique no cadeado na barra de endereço → Notificações → Permitir.
+          </p>
+        </div>
       )}
 
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
