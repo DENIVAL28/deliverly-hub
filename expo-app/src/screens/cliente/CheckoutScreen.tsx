@@ -7,7 +7,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "../../lib/supabase";
 
 const fmt = (v: number) => `R$ ${Number(v).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
-const PAGAMENTOS = ["Dinheiro", "Cartão na entrega", "PIX na entrega"];
 
 export default function CheckoutScreen({ route, navigation }: any) {
   const { empresa, carrinho } = route.params;
@@ -18,25 +17,78 @@ export default function CheckoutScreen({ route, navigation }: any) {
   const [numero, setNumero]           = useState("");
   const [bairro, setBairro]           = useState("");
   const [complemento, setComplemento] = useState("");
-  const [pagamento, setPagamento]     = useState("PIX na entrega");
+  const [pagamento, setPagamento]     = useState(empresa.chave_pix ? "PIX na entrega" : "Dinheiro");
   const [troco, setTroco]             = useState("");
   const [obs, setObs]                 = useState("");
-  const [tipoEntrega, setTipoEntrega] = useState<"delivery" | "retirada">(
-    empresa.retirada_ativa ? "delivery" : "delivery"
-  );
-  const [loading, setLoading] = useState(false);
+  const [tipoEntrega, setTipoEntrega] = useState<"delivery" | "retirada">("delivery");
+  const [cupomCodigo, setCupomCodigo] = useState("");
+  const [cupomAplicado, setCupomAplicado] = useState<any | null>(null);
+  const [cupomErro, setCupomErro]     = useState("");
+  const [aplicandoCupom, setAplicandoCupom] = useState(false);
+  const [loading, setLoading]         = useState(false);
 
   const subtotal = carrinho.reduce((s: number, i: any) => s + i.preco * i.qty, 0);
   const taxa = tipoEntrega === "delivery" ? (empresa.taxa_entrega ?? 0) : 0;
-  const total = subtotal + taxa;
+
+  // Calcular desconto do cupom
+  let desconto = 0;
+  if (cupomAplicado) {
+    if (cupomAplicado.tipo === "percentual") desconto = subtotal * (cupomAplicado.valor / 100);
+    else if (cupomAplicado.tipo === "fixo") desconto = Math.min(cupomAplicado.valor, subtotal);
+    else if (cupomAplicado.tipo === "frete_gratis") desconto = taxa;
+  }
+
+  const total = Math.max(0, subtotal + taxa - desconto);
+
+  // Formas de pagamento disponíveis
+  const pagamentos = ["Dinheiro", "Cartão na entrega", ...(empresa.chave_pix ? ["PIX na entrega"] : [])];
+
+  async function aplicarCupom() {
+    if (!cupomCodigo.trim()) return;
+    setAplicandoCupom(true);
+    setCupomErro("");
+    const { data, error } = await supabase
+      .from("cupons")
+      .select("id, codigo, tipo, valor, desconto_max, validade, usos_max, usos_atual, ativo, pedido_minimo")
+      .eq("empresa_id", empresa.id)
+      .eq("codigo", cupomCodigo.trim().toUpperCase())
+      .single();
+
+    setAplicandoCupom(false);
+    if (error || !data) { setCupomErro("Cupom não encontrado."); return; }
+    if (!data.ativo) { setCupomErro("Cupom inativo."); return; }
+    if (data.validade && new Date(data.validade) < new Date()) { setCupomErro("Cupom expirado."); return; }
+    if (data.usos_max && data.usos_atual >= data.usos_max) { setCupomErro("Cupom esgotado."); return; }
+    if (data.pedido_minimo && subtotal < data.pedido_minimo) {
+      setCupomErro(`Pedido mínimo para este cupom: ${fmt(data.pedido_minimo)}`); return;
+    }
+    setCupomAplicado(data);
+    setCupomErro("");
+  }
 
   async function finalizar() {
+    // Validações
     if (!nome.trim()) { Alert.alert("Informe seu nome."); return; }
     if (tipoEntrega === "delivery") {
       if (!telefone.trim()) { Alert.alert("Informe seu telefone."); return; }
       if (!logradouro.trim() || !numero.trim() || !bairro.trim()) {
         Alert.alert("Preencha o endereço completo."); return;
       }
+    }
+
+    // Validar loja aberta
+    if (!empresa.aberto) {
+      const ok = await new Promise((resolve) =>
+        Alert.alert("Loja fechada", "Esta loja está fechada no momento. Deseja enviar o pedido mesmo assim?",
+          [{ text: "Cancelar", onPress: () => resolve(false) }, { text: "Enviar", onPress: () => resolve(true) }]
+        )
+      );
+      if (!ok) return;
+    }
+
+    // Validar pedido mínimo
+    if (empresa.pedido_minimo && subtotal < empresa.pedido_minimo) {
+      Alert.alert("Pedido mínimo", `O pedido mínimo desta loja é ${fmt(empresa.pedido_minimo)}.`); return;
     }
 
     setLoading(true);
@@ -58,6 +110,7 @@ export default function CheckoutScreen({ route, navigation }: any) {
       p_tipo:             tipoEntrega,
       p_forma_pagamento:  pagamento,
       p_observacao:       obsCompleta || null,
+      p_cupom_id:         cupomAplicado?.id ?? null,
       p_itens: carrinho.map((i: any) => ({
         produto_id: i.id,
         quantidade: i.qty,
@@ -67,7 +120,7 @@ export default function CheckoutScreen({ route, navigation }: any) {
 
     setLoading(false);
     if (error) { Alert.alert("Erro ao finalizar pedido", error.message); return; }
-    navigation.replace("Rastreio", { pedidoId, empresaNome: empresa.nome_fantasia });
+    navigation.replace("Rastreio", { pedidoId, empresaNome: empresa.nome_fantasia, empresa });
   }
 
   return (
@@ -86,19 +139,16 @@ export default function CheckoutScreen({ route, navigation }: any) {
           <Text style={s.secaoTitulo}>Resumo</Text>
           {carrinho.map((i: any, idx: number) => (
             <View key={idx} style={s.itemRow}>
-              <Text style={s.itemQty}>{i.qty}x</Text>
+              <Text style={s.itemQty}>{i.qty}×</Text>
               <Text style={s.itemNome} numberOfLines={1}>{i.nome}</Text>
               <Text style={s.itemPreco}>{fmt(i.preco * i.qty)}</Text>
             </View>
           ))}
-          {taxa > 0 && (
-            <View style={s.itemRow}>
-              <Text style={s.itemQty} />
-              <Text style={[s.itemNome, { color: "#71717a" }]}>Taxa de entrega</Text>
-              <Text style={s.itemPreco}>{fmt(taxa)}</Text>
-            </View>
-          )}
-          <View style={s.totalRow}>
+          <View style={s.divider} />
+          <View style={s.itemRow}><Text style={s.itemQty} /><Text style={[s.itemNome, { color: "#71717a" }]}>Subtotal</Text><Text style={s.itemPreco}>{fmt(subtotal)}</Text></View>
+          {taxa > 0 && <View style={s.itemRow}><Text style={s.itemQty} /><Text style={[s.itemNome, { color: "#71717a" }]}>Taxa de entrega</Text><Text style={s.itemPreco}>{fmt(taxa)}</Text></View>}
+          {desconto > 0 && <View style={s.itemRow}><Text style={s.itemQty} /><Text style={[s.itemNome, { color: "#16a34a" }]}>Desconto</Text><Text style={[s.itemPreco, { color: "#16a34a" }]}>-{fmt(desconto)}</Text></View>}
+          <View style={[s.itemRow, s.totalRow]}>
             <Text style={s.totalLabel}>Total</Text>
             <Text style={s.totalValor}>{fmt(total)}</Text>
           </View>
@@ -110,14 +160,8 @@ export default function CheckoutScreen({ route, navigation }: any) {
             <Text style={s.secaoTitulo}>Tipo de entrega</Text>
             <View style={s.tipoRow}>
               {(["delivery", "retirada"] as const).map((t) => (
-                <TouchableOpacity
-                  key={t}
-                  style={[s.tipoBtn, tipoEntrega === t && s.tipoBtnAtivo]}
-                  onPress={() => setTipoEntrega(t)}
-                >
-                  <Text style={[s.tipoTexto, tipoEntrega === t && s.tipoTextoAtivo]}>
-                    {t === "delivery" ? "🛵 Delivery" : "🏃 Retirada"}
-                  </Text>
+                <TouchableOpacity key={t} style={[s.tipoBtn, tipoEntrega === t && s.tipoBtnAtivo]} onPress={() => setTipoEntrega(t)}>
+                  <Text style={[s.tipoTexto, tipoEntrega === t && s.tipoTextoAtivo]}>{t === "delivery" ? "🛵 Delivery" : "🏃 Retirada"}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -146,23 +190,51 @@ export default function CheckoutScreen({ route, navigation }: any) {
           </View>
         )}
 
+        {/* Cupom */}
+        <View style={s.secao}>
+          <Text style={s.secaoTitulo}>Cupom de desconto</Text>
+          {cupomAplicado ? (
+            <View style={s.cupomAplicado}>
+              <Text style={s.cupomAplicadoTexto}>🎉 {cupomAplicado.codigo} — desconto de {fmt(desconto)}</Text>
+              <TouchableOpacity onPress={() => { setCupomAplicado(null); setCupomCodigo(""); }}>
+                <Text style={s.cupomRemover}>Remover</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={{ flexDirection: "row", gap: 8 }}>
+              <TextInput
+                style={[s.input, { flex: 1, marginBottom: 0 }]}
+                placeholder="Código do cupom"
+                placeholderTextColor="#a1a1aa"
+                value={cupomCodigo}
+                onChangeText={(t) => setCupomCodigo(t.toUpperCase())}
+                autoCapitalize="characters"
+              />
+              <TouchableOpacity style={s.cupomBtn} onPress={aplicarCupom} disabled={aplicandoCupom}>
+                {aplicandoCupom ? <ActivityIndicator color="#fff" size="small" /> : <Text style={s.cupomBtnTexto}>Aplicar</Text>}
+              </TouchableOpacity>
+            </View>
+          )}
+          {cupomErro ? <Text style={s.cupomErro}>{cupomErro}</Text> : null}
+        </View>
+
         {/* Pagamento */}
         <View style={s.secao}>
           <Text style={s.secaoTitulo}>Pagamento</Text>
-          {PAGAMENTOS.map((p) => (
+          {pagamentos.map((p) => (
             <TouchableOpacity key={p} style={[s.pgOpcao, pagamento === p && s.pgOpcaoAtiva]} onPress={() => setPagamento(p)}>
               <View style={[s.radio, pagamento === p && s.radioAtivo]} />
               <Text style={[s.pgTexto, pagamento === p && s.pgTextoAtivo]}>{p}</Text>
             </TouchableOpacity>
           ))}
           {pagamento === "Dinheiro" && (
-            <TextInput style={[s.input, { marginTop: 8 }]} placeholder="Troco para quanto? (ex: 50,00)" placeholderTextColor="#a1a1aa" value={troco} onChangeText={setTroco} keyboardType="numeric" />
+            <TextInput style={[s.input, { marginTop: 8 }]} placeholder="Troco para quanto?" placeholderTextColor="#a1a1aa" value={troco} onChangeText={setTroco} keyboardType="numeric" />
           )}
         </View>
 
         {/* Observação */}
         <View style={s.secao}>
-          <Text style={s.secaoTitulo}>Observação (opcional)</Text>
+          <Text style={s.secaoTitulo}>Observação</Text>
           <TextInput style={[s.input, { height: 70 }]} placeholder="Ex: sem cebola, portão azul..." placeholderTextColor="#a1a1aa" value={obs} onChangeText={setObs} multiline />
         </View>
 
@@ -183,13 +255,14 @@ const s = StyleSheet.create({
   headerNome: { flex: 1, textAlign: "center", fontSize: 16, fontWeight: "700", color: "#18181b" },
   scroll: { padding: 14, gap: 14 },
   secao: { backgroundColor: "#fff", borderRadius: 14, padding: 16, elevation: 1, shadowColor: "#000", shadowOpacity: 0.04, shadowRadius: 4 },
-  secaoTitulo: { fontSize: 12, fontWeight: "800", color: "#71717a", marginBottom: 12, textTransform: "uppercase", letterSpacing: 0.8 },
-  itemRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 },
+  secaoTitulo: { fontSize: 11, fontWeight: "800", color: "#71717a", marginBottom: 12, textTransform: "uppercase", letterSpacing: 0.8 },
+  itemRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 6 },
   itemQty: { fontSize: 13, fontWeight: "700", color: "#f97316", width: 28 },
-  itemNome: { flex: 1, fontSize: 14, color: "#3f3f46" },
-  itemPreco: { fontSize: 14, fontWeight: "700", color: "#18181b" },
-  totalRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: "#f4f4f5" },
-  totalLabel: { fontSize: 15, fontWeight: "800", color: "#18181b" },
+  itemNome: { flex: 1, fontSize: 13, color: "#3f3f46" },
+  itemPreco: { fontSize: 13, fontWeight: "700", color: "#18181b" },
+  divider: { height: 1, backgroundColor: "#f4f4f5", marginVertical: 8 },
+  totalRow: { marginTop: 4 },
+  totalLabel: { flex: 1, fontSize: 15, fontWeight: "800", color: "#18181b" },
   totalValor: { fontSize: 15, fontWeight: "800", color: "#f97316" },
   tipoRow: { flexDirection: "row", gap: 10 },
   tipoBtn: { flex: 1, paddingVertical: 12, borderRadius: 12, borderWidth: 1.5, borderColor: "#e4e4e7", alignItems: "center" },
@@ -197,6 +270,12 @@ const s = StyleSheet.create({
   tipoTexto: { fontSize: 14, fontWeight: "600", color: "#71717a" },
   tipoTextoAtivo: { color: "#f97316" },
   input: { height: 50, borderWidth: 1, borderColor: "#e4e4e7", borderRadius: 10, paddingHorizontal: 14, fontSize: 15, color: "#18181b", marginBottom: 10, backgroundColor: "#fafafa" },
+  cupomAplicado: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", backgroundColor: "#dcfce7", padding: 12, borderRadius: 10 },
+  cupomAplicadoTexto: { fontSize: 13, fontWeight: "700", color: "#16a34a", flex: 1 },
+  cupomRemover: { fontSize: 12, color: "#dc2626", fontWeight: "600" },
+  cupomBtn: { backgroundColor: "#f97316", borderRadius: 10, paddingHorizontal: 16, height: 50, justifyContent: "center" },
+  cupomBtnTexto: { color: "#fff", fontWeight: "700", fontSize: 14 },
+  cupomErro: { fontSize: 12, color: "#dc2626", marginTop: 6 },
   pgOpcao: { flexDirection: "row", alignItems: "center", gap: 12, padding: 14, borderRadius: 12, borderWidth: 1.5, borderColor: "#e4e4e7", marginBottom: 8 },
   pgOpcaoAtiva: { borderColor: "#f97316", backgroundColor: "#fff7ed" },
   radio: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: "#d4d4d8" },

@@ -17,6 +17,7 @@ export default function CardapioScreen({ route, navigation }: any) {
   const [catAtiva, setCatAtiva]       = useState<string | null>(null);
   const [loading, setLoading]         = useState(true);
   const [carrinho, setCarrinho]       = useState<any[]>([]);
+  const [busca, setBusca]             = useState("");
 
   // Modal produto
   const [modalProd, setModalProd]     = useState<any | null>(null);
@@ -119,7 +120,12 @@ export default function CardapioScreen({ route, navigation }: any) {
 
   const total = carrinho.reduce((s, i) => s + i.preco * i.qty, 0);
   const qtdCarrinho = carrinho.reduce((s, i) => s + i.qty, 0);
-  const produtosDaCat = catAtiva ? produtos.filter((p) => p.categoria_id === catAtiva) : [];
+  const produtosDaCat = busca.trim()
+    ? produtos.filter((p) =>
+        p.nome?.toLowerCase().includes(busca.toLowerCase()) ||
+        p.descricao?.toLowerCase().includes(busca.toLowerCase())
+      )
+    : catAtiva ? produtos.filter((p) => p.categoria_id === catAtiva) : [];
 
   if (loading) return <View style={s.center}><ActivityIndicator size="large" color="#f97316" /></View>;
 
@@ -157,6 +163,22 @@ export default function CardapioScreen({ route, navigation }: any) {
             {empresa?.pedido_minimo > 0 ? ` · Mín. ${fmt(empresa.pedido_minimo)}` : ""}
           </Text>
         </View>
+      </View>
+
+      {/* Busca */}
+      <View style={s.buscaWrap}>
+        <TextInput
+          style={s.buscaInput}
+          placeholder="Buscar no cardápio..."
+          placeholderTextColor="#a1a1aa"
+          value={busca}
+          onChangeText={setBusca}
+        />
+        {busca ? (
+          <TouchableOpacity onPress={() => setBusca("")} style={s.buscaLimpar}>
+            <Text style={s.buscaLimparTexto}>✕</Text>
+          </TouchableOpacity>
+        ) : null}
       </View>
 
       {!estaAberto && (
@@ -323,6 +345,10 @@ const s = StyleSheet.create({
   statusBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 20 },
   statusTexto: { fontSize: 11, fontWeight: "700" },
   lojaMeta: { fontSize: 12, color: "#71717a" },
+  buscaWrap: { flexDirection: "row", alignItems: "center", backgroundColor: "#fff", paddingHorizontal: 12, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: "#e4e4e7" },
+  buscaInput: { flex: 1, height: 40, backgroundColor: "#f4f4f5", borderRadius: 10, paddingHorizontal: 12, fontSize: 14, color: "#18181b" },
+  buscaLimpar: { padding: 8 },
+  buscaLimparTexto: { fontSize: 14, color: "#a1a1aa" },
   fechadoBanner: { backgroundColor: "#fff7ed", padding: 10, borderBottomWidth: 1, borderBottomColor: "#fed7aa" },
   fechadoTexto: { fontSize: 12, color: "#ea580c", textAlign: "center" },
   catsScroll: { backgroundColor: "#fff", maxHeight: 52 },
