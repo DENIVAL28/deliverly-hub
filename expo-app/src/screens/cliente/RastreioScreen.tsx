@@ -1,18 +1,18 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "../../lib/supabase";
 
 const ETAPAS = [
-  { key: "novo",       label: "Pedido recebido",    icone: "📋" },
-  { key: "aceito",     label: "Aceito pela loja",   icone: "✅" },
-  { key: "preparo",    label: "Em preparo",          icone: "👨‍🍳" },
-  { key: "entrega",    label: "Saiu para entrega",   icone: "🛵" },
-  { key: "finalizado", label: "Entregue!",           icone: "🎉" },
+  { key: "aguardando_confirmacao", label: "Aguardando confirmação", icone: "⏳" },
+  { key: "novo",                   label: "Pedido recebido",         icone: "📋" },
+  { key: "aceito",                 label: "Aceito pela loja",        icone: "✅" },
+  { key: "preparo",                label: "Em preparo",              icone: "👨‍🍳" },
+  { key: "entrega",                label: "Saiu para entrega",       icone: "🛵" },
+  { key: "finalizado",             label: "Entregue!",               icone: "🎉" },
 ];
 
-const STATUS_ORDER = ["novo", "aceito", "preparo", "entrega", "finalizado"];
-
+const STATUS_ORDER = ["aguardando_confirmacao", "aguardando_pagamento", "novo", "aceito", "preparo", "entrega", "finalizado"];
 const fmt = (v: number) => `R$ ${Number(v).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
 
 export default function RastreioScreen({ route, navigation }: any) {
@@ -24,7 +24,7 @@ export default function RastreioScreen({ route, navigation }: any) {
     async function buscar() {
       const { data } = await supabase
         .from("pedidos")
-        .select("id, numero, status, total, created_at, cliente_nome, forma_pagamento")
+        .select("id, numero, status, total, taxa_entrega, subtotal, created_at, cliente_nome, forma_pagamento, tipo, observacao, endereco_entrega")
         .eq("id", pedidoId)
         .single();
       setPedido(data);
@@ -32,7 +32,6 @@ export default function RastreioScreen({ route, navigation }: any) {
     }
     buscar();
 
-    // Realtime — atualiza status
     const channel = supabase
       .channel(`rastreio-${pedidoId}`)
       .on("postgres_changes", {
@@ -48,8 +47,16 @@ export default function RastreioScreen({ route, navigation }: any) {
     return <View style={s.center}><ActivityIndicator size="large" color="#f97316" /></View>;
   }
 
-  const statusIdx = STATUS_ORDER.indexOf(pedido.status);
   const cancelado = pedido.status === "cancelado";
+  const aguardandoPagamento = pedido.status === "aguardando_pagamento";
+  const statusIdx = ETAPAS.findIndex((e) => e.key === pedido.status);
+
+  // Filtra etapas relevantes para o tipo de pedido
+  const etapasFiltradas = pedido.tipo === "retirada"
+    ? ETAPAS.filter((e) => e.key !== "entrega")
+    : pedido.tipo === "mesa"
+    ? ETAPAS.filter((e) => !["entrega", "aguardando_confirmacao"].includes(e.key))
+    : ETAPAS;
 
   return (
     <SafeAreaView style={s.container}>
@@ -61,37 +68,67 @@ export default function RastreioScreen({ route, navigation }: any) {
         <View style={{ width: 36 }} />
       </View>
 
-      <View style={s.scroll}>
-        <View style={s.loja}>
-          <Text style={s.lojaNome}>{empresaNome}</Text>
-          <Text style={s.lojaMeta}>{fmt(pedido.total)} · {pedido.forma_pagamento}</Text>
+      <ScrollView contentContainerStyle={s.scroll}>
+        {/* Info do pedido */}
+        <View style={s.card}>
+          <Text style={s.cardTitulo}>{empresaNome}</Text>
+          <Text style={s.cardSub}>{pedido.cliente_nome}</Text>
+          {pedido.endereco_entrega && pedido.tipo === "delivery" && (
+            <Text style={s.cardSub}>📍 {pedido.endereco_entrega}</Text>
+          )}
+          <View style={s.divider} />
+          <View style={s.cardRow}>
+            <Text style={s.cardLabel}>Total</Text>
+            <Text style={s.cardValor}>{fmt(pedido.total)}</Text>
+          </View>
+          <View style={s.cardRow}>
+            <Text style={s.cardLabel}>Pagamento</Text>
+            <Text style={s.cardValor}>{pedido.forma_pagamento}</Text>
+          </View>
+          {pedido.observacao && (
+            <View style={s.cardRow}>
+              <Text style={s.cardLabel}>Obs</Text>
+              <Text style={[s.cardValor, { flex: 1, textAlign: "right" }]} numberOfLines={2}>{pedido.observacao}</Text>
+            </View>
+          )}
         </View>
 
+        {/* Status aguardando pagamento */}
+        {aguardandoPagamento && (
+          <View style={s.pixCard}>
+            <Text style={s.pixTitulo}>💳 Aguardando pagamento</Text>
+            <Text style={s.pixTexto}>Realize o pagamento e aguarde a confirmação da loja.</Text>
+          </View>
+        )}
+
+        {/* Cancelado */}
         {cancelado ? (
           <View style={s.cancelado}>
             <Text style={s.canceladoIcone}>❌</Text>
             <Text style={s.canceladoTexto}>Pedido cancelado</Text>
           </View>
         ) : (
-          <View style={s.timeline}>
-            {ETAPAS.map((etapa, idx) => {
-              const feito = idx <= statusIdx;
-              const atual = idx === statusIdx;
+          /* Timeline */
+          <View style={s.timelineCard}>
+            <Text style={s.timelineTitulo}>Acompanhamento</Text>
+            {etapasFiltradas.map((etapa, idx) => {
+              const etapaStatusIdx = ETAPAS.findIndex((e) => e.key === etapa.key);
+              const feito = statusIdx >= etapaStatusIdx && statusIdx >= 0;
+              const atual = etapa.key === pedido.status;
+              const ultimo = idx === etapasFiltradas.length - 1;
               return (
                 <View key={etapa.key} style={s.etapaRow}>
                   <View style={s.etapaEsq}>
                     <View style={[s.etapaBolha, feito && s.etapaBolhaFeita, atual && s.etapaBolhaAtual]}>
-                      <Text style={s.etapaIcone}>{feito ? etapa.icone : "○"}</Text>
+                      <Text style={{ fontSize: atual ? 16 : 14 }}>{feito ? etapa.icone : "○"}</Text>
                     </View>
-                    {idx < ETAPAS.length - 1 && (
-                      <View style={[s.etapaLinha, feito && idx < statusIdx && s.etapaLinhaFeita]} />
-                    )}
+                    {!ultimo && <View style={[s.etapaLinha, feito && !atual && s.etapaLinhaFeita]} />}
                   </View>
                   <View style={s.etapaDireita}>
-                    <Text style={[s.etapaLabel, atual && s.etapaLabelAtual, feito && !atual && s.etapaLabelFeita]}>
+                    <Text style={[s.etapaLabel, feito && s.etapaLabelFeita, atual && s.etapaLabelAtual]}>
                       {etapa.label}
                     </Text>
-                    {atual && <Text style={s.etapaAtualTexto}>Em andamento</Text>}
+                    {atual && <Text style={s.etapaAtualSub}>Em andamento...</Text>}
                   </View>
                 </View>
               );
@@ -102,7 +139,8 @@ export default function RastreioScreen({ route, navigation }: any) {
         <TouchableOpacity style={s.botaoNovo} onPress={() => navigation.popToTop()}>
           <Text style={s.botaoNovoTexto}>Fazer novo pedido</Text>
         </TouchableOpacity>
-      </View>
+        <View style={{ height: 24 }} />
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -114,27 +152,34 @@ const s = StyleSheet.create({
   voltarBtn: { width: 36, height: 36, justifyContent: "center" },
   voltarTexto: { fontSize: 28, color: "#18181b", lineHeight: 30 },
   headerNome: { flex: 1, textAlign: "center", fontSize: 16, fontWeight: "700", color: "#18181b" },
-  scroll: { flex: 1, padding: 16 },
-  loja: { backgroundColor: "#fff", borderRadius: 14, padding: 16, marginBottom: 16, elevation: 1, shadowColor: "#000", shadowOpacity: 0.04, shadowRadius: 4 },
-  lojaNome: { fontSize: 17, fontWeight: "800", color: "#18181b" },
-  lojaMeta: { fontSize: 13, color: "#71717a", marginTop: 4 },
-  cancelado: { alignItems: "center", paddingVertical: 40 },
+  scroll: { padding: 14, gap: 14 },
+  card: { backgroundColor: "#fff", borderRadius: 14, padding: 16, elevation: 2, shadowColor: "#000", shadowOpacity: 0.04, shadowRadius: 6 },
+  cardTitulo: { fontSize: 17, fontWeight: "800", color: "#18181b" },
+  cardSub: { fontSize: 13, color: "#71717a", marginTop: 2 },
+  divider: { height: 1, backgroundColor: "#f4f4f5", marginVertical: 12 },
+  cardRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 6 },
+  cardLabel: { fontSize: 13, color: "#71717a" },
+  cardValor: { fontSize: 13, fontWeight: "700", color: "#18181b" },
+  pixCard: { backgroundColor: "#fff7ed", borderRadius: 14, padding: 16, borderWidth: 1, borderColor: "#fed7aa" },
+  pixTitulo: { fontSize: 16, fontWeight: "800", color: "#ea580c", marginBottom: 6 },
+  pixTexto: { fontSize: 13, color: "#71717a" },
+  cancelado: { alignItems: "center", paddingVertical: 40, gap: 10 },
   canceladoIcone: { fontSize: 48 },
-  canceladoTexto: { fontSize: 18, fontWeight: "700", color: "#dc2626", marginTop: 12 },
-  timeline: { backgroundColor: "#fff", borderRadius: 14, padding: 20, marginBottom: 20, elevation: 1, shadowColor: "#000", shadowOpacity: 0.04, shadowRadius: 4 },
-  etapaRow: { flexDirection: "row", gap: 14, minHeight: 60 },
-  etapaEsq: { alignItems: "center", width: 40 },
+  canceladoTexto: { fontSize: 18, fontWeight: "700", color: "#dc2626" },
+  timelineCard: { backgroundColor: "#fff", borderRadius: 14, padding: 20, elevation: 2, shadowColor: "#000", shadowOpacity: 0.04, shadowRadius: 6 },
+  timelineTitulo: { fontSize: 13, fontWeight: "800", color: "#71717a", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 16 },
+  etapaRow: { flexDirection: "row", gap: 14, minHeight: 52 },
+  etapaEsq: { alignItems: "center", width: 36 },
   etapaBolha: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#f4f4f5", justifyContent: "center", alignItems: "center", borderWidth: 2, borderColor: "#e4e4e7" },
   etapaBolhaFeita: { backgroundColor: "#fff7ed", borderColor: "#fed7aa" },
   etapaBolhaAtual: { backgroundColor: "#f97316", borderColor: "#f97316" },
-  etapaIcone: { fontSize: 16 },
   etapaLinha: { flex: 1, width: 2, backgroundColor: "#e4e4e7", marginVertical: 4 },
   etapaLinhaFeita: { backgroundColor: "#fed7aa" },
-  etapaDireita: { flex: 1, paddingTop: 6, paddingBottom: 10 },
-  etapaLabel: { fontSize: 15, color: "#a1a1aa", fontWeight: "500" },
+  etapaDireita: { flex: 1, paddingTop: 6, paddingBottom: 8 },
+  etapaLabel: { fontSize: 14, color: "#a1a1aa", fontWeight: "500" },
   etapaLabelFeita: { color: "#71717a" },
   etapaLabelAtual: { color: "#f97316", fontWeight: "700" },
-  etapaAtualTexto: { fontSize: 12, color: "#f97316", marginTop: 2 },
+  etapaAtualSub: { fontSize: 12, color: "#f97316", marginTop: 2 },
   botaoNovo: { backgroundColor: "#f97316", borderRadius: 14, height: 52, justifyContent: "center", alignItems: "center" },
   botaoNovoTexto: { color: "#fff", fontSize: 16, fontWeight: "700" },
 });

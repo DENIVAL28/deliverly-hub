@@ -32,15 +32,17 @@ const ATIVOS = ["aguardando_confirmacao", "aguardando_pagamento", "novo", "aceit
 const fmt = (v: number) => `R$ ${Number(v).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
 
 export default function HomeScreen() {
-  const [empresaId, setEmpresaId]       = useState<string | null>(null);
-  const [userId, setUserId]             = useState<string | null>(null);
-  const [nomeEmpresa, setNomeEmpresa]   = useState("Minha Loja");
-  const [pedidos, setPedidos]           = useState<any[]>([]);
-  const [loading, setLoading]           = useState(true);
-  const [refreshing, setRefreshing]     = useState(false);
-  const [abaAtiva, setAbaAtiva]         = useState<"ativos" | "todos">("ativos");
+  const [empresaId, setEmpresaId]         = useState<string | null>(null);
+  const [userId, setUserId]               = useState<string | null>(null);
+  const [nomeEmpresa, setNomeEmpresa]     = useState("Minha Loja");
+  const [lojaAberta, setLojaAberta]       = useState(true);
+  const [pedidos, setPedidos]             = useState<any[]>([]);
+  const [loading, setLoading]             = useState(true);
+  const [refreshing, setRefreshing]       = useState(false);
+  const [abaAtiva, setAbaAtiva]           = useState<"ativos" | "todos">("ativos");
   const [pedidoDetalhe, setPedidoDetalhe] = useState<any | null>(null);
-  const [avancando, setAvancando]       = useState(false);
+  const [avancando, setAvancando]         = useState(false);
+  const [togglingLoja, setTogglingLoja]   = useState(false);
 
   useEffect(() => {
     async function init() {
@@ -54,8 +56,11 @@ export default function HomeScreen() {
       setEmpresaId(profile.empresa_id);
 
       const { data: empresa } = await supabase
-        .from("empresas").select("nome_fantasia").eq("id", profile.empresa_id).single();
-      if (empresa) setNomeEmpresa(empresa.nome_fantasia ?? "Minha Loja");
+        .from("empresas").select("nome_fantasia, aberto").eq("id", profile.empresa_id).single();
+      if (empresa) {
+        setNomeEmpresa(empresa.nome_fantasia ?? "Minha Loja");
+        setLojaAberta(empresa.aberto ?? true);
+      }
 
       await registerExpoPushToken(profile.empresa_id, user.id);
     }
@@ -133,6 +138,15 @@ export default function HomeScreen() {
     ]);
   }
 
+  async function toggleLoja() {
+    if (!empresaId) return;
+    setTogglingLoja(true);
+    const novoStatus = !lojaAberta;
+    await supabase.from("empresas").update({ aberto: novoStatus }).eq("id", empresaId);
+    setLojaAberta(novoStatus);
+    setTogglingLoja(false);
+  }
+
   async function sair() {
     Alert.alert("Sair", "Deseja sair do app?", [
       { text: "Cancelar", style: "cancel" },
@@ -184,15 +198,46 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <View>
+        <View style={{ flex: 1 }}>
           <Text style={styles.headerTitulo}>{nomeEmpresa}</Text>
           <Text style={styles.headerSub}>
             {ativos.length > 0 ? `${ativos.length} pedido${ativos.length > 1 ? "s" : ""} ativo${ativos.length > 1 ? "s" : ""}` : "Sem pedidos ativos"}
           </Text>
         </View>
+        <TouchableOpacity
+          style={[styles.toggleLoja, { backgroundColor: lojaAberta ? "#dcfce7" : "#fee2e2" }]}
+          onPress={toggleLoja}
+          disabled={togglingLoja}
+        >
+          <Text style={[styles.toggleLojaTexto, { color: lojaAberta ? "#16a34a" : "#dc2626" }]}>
+            {togglingLoja ? "..." : lojaAberta ? "🟢 Aberta" : "🔴 Fechada"}
+          </Text>
+        </TouchableOpacity>
         <TouchableOpacity onPress={sair} style={styles.sairBotao}>
           <Text style={styles.sairTexto}>Sair</Text>
         </TouchableOpacity>
+      </View>
+
+      {/* Dashboard rápido */}
+      <View style={styles.dashboard}>
+        <View style={styles.dashCard}>
+          <Text style={styles.dashValor}>{ativos.length}</Text>
+          <Text style={styles.dashLabel}>Ativos</Text>
+        </View>
+        <View style={styles.dashDivider} />
+        <View style={styles.dashCard}>
+          <Text style={styles.dashValor}>
+            {pedidos.filter((p) => p.status === "finalizado" && new Date(p.created_at).toDateString() === new Date().toDateString()).length}
+          </Text>
+          <Text style={styles.dashLabel}>Finalizados hoje</Text>
+        </View>
+        <View style={styles.dashDivider} />
+        <View style={styles.dashCard}>
+          <Text style={styles.dashValor}>
+            {fmt(pedidos.filter((p) => p.status === "finalizado" && new Date(p.created_at).toDateString() === new Date().toDateString()).reduce((s, p) => s + Number(p.total), 0))}
+          </Text>
+          <Text style={styles.dashLabel}>Faturado hoje</Text>
+        </View>
       </View>
 
       <View style={styles.abas}>
@@ -287,8 +332,15 @@ const styles = StyleSheet.create({
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, paddingVertical: 14, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#e4e4e7" },
   headerTitulo: { fontSize: 18, fontWeight: "800", color: "#18181b" },
   headerSub: { fontSize: 12, color: "#71717a", marginTop: 2 },
-  sairBotao: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, backgroundColor: "#f4f4f5" },
+  sairBotao: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: "#f4f4f5" },
   sairTexto: { fontSize: 13, color: "#71717a", fontWeight: "600" },
+  toggleLoja: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 20, marginRight: 6 },
+  toggleLojaTexto: { fontSize: 12, fontWeight: "700" },
+  dashboard: { flexDirection: "row", backgroundColor: "#fff", paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: "#e4e4e7" },
+  dashCard: { flex: 1, alignItems: "center" },
+  dashValor: { fontSize: 16, fontWeight: "800", color: "#18181b" },
+  dashLabel: { fontSize: 10, color: "#a1a1aa", marginTop: 2 },
+  dashDivider: { width: 1, backgroundColor: "#e4e4e7" },
   abas: { flexDirection: "row", backgroundColor: "#fff", paddingHorizontal: 16 },
   aba: { paddingVertical: 12, paddingHorizontal: 4, marginRight: 20, borderBottomWidth: 2, borderBottomColor: "transparent" },
   abaAtiva: { borderBottomColor: "#f97316" },
