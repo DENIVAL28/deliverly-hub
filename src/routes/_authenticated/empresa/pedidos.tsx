@@ -187,13 +187,57 @@ function PedidosPage() {
   const somAtivoRef = useRef(true);
   somAtivoRef.current = somAtivo;
 
+  const VAPID_PUBLIC = "BDQJCfKKcQaq_jK6dVZ0-BLig3JxFkOB_bG7q0WWYF6tzS49PsePMgfZskeqiELxGrlM1EB4740-Q3u9hl-r7Ro";
+
+  async function registrarPushSubscription(swReg: ServiceWorkerRegistration) {
+    if (!empresaId) return;
+    try {
+      const raw = VAPID_PUBLIC.replace(/-/g, "+").replace(/_/g, "/");
+      const pad = raw.padEnd(raw.length + ((4 - (raw.length % 4)) % 4), "=");
+      const bin = atob(pad);
+      const key = Uint8Array.from(bin, (c) => c.charCodeAt(0));
+
+      const sub = await swReg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: key,
+      });
+
+      const json = sub.toJSON();
+      await supabase.from("push_subscriptions" as any).upsert({
+        empresa_id: empresaId,
+        endpoint: json.endpoint,
+        p256dh: json.keys?.p256dh,
+        auth: json.keys?.auth,
+      }, { onConflict: "endpoint" });
+    } catch (err) {
+      console.warn("Falha ao registrar push subscription:", err);
+    }
+  }
+
   async function pedirPermissaoNotificacao() {
     if (typeof Notification === "undefined") return;
     const result = await Notification.requestPermission();
     setNotifPermissao(result);
-    if (result === "granted") toast.success("Notificações ativadas! Você será avisado ao receber pedidos.");
-    else toast.error("Permissão negada. Ative nas configurações do navegador.");
+    if (result === "granted") {
+      toast.success("Notificações ativadas!");
+      if ("serviceWorker" in navigator) {
+        const reg = await navigator.serviceWorker.ready;
+        await registrarPushSubscription(reg);
+      }
+    } else {
+      toast.error("Permissão negada. Ative nas configurações do navegador.");
+    }
   }
+
+  // Registra o Service Worker e a subscription quando já tem permissão
+  useEffect(() => {
+    if (!("serviceWorker" in navigator)) return;
+    navigator.serviceWorker.register("/sw.js").then(async (reg) => {
+      if (Notification.permission === "granted" && empresaId) {
+        await registrarPushSubscription(reg);
+      }
+    });
+  }, [empresaId]);
 
   const diaInicio = new Date(dataSel); diaInicio.setHours(0,0,0,0);
   const diaFim    = new Date(dataSel); diaFim.setHours(23,59,59,999);
