@@ -40,8 +40,9 @@
       "supabaseUrl": "https://ilgzvcfisrhrfmpcgtcx.supabase.co",
       "supabaseAnonKey": "sb_publishable_KfTKKVXgxtJhwm8D1-cY0Q_9aKqHEPS",
       "eas": {
-        "projectId": "SEU_PROJECT_ID_AQUI"
+        "projectId": "a503d29c-d40c-4741-a7dc-de966e5dbde9"
       }
-    }
+    },
+    "owner": "sos-sistemas"
   }
 }

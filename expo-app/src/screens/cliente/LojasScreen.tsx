@@ -35,8 +35,13 @@ export default function LojasScreen({ navigation }: any) {
   return (
     <SafeAreaView style={s.container}>
       <View style={s.header}>
-        <Text style={s.titulo}>🛵 Deliverly Hub</Text>
-        <Text style={s.sub}>Peça agora na sua loja favorita</Text>
+        <View>
+          <Text style={s.titulo}>🛵 Deliverly Hub</Text>
+          <Text style={s.sub}>Peça agora na sua loja favorita</Text>
+        </View>
+        <TouchableOpacity style={s.lojistaBotao} onPress={() => navigation.navigate("Login")}>
+          <Text style={s.lojistaTexto}>Sou lojista</Text>
+        </TouchableOpacity>
       </View>
       <View style={s.buscaWrap}>
         <TextInput
@@ -76,7 +81,9 @@ export default function LojasScreen({ navigation }: any) {
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#f4f4f5" },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  header: { backgroundColor: "#f97316", paddingHorizontal: 16, paddingTop: 8, paddingBottom: 16 },
+  header: { backgroundColor: "#f97316", paddingHorizontal: 16, paddingTop: 8, paddingBottom: 16, flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  lojistaBotao: { backgroundColor: "rgba(0,0,0,0.15)", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
+  lojistaTexto: { color: "#fff", fontSize: 12, fontWeight: "700" },
   titulo: { fontSize: 22, fontWeight: "800", color: "#fff" },
   sub: { fontSize: 13, color: "rgba(255,255,255,0.85)", marginTop: 2 },
   buscaWrap: { padding: 12, backgroundColor: "#f97316" },
