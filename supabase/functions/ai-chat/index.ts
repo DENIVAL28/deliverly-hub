@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const GEMINI_KEY = Deno.env.get("GEMINI_API_KEY") ?? "";
+const GROQ_KEY = Deno.env.get("GROQ_API_KEY") ?? "";
 
 const SYSTEM_PROMPT = `Você é o Assistente do Deliverly Hub, uma plataforma de delivery digital para restaurantes, lanchonetes, açaiterias e outros estabelecimentos alimentícios do Brasil.
 
@@ -106,36 +106,43 @@ serve(async (req) => {
   try {
     const { messages } = await req.json() as { messages: { role: string; content: string }[] };
 
-    if (!GEMINI_KEY) {
-      return new Response(JSON.stringify({ error: "GEMINI_API_KEY not configured" }), { status: 500, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+    if (!GROQ_KEY) {
+      return new Response(JSON.stringify({ reply: "GROQ_API_KEY não configurada." }), {
+        status: 500, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+      });
     }
 
-    // Converte formato para Gemini (user/model em vez de user/assistant)
-    const contents = messages.map((m) => ({
-      role: m.role === "assistant" ? "model" : "user",
-      parts: [{ text: m.content }],
-    }));
-
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents,
-          systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-          generationConfig: { maxOutputTokens: 600, temperature: 0.2 },
-        }),
-      }
-    );
+    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${GROQ_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "llama-3.3-70b-versatile",
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          ...messages.map((m) => ({ role: m.role === "assistant" ? "assistant" : "user", content: m.content })),
+        ],
+        max_tokens: 600,
+        temperature: 0.2,
+      }),
+    });
 
     const data = await res.json();
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "Desculpe, não consegui processar sua pergunta. Tente novamente.";
+    if (data?.error) {
+      return new Response(JSON.stringify({ reply: `Erro API: ${data.error.message ?? JSON.stringify(data.error)}` }), {
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+      });
+    }
 
+    const text = data?.choices?.[0]?.message?.content ?? "Desculpe, não consegui processar sua pergunta. Tente novamente.";
     return new Response(JSON.stringify({ reply: text }), {
       headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
     });
   } catch (e) {
-    return new Response(JSON.stringify({ error: String(e) }), { status: 500, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+    return new Response(JSON.stringify({ error: String(e) }), {
+      status: 500, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+    });
   }
 });

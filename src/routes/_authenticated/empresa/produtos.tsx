@@ -75,6 +75,7 @@ function ProdutosPage() {
       categoria_id: fd.get("categoria_id") ? String(fd.get("categoria_id")) : null,
       controlar_estoque: fd.get("controlar_estoque") === "on",
       estoque: Number(fd.get("estoque") || 0),
+      requer_preparo: fd.get("requer_preparo") !== "off",
     } as any).select("id").single();
     if (error || !produto) { toast.error(parsarErroSupabase(error)); setUploading(false); return; }
     if (file) {
@@ -108,6 +109,7 @@ function ProdutosPage() {
       foto_url,
       controlar_estoque: fd.get("controlar_estoque") === "on",
       estoque: Number(fd.get("estoque") || 0),
+      requer_preparo: fd.get("requer_preparo") !== "off",
     } as any).eq("id", editProduto.id);
     setUploading(false);
     if (error) { toast.error(parsarErroSupabase(error)); return; }
@@ -219,6 +221,17 @@ function ProdutosPage() {
                     </div>
                   )}
                 </div>
+                <div className="flex items-center justify-between border border-zinc-100 rounded-xl p-3 bg-zinc-50/60">
+                  <div>
+                    <p className="text-sm font-medium text-zinc-700">Requer preparo</p>
+                    <p className="text-xs text-zinc-400">Desative para bebidas e itens prontos</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" name="requer_preparo" defaultChecked className="sr-only peer" />
+                    <div className="w-9 h-5 bg-zinc-300 peer-focus:ring-2 peer-focus:ring-brand/30 rounded-full peer peer-checked:bg-brand transition-colors" />
+                    <div className="absolute left-0.5 top-0.5 bg-white size-4 rounded-full shadow transition-transform peer-checked:translate-x-4" />
+                  </label>
+                </div>
                 <Button type="submit" disabled={uploading} className="w-full bg-brand hover:bg-brand/90">
                   {uploading ? "Salvando..." : "Criar produto"}
                 </Button>
@@ -300,6 +313,17 @@ function ProdutosPage() {
                       defaultValue={editProduto.estoque ?? 0} />
                   </div>
                 )}
+              </div>
+              <div className="flex items-center justify-between border border-zinc-100 rounded-xl p-3 bg-zinc-50/60">
+                <div>
+                  <p className="text-sm font-medium text-zinc-700">Requer preparo</p>
+                  <p className="text-xs text-zinc-400">Desative para bebidas e itens prontos</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" name="requer_preparo" defaultChecked={editProduto.requer_preparo !== false} className="sr-only peer" />
+                  <div className="w-9 h-5 bg-zinc-300 peer-focus:ring-2 peer-focus:ring-brand/30 rounded-full peer peer-checked:bg-brand transition-colors" />
+                  <div className="absolute left-0.5 top-0.5 bg-white size-4 rounded-full shadow transition-transform peer-checked:translate-x-4" />
+                </label>
               </div>
               <Button type="submit" disabled={uploading} className="w-full bg-brand hover:bg-brand/90">
                 {uploading ? "Salvando..." : "Salvar alterações"}
