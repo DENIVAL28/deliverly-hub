@@ -178,6 +178,7 @@ function PedidosPage() {
   const [tab, setTab] = useState<Tab>("ativos");
   const [somAtivo, setSomAtivo] = useState(true);
   const [entregadorSel, setEntregadorSel] = useState<Record<string, string>>({});
+  const [descontoInput, setDescontoInput] = useState<Record<string, string>>({});
   const [page, setPage] = useState(0);
   const [exportando, setExportando] = useState(false);
   const [dataSel, setDataSel] = useState<Date>(() => { const d = new Date(); d.setHours(0,0,0,0); return d; });
@@ -387,6 +388,31 @@ function PedidosPage() {
     if (error) { toast.error(traduzirErro(error.message)); return; }
     toast.success("Pedido cancelado");
     qc.invalidateQueries({ queryKey: ["pedidos", empresaId] });
+  }
+
+  async function aplicarDesconto(pedido: any) {
+    const raw = (descontoInput[pedido.id] ?? "").replace(",", ".");
+    const valor = parseFloat(raw);
+    if (isNaN(valor) || valor < 0) { toast.error("Valor de desconto inválido"); return; }
+    if (valor >= Number(pedido.total)) { toast.error("Desconto não pode ser maior que o total"); return; }
+    const { error } = await supabase.from("pedidos").update({ desconto: valor } as any).eq("id", pedido.id);
+    if (error) { toast.error(traduzirErro(error.message)); return; }
+    setDescontoInput((s) => ({ ...s, [pedido.id]: "" }));
+    qc.invalidateQueries({ queryKey: ["pedidos-ativos", empresaId] });
+    qc.invalidateQueries({ queryKey: ["pedidos-pag", empresaId] });
+    toast.success(`Desconto de ${fmt(valor)} aplicado!`);
+
+    // Notifica o cliente via WhatsApp com o novo total
+    if (pedido.cliente_telefone) {
+      const novoTotal = Number(pedido.total) - valor;
+      const nomeEmpresa = empresa?.nome_fantasia ?? "Estabelecimento";
+      const tel = pedido.cliente_telefone.replace(/\D/g, "");
+      const msg = encodeURIComponent(
+        `🎁 *Desconto especial no pedido #${pedido.numero}!*\n\nOlá, *${pedido.cliente_nome}*! O estabelecimento concedeu um desconto de *${fmt(valor)}* no seu pedido.\n\n*Novo total: ${fmt(novoTotal)}*\n\n_${nomeEmpresa}_`
+      );
+      const telFmt = tel.startsWith("55") ? tel : `55${tel}`;
+      window.open(`https://wa.me/${telFmt}?text=${msg}`, "_blank");
+    }
   }
 
   async function excluir(id: string) {
@@ -604,7 +630,15 @@ function PedidosPage() {
                   {p.observacao && <div className="text-xs text-zinc-500 italic mt-1">"{p.observacao}"</div>}
                 </div>
                 <div className="text-right">
-                  <div className="text-lg font-semibold text-ink">{fmt(Number(p.total))}</div>
+                  {Number(p.desconto) > 0 ? (
+                    <div>
+                      <div className="text-xs line-through text-zinc-400">{fmt(Number(p.total))}</div>
+                      <div className="text-lg font-semibold text-green-600">{fmt(Number(p.total) - Number(p.desconto))}</div>
+                      <div className="text-xs text-green-600 font-medium">-{fmt(Number(p.desconto))} desconto</div>
+                    </div>
+                  ) : (
+                    <div className="text-lg font-semibold text-ink">{fmt(Number(p.total))}</div>
+                  )}
                   <div className="text-xs text-zinc-500">{p.forma_pagamento ?? "—"}</div>
                   {(p as any).pagamento_online_status === "aprovado" && (
                     <span className="inline-block mt-1 px-2 py-0.5 text-[10px] font-bold rounded bg-green-100 text-green-700 uppercase tracking-wide">✓ Pago online</span>
@@ -651,6 +685,25 @@ function PedidosPage() {
 
                 {isAtivo && (
                   <>
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        placeholder="Desconto R$"
+                        value={descontoInput[p.id] ?? ""}
+                        onChange={(e) => setDescontoInput((s) => ({ ...s, [p.id]: e.target.value }))}
+                        className="h-9 w-28 rounded-xl border border-zinc-200 px-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/30 placeholder:text-zinc-400"
+                      />
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={!descontoInput[p.id]}
+                        onClick={() => aplicarDesconto(p)}
+                        className="text-green-600 hover:text-green-700 border-green-200 hover:bg-green-50 disabled:opacity-40"
+                      >
+                        Aplicar
+                      </Button>
+                    </div>
                     <Button size="sm" variant="outline" onClick={() => cancel(p.id)} className="text-red-500 hover:text-red-600 border-red-200 hover:bg-red-50">
                       Cancelar
                     </Button>
