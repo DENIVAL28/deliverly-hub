@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { MapPin, Clock, ShoppingBag, Search, ChevronRight, ChevronDown, X } from "lucide-react";
+import { verificarAberto } from "@/lib/loja-horario";
 
 export const Route = createFileRoute("/lojas")({
   ssr: false,
@@ -51,7 +52,7 @@ function LojasPage() {
       const agora = new Date().toISOString();
       const { data } = await (supabase as any)
         .from("empresas")
-        .select("id,nome_fantasia,slug,logo_url,banner_url,cor_primaria,aberto,taxa_entrega,tempo_entrega,cidade,segmento")
+        .select("id,nome_fantasia,slug,logo_url,banner_url,cor_primaria,aberto,taxa_entrega,tempo_entrega,cidade,segmento,horario_abertura,horario_fechamento,dias_semana")
         .eq("status", "ativa")
         .or(`vencimento.is.null,vencimento.gt.${agora}`)
         .order("nome_fantasia");
@@ -114,8 +115,8 @@ function LojasPage() {
     return matchSeg && matchBusca;
   });
 
-  const abertas  = filtradas.filter((l) => l.aberto);
-  const fechadas = filtradas.filter((l) => !l.aberto);
+  const abertas  = filtradas.filter((l) => verificarAberto(l).aberto);
+  const fechadas = filtradas.filter((l) => !verificarAberto(l).aberto);
 
   const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
@@ -372,11 +373,13 @@ function LojaCard({ loja, fmt }: { loja: any; fmt: (v: number) => string }) {
             <span className="text-6xl opacity-20">{EMOJI_SEGMENTO[loja.segmento] ?? "🍽️"}</span>
           </div>
         )}
+        {(() => { const { aberto: a } = verificarAberto(loja); return (
         <div className={`absolute top-3 left-3 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide backdrop-blur-sm ${
-          loja.aberto ? "bg-green-500 text-white" : "bg-black/60 text-zinc-300"
+          a ? "bg-green-500 text-white" : "bg-black/60 text-zinc-300"
         }`}>
-          {loja.aberto ? "● Aberto" : "○ Fechado"}
+          {a ? "● Aberto" : "○ Fechado"}
         </div>
+        ); })()}
         {loja.logo_url && (
           <div className="absolute bottom-0 right-3 translate-y-1/2 size-12 rounded-xl overflow-hidden border-2 border-white shadow-md bg-white">
             <img src={loja.logo_url} alt={loja.nome_fantasia} className="w-full h-full object-contain p-0.5" />
