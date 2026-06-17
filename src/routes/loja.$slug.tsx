@@ -17,7 +17,7 @@ export const Route = createFileRoute("/loja/$slug")({
   loader: async ({ params }) => {
     const { data: empresa } = await supabase
       .from("empresas")
-      .select("id,nome_fantasia,slug,whatsapp,cor_primaria,taxa_entrega,status,aberto,logo_url,banner_url,tempo_entrega,pedido_minimo,horario_abertura,horario_fechamento,dias_semana,chave_pix,nome_recebedor,cidade_recebedor,retirada_ativa,taxa_entrega_tipo,taxa_entrega_por_km,taxa_entrega_base,empresa_lat,empresa_lng")
+      .select("id,nome_fantasia,slug,whatsapp,cor_primaria,taxa_entrega,status,aberto,logo_url,banner_url,tempo_entrega,pedido_minimo,horario_abertura,horario_fechamento,dias_semana,chave_pix,tipo_chave_pix,nome_recebedor,cidade_recebedor,retirada_ativa,taxa_entrega_tipo,taxa_entrega_por_km,taxa_entrega_base,empresa_lat,empresa_lng")
       .eq("slug", params.slug)
       .maybeSingle();
     if (!empresa) throw notFound();
@@ -279,22 +279,19 @@ function LojaPage() {
       setCart({}); setCheckoutOpen(false); setCupomAplicado(null); setCodigoCupom("");
 
       if (forma_pagamento === "PIX") {
-        const { data: pixData } = await supabase
-          .from("empresas")
-          .select("chave_pix,nome_recebedor,cidade_recebedor,tipo_chave_pix")
-          .eq("id", empresa.id)
-          .single();
-        const chaveRaw  = (pixData as any)?.chave_pix;
-        const tipoChave = (pixData as any)?.tipo_chave_pix ?? "aleatoria";
+        const emp = empresa as any;
+        const chaveRaw = emp.chave_pix as string | null;
+        const tipoChave = emp.tipo_chave_pix ?? "aleatoria";
         const chave = chaveRaw ? normalizarChavePix(chaveRaw.trim(), tipoChave) : null;
         if (chave) {
-          const nomeRec   = ((pixData as any)?.nome_recebedor  || empresa.nome_fantasia || "Loja").normalize("NFD").replace(/[̀-ͯ]/g, "").substring(0, 25);
-          const cidadeRec = ((pixData as any)?.cidade_recebedor || "Brasil").normalize("NFD").replace(/[̀-ͯ]/g, "").substring(0, 15);
+          const nomeRec   = (emp.nome_recebedor || emp.nome_fantasia || "Loja").normalize("NFD").replace(/[̀-ͯ]/g, "").substring(0, 25);
+          const cidadeRec = (emp.cidade_recebedor || "Brasil").normalize("NFD").replace(/[̀-ͯ]/g, "").substring(0, 15);
           const payload   = gerarPixPayload(chave, nomeRec, cidadeRec, total);
           try {
             const qrUrl = await QRCode.toDataURL(payload, { width: 240, margin: 2, color: { dark: "#18181b", light: "#ffffff" } });
             setPixModal({ payload, qrUrl, total, desconto: 0, waLink: waUrl ?? "", pedidoNum: pedido.numero, pedidoId: pedido.id, pixChave: chave, pixNome: nomeRec, pixCidade: cidadeRec });
-          } catch {
+          } catch (e) {
+            console.error("Erro ao gerar QR PIX:", e);
             setPedidoFeito({ id: pedido.id, numero: pedido.numero, waUrl });
           }
           return;
