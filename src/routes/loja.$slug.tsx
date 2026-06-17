@@ -61,6 +61,7 @@ function LojaPage() {
   const [checkoutErro, setCheckoutErro]   = useState<string | null>(null);
   const [catAtiva, setCatAtiva]           = useState<string | null>(null);
   const [formaPagamento, setFormaPagamento] = useState(() => (empresa as any).chave_pix ? "PIX" : "Dinheiro");
+  const [trocoDelivery, setTrocoDelivery]   = useState("");
   const [tipoEntrega, setTipoEntrega]       = useState<"delivery" | "retirada">("delivery");
   const [clienteLat, setClienteLat]         = useState<number | null>(null);
   const [clienteLng, setClienteLng]         = useState<number | null>(null);
@@ -256,7 +257,11 @@ function LojaPage() {
     const isRetirada       = tipoEntrega === "retirada";
     const cliente_endereco = mesa ? `Mesa ${mesa}` : isRetirada ? "Retirada no balcão" : String(fd.get("endereco")).trim().slice(0, 255);
     const forma_pagamento  = String(fd.get("pagamento"));
-    const observacao       = String(fd.get("observacao") || "").trim().slice(0, 500);
+    const trocoVal         = forma_pagamento === "Dinheiro" && !mesa && tipoEntrega === "delivery" && trocoDelivery.trim()
+      ? parseFloat(trocoDelivery.replace(",", "."))
+      : null;
+    const obsBase          = String(fd.get("observacao") || "").trim().slice(0, 400);
+    const observacao       = [obsBase, trocoVal && trocoVal > 0 ? `Troco para R$${trocoVal.toFixed(2).replace(".", ",")}` : ""].filter(Boolean).join(" | ").slice(0, 500);
 
     if (!cliente_nome || cliente_nome.length < 2) { setCheckoutErro("Informe seu nome completo."); return; }
     if (!mesa && (!cliente_telefone || cliente_telefone.length < 8)) { setCheckoutErro("Informe um telefone válido."); return; }
@@ -1154,6 +1159,17 @@ function LojaPage() {
                     <p className="text-xs text-zinc-400">Pagamento feito no momento da entrega</p>
                   )}
                 </div>
+                {formaPagamento === "Dinheiro" && !mesa && tipoEntrega === "delivery" && (
+                  <div className="space-y-1.5">
+                    <Label>Troco para (opcional)</Label>
+                    <input
+                      type="number" min="0" step="0.01" placeholder="Ex: 50,00"
+                      value={trocoDelivery} onChange={(e) => setTrocoDelivery(e.target.value)}
+                      className="w-full h-12 rounded-xl border border-zinc-200 bg-white px-3 text-base focus:outline-none focus:ring-2 focus:ring-orange-400/40"
+                    />
+                    <p className="text-xs text-zinc-400">Deixe vazio se não precisar de troco</p>
+                  </div>
+                )}
                 <CpfField value={clienteCpf} onChange={setClienteCpf} />
                 <div className="space-y-1.5">
                   <Label>Observação (opcional)</Label>

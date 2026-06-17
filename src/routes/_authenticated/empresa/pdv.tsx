@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/use-auth";
 import { PageHeader } from "@/components/AppShell";
@@ -10,6 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Minus, Trash2, ShoppingCart, Search, CheckCircle2, X } from "lucide-react";
 import { toast } from "sonner";
+import QRCode from "qrcode";
+import { gerarPixPayload, normalizarChavePix, normalizarTexto } from "@/lib/pix";
 
 export const Route = createFileRoute("/_authenticated/empresa/pdv")({
   component: PDVPage,
@@ -159,14 +161,29 @@ function PDVPage() {
   const [vendaFeita, setVendaFeita]       = useState<{ numero: number; total: number; nome: string; cpf: string; itens: CartItem[]; troco: number | null } | null>(null);
   const [mobileTab, setMobileTab]         = useState<"produtos" | "pedido">("produtos");
 
-  const { data: nomeEmpresa = "Estabelecimento" } = useQuery({
-    queryKey: ["empresa-nome-pdv", empresaId],
+  const [pixQrUrl, setPixQrUrl] = useState<string | null>(null);
+
+  const { data: empresaData } = useQuery({
+    queryKey: ["empresa-pdv", empresaId],
     enabled: !!empresaId,
     queryFn: async () => {
-      const { data } = await supabase.from("empresas").select("nome_fantasia").eq("id", empresaId!).single();
-      return data?.nome_fantasia ?? "Estabelecimento";
+      const { data } = await supabase.from("empresas")
+        .select("nome_fantasia,chave_pix,tipo_chave_pix,nome_recebedor,cidade_recebedor")
+        .eq("id", empresaId!).single();
+      return data;
     },
   });
+  const nomeEmpresa = empresaData?.nome_fantasia ?? "Estabelecimento";
+
+  // Gera QR PIX quando pagamento = PIX e há itens no carrinho
+  useEffect(() => {
+    if (pagamento !== "PIX" || total <= 0 || !empresaData?.chave_pix) { setPixQrUrl(null); return; }
+    const chave = normalizarChavePix(empresaData.chave_pix, empresaData.tipo_chave_pix ?? "aleatoria");
+    const nome  = normalizarTexto(empresaData.nome_recebedor ?? "ESTABELECIMENTO", 25);
+    const cidade = normalizarTexto(empresaData.cidade_recebedor ?? "BRASIL", 15);
+    const payload = gerarPixPayload(chave, nome, cidade, total);
+    QRCode.toDataURL(payload, { width: 200, margin: 1 }).then(setPixQrUrl).catch(() => setPixQrUrl(null));
+  }, [pagamento, total, empresaData]);
 
   const { data: categorias = [] } = useQuery({
     queryKey: ["categorias", empresaId],
@@ -463,6 +480,23 @@ function PDVPage() {
                 </button>
               ))}
             </div>
+
+            {/* PIX QR Code */}
+            {pagamento === "PIX" && (
+              <div className="rounded-xl border border-zinc-100 bg-zinc-50 p-3 flex flex-col items-center gap-2">
+                {!empresaData?.chave_pix ? (
+                  <p className="text-xs text-amber-600 text-center">Configure a chave PIX nas Configurações para usar este método.</p>
+                ) : pixQrUrl && total > 0 ? (
+                  <>
+                    <img src={pixQrUrl} alt="QR PIX" className="w-40 h-40 rounded-lg" />
+                    <p className="text-xs text-zinc-500 text-center">Mostre o QR para o cliente escanear</p>
+                    <p className="text-sm font-bold text-zinc-800">{fmt(total)}</p>
+                  </>
+                ) : (
+                  <p className="text-xs text-zinc-400">Adicione itens para gerar o QR PIX</p>
+                )}
+              </div>
+            )}
 
             {/* Troco */}
             {pagamento === "Dinheiro" && (

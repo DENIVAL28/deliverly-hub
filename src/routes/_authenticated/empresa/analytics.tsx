@@ -67,33 +67,38 @@ function AnalyticsPage() {
     },
   });
 
-  // Contadores por tipo de evento
+  // Visitas = sessões únicas (evita contar refresh como nova visita)
+  const visitas = new Set(
+    (eventos ?? []).filter((e: any) => e.evento === "visita" && e.session_id).map((e: any) => e.session_id)
+  ).size;
+
+  // Demais eventos: contagem total (ações intencionais)
   const totais = (eventos ?? []).reduce((acc: Record<string, number>, e: any) => {
-    acc[e.evento] = (acc[e.evento] ?? 0) + 1;
+    if (e.evento !== "visita") acc[e.evento] = (acc[e.evento] ?? 0) + 1;
     return acc;
   }, {} as Record<string, number>);
+  totais["visita"] = visitas;
 
-  const visitas = totais["visita"] ?? 0;
   const pedidos = totais["pedido_finalizado"] ?? 0;
   const conversao = visitas > 0 ? ((pedidos / visitas) * 100).toFixed(1) : "0.0";
 
-  // Visitas por dia (últimos 14 dias)
+  // Visitas por dia — sessões únicas por dia
   const visitasPorDia = (() => {
-    const dias: Record<string, number> = {};
+    const dias: Record<string, Set<string>> = {};
     const hoje = new Date();
     for (let i = 13; i >= 0; i--) {
       const d = new Date(hoje);
       d.setDate(d.getDate() - i);
-      dias[d.toISOString().slice(0, 10)] = 0;
+      dias[d.toISOString().slice(0, 10)] = new Set();
     }
     for (const e of (eventos ?? [])) {
-      if (e.evento !== "visita") continue;
+      if (e.evento !== "visita" || !e.session_id) continue;
       const dia = e.created_at.slice(0, 10);
-      if (dia in dias) dias[dia]++;
+      if (dia in dias) dias[dia].add(e.session_id);
     }
-    return Object.entries(dias).map(([data, count]) => ({
+    return Object.entries(dias).map(([data, sessions]) => ({
       data: data.slice(5),
-      visitas: count,
+      visitas: sessions.size,
     }));
   })();
 
