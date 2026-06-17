@@ -91,7 +91,7 @@ export function AssistenteIA() {
     return (
       <button
         onClick={() => setAberto(true)}
-        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-3 rounded-full b-btn text-white shadow-2xl hover:scale-105 transition-transform ring-2 ring-white"
+        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-3 rounded-full bg-orange-500 hover:bg-orange-600 text-white shadow-2xl hover:scale-105 transition-transform ring-2 ring-white"
         title="Assistente Deliverly Hub"
       >
         <Sparkles className="size-5" />
