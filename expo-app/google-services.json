@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "782123705701",
+    "project_id": "deliverly-hub",
+    "storage_bucket": "deliverly-hub.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:782123705701:android:2ce8ca3b1bfeb24161ad8c",
+        "android_client_info": {
+          "package_name": "com.deliverlyhub.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAMtwZILCijEMaNAUZIJ6l6JkTIor38fD4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
