@@ -63,9 +63,33 @@ Deno.serve(async (req) => {
     );
 
     const ok = results.filter((r) => r.status === "fulfilled").length;
-    console.log(`Push: ${ok}/${subs.length} enviados`);
+    console.log(`WebPush: ${ok}/${subs.length} enviados`);
 
-    return new Response(JSON.stringify({ sent: ok, total: subs.length }), {
+    // Expo Push Notifications (app Android nativo)
+    const { data: expoTokens } = await supabase
+      .from("expo_push_tokens")
+      .select("token")
+      .eq("empresa_id", pedido.empresa_id);
+
+    if (expoTokens?.length) {
+      const expoPayload = expoTokens.map(({ token }: { token: string }) => ({
+        to: token,
+        title: "🛒 Novo pedido chegou!",
+        body: `Pedido #${pedido.numero} — ${pedido.cliente_nome ?? "Cliente"}`,
+        data: { pedidoId: pedido.id, empresaId: pedido.empresa_id },
+        sound: "default",
+        priority: "high",
+        channelId: "pedidos",
+      }));
+      const expoRes = await fetch("https://exp.host/--/api/v2/push/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        body: JSON.stringify(expoPayload),
+      });
+      console.log(`ExpoPush: ${expoTokens.length} tokens, status ${expoRes.status}`);
+    }
+
+    return new Response(JSON.stringify({ sent: ok, total: subs.length, expo: expoTokens?.length ?? 0 }), {
       headers: { ...CORS, "Content-Type": "application/json" },
     });
   } catch (err) {
