@@ -396,8 +396,7 @@ function PedidosPage() {
     if (error) { toast.error(traduzirErro(error.message)); return; }
     qc.invalidateQueries({ queryKey: ["pedidos-ativos", empresaId] });
     qc.invalidateQueries({ queryKey: ["pedidos-pag", empresaId] });
-    toast.success(`Pedido #${p.numero} confirmado! Cliente será notificado.`);
-    notificarWhatsApp({ ...p, status: "aguardando_pagamento" }, empresa);
+    toast.success(`Pedido #${p.numero} confirmado!`);
   }
 
   async function confirmarPagamento(p: any) {
@@ -406,7 +405,6 @@ function PedidosPage() {
     qc.invalidateQueries({ queryKey: ["pedidos-ativos", empresaId] });
     qc.invalidateQueries({ queryKey: ["pedidos-pag", empresaId] });
     toast.success(`Pagamento do pedido #${p.numero} confirmado!`);
-    notificarWhatsApp({ ...p, status: "aceito" }, empresa);
   }
 
   async function cancel(id: string) {
@@ -427,18 +425,6 @@ function PedidosPage() {
     qc.invalidateQueries({ queryKey: ["pedidos-ativos", empresaId] });
     qc.invalidateQueries({ queryKey: ["pedidos-pag", empresaId] });
     toast.success(`Desconto de ${fmt(valor)} aplicado!`);
-
-    // Notifica o cliente via WhatsApp com o novo total
-    if (pedido.cliente_telefone) {
-      const novoTotal = Number(pedido.total) - valor;
-      const nomeEmpresa = empresa?.nome_fantasia ?? "Estabelecimento";
-      const tel = pedido.cliente_telefone.replace(/\D/g, "");
-      const msg = encodeURIComponent(
-        `🎁 *Desconto especial no pedido #${pedido.numero}!*\n\nOlá, *${pedido.cliente_nome}*! O estabelecimento concedeu um desconto de *${fmt(valor)}* no seu pedido.\n\n*Novo total: ${fmt(novoTotal)}*\n\n_${nomeEmpresa}_`
-      );
-      const telFmt = tel.startsWith("55") ? tel : `55${tel}`;
-      window.open(`https://wa.me/${telFmt}?text=${msg}`, "_blank");
-    }
   }
 
   async function excluir(id: string) {
