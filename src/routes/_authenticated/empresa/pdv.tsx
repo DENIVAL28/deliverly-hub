@@ -175,16 +175,6 @@ function PDVPage() {
   });
   const nomeEmpresa = empresaData?.nome_fantasia ?? "Estabelecimento";
 
-  // Gera QR PIX quando pagamento = PIX e há itens no carrinho
-  useEffect(() => {
-    if (pagamento !== "PIX" || total <= 0 || !empresaData?.chave_pix) { setPixQrUrl(null); return; }
-    const chave = normalizarChavePix(empresaData.chave_pix, empresaData.tipo_chave_pix ?? "aleatoria");
-    const nome  = normalizarTexto(empresaData.nome_recebedor ?? "ESTABELECIMENTO", 25);
-    const cidade = normalizarTexto(empresaData.cidade_recebedor ?? "BRASIL", 15);
-    const payload = gerarPixPayload(chave, nome, cidade, total);
-    QRCode.toDataURL(payload, { width: 200, margin: 1 }).then(setPixQrUrl).catch(() => setPixQrUrl(null));
-  }, [pagamento, total, empresaData]);
-
   const { data: categorias = [] } = useQuery({
     queryKey: ["categorias", empresaId],
     enabled: !!empresaId,
@@ -214,6 +204,16 @@ function PDVPage() {
   }, [descontoValor, descontoPct, subtotal]);
   const total        = Math.max(0, subtotal - desconto);
   const trocoVal     = pagamento === "Dinheiro" && valorCliente ? parseFloat(valorCliente.replace(",", ".")) - total : null;
+
+  // Gera QR PIX — precisa ficar APÓS total ser calculado
+  useEffect(() => {
+    if (pagamento !== "PIX" || total <= 0 || !empresaData?.chave_pix) { setPixQrUrl(null); return; }
+    const chave  = normalizarChavePix(empresaData.chave_pix, empresaData.tipo_chave_pix ?? "aleatoria");
+    const nome   = normalizarTexto(empresaData.nome_recebedor ?? "ESTABELECIMENTO", 25);
+    const cidade = normalizarTexto(empresaData.cidade_recebedor ?? "BRASIL", 15);
+    const payload = gerarPixPayload(chave, nome, cidade, total);
+    QRCode.toDataURL(payload, { width: 200, margin: 1 }).then(setPixQrUrl).catch(() => setPixQrUrl(null));
+  }, [pagamento, total, empresaData]);
 
   function cartKey(id: string, opcoes?: OpcaoSel[]) {
     return opcoes?.length ? `${id}__${opcoes.map((o) => o.opcaoId).join("_")}` : id;
