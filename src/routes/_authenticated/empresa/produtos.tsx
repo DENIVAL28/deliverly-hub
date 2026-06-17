@@ -75,7 +75,7 @@ function ProdutosPage() {
       categoria_id: fd.get("categoria_id") ? String(fd.get("categoria_id")) : null,
       controlar_estoque: fd.get("controlar_estoque") === "on",
       estoque: Number(fd.get("estoque") || 0),
-      requer_preparo: fd.get("requer_preparo") !== "off",
+      requer_preparo: fd.get("requer_preparo") === "on",
     } as any).select("id").single();
     if (error || !produto) { toast.error(parsarErroSupabase(error)); setUploading(false); return; }
     if (file) {
@@ -109,7 +109,7 @@ function ProdutosPage() {
       foto_url,
       controlar_estoque: fd.get("controlar_estoque") === "on",
       estoque: Number(fd.get("estoque") || 0),
-      requer_preparo: fd.get("requer_preparo") !== "off",
+      requer_preparo: fd.get("requer_preparo") === "on",
     } as any).eq("id", editProduto.id);
     setUploading(false);
     if (error) { toast.error(parsarErroSupabase(error)); return; }
