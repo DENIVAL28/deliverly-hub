@@ -372,16 +372,20 @@ function LojaPage() {
   }
 
   const STATUS_COR: Record<string, string> = {
-    novo: "bg-blue-100 text-blue-700",
-    aceito: "bg-amber-100 text-amber-700",
-    preparo: "bg-orange-100 text-orange-700",
-    entrega: "bg-purple-100 text-purple-700",
+    aguardando_confirmacao: "bg-zinc-100 text-zinc-600",
+    aguardando_pagamento:   "bg-blue-100 text-blue-700",
+    novo:       "bg-blue-100 text-blue-700",
+    aceito:     "bg-amber-100 text-amber-700",
+    preparo:    "bg-orange-100 text-orange-700",
+    entrega:    "bg-purple-100 text-purple-700",
     finalizado: "bg-green-100 text-green-700",
-    cancelado: "bg-red-100 text-red-700",
+    cancelado:  "bg-red-100 text-red-700",
   };
   const STATUS_LABEL: Record<string, string> = {
-    novo: "Aguardando", aceito: "Aceito", preparo: "Em preparo",
-    entrega: "Saiu p/ entrega", finalizado: "Entregue", cancelado: "Cancelado",
+    aguardando_confirmacao: "Aguard. confirmação",
+    aguardando_pagamento:   "Pagar PIX ➜",
+    novo:       "Aguardando", aceito: "Aceito", preparo: "Em preparo",
+    entrega:    "Saiu p/ entrega", finalizado: "Entregue", cancelado: "Cancelado",
   };
 
   const termoBusca = busca.trim().toLowerCase();
@@ -780,8 +784,7 @@ function LojaPage() {
                     <a
                       key={p.id}
                       href={`/pedido/${p.id}`}
-                      target="_blank" rel="noreferrer"
-                      className="flex items-center justify-between p-3 rounded-xl bg-zinc-50 hover:bg-zinc-100 transition-colors"
+                      className={`flex items-center justify-between p-3 rounded-xl transition-colors ${p.status === "aguardando_pagamento" ? "bg-blue-50 hover:bg-blue-100 ring-1 ring-blue-200" : "bg-zinc-50 hover:bg-zinc-100"}`}
                     >
                       <div>
                         <div className="font-bold text-zinc-900 text-sm">Pedido #{p.numero}</div>
