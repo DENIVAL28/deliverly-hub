@@ -153,9 +153,20 @@ function PDVPage() {
   const [descontoValor, setDescontoValor] = useState("");
   const [descontoPct, setDescontoPct]     = useState("");
   const [obs, setObs]                     = useState("");
+  const [nomeCliente, setNomeCliente]     = useState("");
+  const [cpfCliente, setCpfCliente]       = useState("");
   const [finishing, setFinishing]         = useState(false);
-  const [vendaFeita, setVendaFeita]       = useState<{ numero: number; total: number } | null>(null);
+  const [vendaFeita, setVendaFeita]       = useState<{ numero: number; total: number; nome: string; cpf: string; itens: CartItem[]; troco: number | null } | null>(null);
   const [mobileTab, setMobileTab]         = useState<"produtos" | "pedido">("produtos");
+
+  const { data: nomeEmpresa = "Estabelecimento" } = useQuery({
+    queryKey: ["empresa-nome-pdv", empresaId],
+    enabled: !!empresaId,
+    queryFn: async () => {
+      const { data } = await supabase.from("empresas").select("nome_fantasia").eq("id", empresaId!).single();
+      return data?.nome_fantasia ?? "Estabelecimento";
+    },
+  });
 
   const { data: categorias = [] } = useQuery({
     queryKey: ["categorias", empresaId],
@@ -213,7 +224,37 @@ function PDVPage() {
 
   function limparVenda() {
     setCart({}); setDescontoValor(""); setDescontoPct("");
-    setValorCliente(""); setObs(""); setPagamento("Dinheiro"); setVendaFeita(null);
+    setValorCliente(""); setObs(""); setPagamento("Dinheiro");
+    setNomeCliente(""); setCpfCliente(""); setVendaFeita(null);
+  }
+
+  function imprimirCupom(venda: NonNullable<typeof vendaFeita>, nomeEmpresa: string) {
+    const data = new Date().toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+    const itensHtml = venda.itens.map((i) =>
+      `<tr><td>${i.qty}x ${i.nome}${i.opcoes?.length ? `<br><small>${i.opcoes.map(o => o.opcaoNome).join(", ")}</small>` : ""}</td><td style="text-align:right">${fmt(i.preco * i.qty)}</td></tr>`
+    ).join("");
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Cupom #${venda.numero}</title>
+    <style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Courier New',monospace;font-size:13px;width:80mm;padding:8px}
+    .c{text-align:center}.b{font-weight:bold}.line{border-top:1px dashed #000;margin:6px 0}table{width:100%;border-collapse:collapse}td{vertical-align:top}
+    @media print{body{width:80mm}}</style></head><body>
+    <div class="c b" style="font-size:15px">${nomeEmpresa}</div>
+    <div class="c" style="font-size:11px">${data}</div>
+    <div class="line"></div>
+    <div class="c b" style="font-size:18px">CUPOM #${venda.numero}</div>
+    <div class="line"></div>
+    ${venda.nome ? `<div><b>Cliente:</b> ${venda.nome}</div>` : ""}
+    ${venda.cpf  ? `<div><b>CPF:</b> ${venda.cpf}</div>` : ""}
+    ${(venda.nome || venda.cpf) ? '<div class="line"></div>' : ""}
+    <table>${itensHtml}</table>
+    <div class="line"></div>
+    <div style="display:flex;justify-content:space-between;font-weight:bold;font-size:15px"><span>TOTAL</span><span>${fmt(venda.total)}</span></div>
+    ${venda.troco !== null && venda.troco >= 0 ? `<div style="font-size:11px;margin-top:4px">Troco: ${fmt(venda.troco)}</div>` : ""}
+    <div class="line"></div>
+    <div class="c" style="font-size:11px">Obrigado pela preferência!</div>
+    <script>window.onload=function(){window.print();window.onafterprint=function(){window.close();}}<\/script>
+    </body></html>`;
+    const win = window.open("", "_blank", "width=400,height=600");
+    if (win) { win.document.write(html); win.document.close(); }
   }
 
   async function finalizar() {
@@ -233,18 +274,19 @@ function PDVPage() {
       ].filter(Boolean).join(" | ");
 
       const { data, error } = await supabase.rpc("finalizar_pedido", {
-        p_empresa_id:   empresaId!,
-        p_cliente_nome: "Balcão",
+        p_empresa_id:      empresaId!,
+        p_cliente_nome:    nomeCliente.trim() || "Balcão",
+        p_cliente_cpf:     cpfCliente.trim() || undefined,
         p_forma_pagamento: pagamento,
-        p_observacao:   obsCompleta || undefined,
-        p_tipo:         "pdv",
-        p_itens:        itensRpc,
-        p_desconto_pdv: desconto > 0 ? desconto : undefined,
+        p_observacao:      obsCompleta || undefined,
+        p_tipo:            "pdv",
+        p_itens:           itensRpc,
+        p_desconto_pdv:    desconto > 0 ? desconto : undefined,
       });
 
       if (error || !data) { toast.error("Erro: " + (error?.message ?? "tente novamente")); return; }
       const pedido = data as { numero: number; total: number };
-      setVendaFeita({ numero: pedido.numero, total: pedido.total });
+      setVendaFeita({ numero: pedido.numero, total: pedido.total, nome: nomeCliente.trim(), cpf: cpfCliente.trim(), itens: items, troco: trocoVal });
       qc.invalidateQueries({ queryKey: ["pedidos-empresa", empresaId] });
     } finally {
       setFinishing(false);
@@ -261,13 +303,20 @@ function PDVPage() {
           <p className="text-3xl font-black text-zinc-900">Venda #{vendaFeita.numero}</p>
           <p className="text-zinc-500 mt-1">registrada com sucesso!</p>
           <p className="text-2xl font-black text-brand mt-3">{fmt(vendaFeita.total)}</p>
-          {trocoVal !== null && trocoVal >= 0 && (
-            <p className="text-sm text-zinc-500 mt-1">Troco: <span className="font-bold text-zinc-800">{fmt(trocoVal)}</span></p>
+          {vendaFeita.troco !== null && vendaFeita.troco >= 0 && (
+            <p className="text-sm text-zinc-500 mt-1">Troco: <span className="font-bold text-zinc-800">{fmt(vendaFeita.troco)}</span></p>
           )}
+          {vendaFeita.nome && <p className="text-sm text-zinc-600 mt-1">Cliente: <span className="font-semibold">{vendaFeita.nome}</span></p>}
+          {vendaFeita.cpf  && <p className="text-sm text-zinc-600">CPF: <span className="font-semibold">{vendaFeita.cpf}</span></p>}
         </div>
-        <Button onClick={limparVenda} className="bg-brand hover:bg-brand/90 px-10 h-12 text-base font-bold gap-2">
-          <Plus className="size-5" /> Nova venda
-        </Button>
+        <div className="flex gap-3">
+          <Button variant="outline" onClick={() => imprimirCupom(vendaFeita, nomeEmpresa as string)} className="gap-2 border-zinc-300">
+            🖨️ Imprimir cupom
+          </Button>
+          <Button onClick={limparVenda} className="bg-brand hover:bg-brand/90 px-10 h-12 text-base font-bold gap-2">
+            <Plus className="size-5" /> Nova venda
+          </Button>
+        </div>
       </div>
     );
   }
@@ -427,6 +476,18 @@ function PDVPage() {
                 )}
               </div>
             )}
+
+            {/* Cliente */}
+            <div className="flex gap-2">
+              <div className="flex-1 space-y-1">
+                <Label className="text-[10px] text-zinc-400">Nome do cliente</Label>
+                <Input value={nomeCliente} onChange={(e) => setNomeCliente(e.target.value)} placeholder="Opcional" className="h-8 text-sm" />
+              </div>
+              <div className="flex-1 space-y-1">
+                <Label className="text-[10px] text-zinc-400">CPF (nota fiscal)</Label>
+                <Input value={cpfCliente} onChange={(e) => setCpfCliente(e.target.value)} placeholder="000.000.000-00" className="h-8 text-sm" />
+              </div>
+            </div>
 
             {/* Obs */}
             <Textarea value={obs} onChange={(e) => setObs(e.target.value)} placeholder="Observação (opcional)" className="resize-none text-xs h-14" />

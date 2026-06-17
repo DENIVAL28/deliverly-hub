@@ -260,7 +260,7 @@ function LojaPage() {
 
     if (!cliente_nome || cliente_nome.length < 2) { setCheckoutErro("Informe seu nome completo."); return; }
     if (!mesa && (!cliente_telefone || cliente_telefone.length < 8)) { setCheckoutErro("Informe um telefone válido."); return; }
-    if (!mesa && !isRetirada && (!cliente_endereco || cliente_endereco.length < 5)) { setCheckoutErro("Informe o endereço de entrega."); return; }
+    if (!mesa && !isRetirada && (!cliente_endereco || cliente_endereco.length < 10)) { setCheckoutErro("Informe o endereço completo (rua, número e bairro)."); return; }
     if (!["Dinheiro", "Cartão", "PIX"].includes(forma_pagamento)) { setCheckoutErro("Selecione a forma de pagamento."); return; }
 
     trackEvento(empresa.id, "checkout_iniciado");
