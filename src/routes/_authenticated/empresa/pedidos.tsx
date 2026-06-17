@@ -292,13 +292,6 @@ function PedidosPage() {
     return () => { supabase.removeChannel(channel); };
   }, [empresaId, qc]);
 
-  // Título da aba muda com pedidos ativos
-  useEffect(() => {
-    const count = (pedidosAtivos as any[]).length;
-    document.title = count > 0 ? `(${count}) Novo pedido! — Pedidos` : "Pedidos";
-    return () => { document.title = "Pedidos"; };
-  }, [(pedidosAtivos as any[]).length]);
-
   // Query 1 — Ativos (tempo real, sem limite)
   const { data: pedidosAtivos = [] } = useQuery({
     queryKey: ["pedidos-ativos", empresaId],
@@ -310,6 +303,13 @@ function PedidosPage() {
         .in("status", ATIVOS as any)
         .order("created_at", { ascending: false })).data ?? [],
   });
+
+  // Título da aba muda com pedidos ativos
+  useEffect(() => {
+    const count = (pedidosAtivos as any[]).length;
+    document.title = count > 0 ? `(${count}) Novo pedido! — Pedidos` : "Pedidos";
+    return () => { document.title = "Pedidos"; };
+  }, [(pedidosAtivos as any[]).length]);
 
   // Query resumo do dia — finalizados
   const { data: resumoDia } = useQuery({
