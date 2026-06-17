@@ -1,8 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import { enableScreens } from "react-native-screens";
 import * as Notifications from "expo-notifications";
 import { supabase } from "./src/lib/supabase";
+
+enableScreens();
 
 // Telas do cliente (sem login)
 import LojasScreen from "./src/screens/cliente/LojasScreen";
@@ -44,6 +48,7 @@ export default function App() {
   if (loading) return null;
 
   return (
+    <SafeAreaProvider>
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {/* Cliente — fluxo público, sem login */}
@@ -60,5 +65,6 @@ export default function App() {
         )}
       </Stack.Navigator>
     </NavigationContainer>
+    </SafeAreaProvider>
   );
 }
