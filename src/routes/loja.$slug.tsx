@@ -25,11 +25,11 @@ export const Route = createFileRoute("/loja/$slug")({
     const [{ data: categorias }, { data: produtos }, { data: avs }] = await Promise.all([
       supabase.from("categorias").select("*").eq("empresa_id", empresa.id).eq("ativo", true).order("ordem"),
       (supabase.from("produtos") as any).select("*, grupos_opcoes(id, nome, opcoes(id, nome, ativo))").eq("empresa_id", empresa.id).eq("ativo", true),
-      supabase.from("avaliacoes").select("nota").eq("empresa_id", empresa.id),
+      supabase.from("avaliacoes").select("nota,comentario,cliente_nome,created_at").eq("empresa_id", empresa.id).order("created_at", { ascending: false }).limit(20),
     ]);
-    const notas = (avs ?? []) as any[];
-    const mediaAval = notas.length ? notas.reduce((s: number, a: any) => s + a.nota, 0) / notas.length : null;
-    return { empresa, categorias: categorias ?? [], produtos: produtos ?? [], mediaAval, totalAval: notas.length };
+    const avaliacoes = (avs ?? []) as any[];
+    const mediaAval = avaliacoes.length ? avaliacoes.reduce((s: number, a: any) => s + a.nota, 0) / avaliacoes.length : null;
+    return { empresa, categorias: categorias ?? [], produtos: produtos ?? [], mediaAval, totalAval: avaliacoes.length, avaliacoes };
   },
   component: LojaPage,
   notFoundComponent: () => (
@@ -43,7 +43,7 @@ interface OpcaoSelecionada {
 interface CartItem { id: string; cartKey: string; nome: string; preco: number; qty: number; opcoes?: OpcaoSelecionada[]; }
 
 function LojaPage() {
-  const { empresa, categorias, produtos, mediaAval, totalAval } = Route.useLoaderData();
+  const { empresa, categorias, produtos, mediaAval, totalAval, avaliacoes } = Route.useLoaderData();
   // Lê mesa da URL: /loja/slug?mesa=3
   const mesa = useMemo(() => {
     if (typeof window === "undefined") return null;
@@ -718,6 +718,36 @@ function LojaPage() {
           </>
         )}
       </div>
+
+      {/* Seção de avaliações públicas */}
+      {avaliacoes.length > 0 && (
+        <div className="max-w-2xl mx-auto px-4 pb-6 mt-2">
+          <h2 className="text-sm font-bold text-zinc-700 mb-3 flex items-center gap-2">
+            <span className="text-yellow-400">★</span> Avaliações dos clientes
+            <span className="text-zinc-400 font-normal">({totalAval})</span>
+          </h2>
+          <div className="space-y-3">
+            {avaliacoes.filter((a: any) => a.comentario?.trim()).map((a: any, i: number) => (
+              <div key={i} className="bg-white rounded-2xl shadow-sm px-4 py-3">
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <div className="flex gap-0.5">
+                    {[1,2,3,4,5].map((n) => (
+                      <span key={n} className={`text-sm ${n <= a.nota ? "text-yellow-400" : "text-zinc-200"}`}>★</span>
+                    ))}
+                  </div>
+                  <span className="text-[11px] text-zinc-400">
+                    {new Date(a.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
+                  </span>
+                </div>
+                <p className="text-sm text-zinc-700 leading-relaxed">{a.comentario}</p>
+                {a.cliente_nome && (
+                  <p className="text-xs text-zinc-400 mt-1">— {a.cliente_nome.split(" ")[0]}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Barra do carrinho */}
       {totalQty > 0 && !selectedProduct && !checkoutOpen && (() => {
