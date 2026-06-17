@@ -1,8 +1,8 @@
-﻿{
+{
   "name": "Delivery Hub — Sistema de Delivery",
-  "short_name": "Delivery",
+  "short_name": "Delivery Hub",
   "description": "Cardápio digital, PDV e gestão de entregadores para restaurantes",
-  "start_url": "/",
+  "start_url": "/empresa/pedidos",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
@@ -11,10 +11,22 @@
   "lang": "pt-BR",
   "icons": [
     {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
       "src": "/favicon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ]
 }

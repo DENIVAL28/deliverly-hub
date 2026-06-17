@@ -184,6 +184,8 @@ function PedidosPage() {
   const [notifPermissao, setNotifPermissao] = useState<NotificationPermission>(
     typeof Notification !== "undefined" ? Notification.permission : "denied"
   );
+  const isIos = typeof navigator !== "undefined" && /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isStandalone = typeof window !== "undefined" && (window.navigator as any).standalone === true;
   const somAtivoRef = useRef(true);
   somAtivoRef.current = somAtivo;
 
@@ -477,12 +479,23 @@ function PedidosPage() {
           </Button>
         </div>
       )}
-      {notifPermissao === "denied" && (
+      {notifPermissao === "denied" && !isIos && (
         <div className="mb-4 flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
           <BellOff className="size-4 text-red-500 shrink-0" />
           <p className="text-sm text-red-700">
             Notificações bloqueadas no navegador. Para ativar: clique no cadeado na barra de endereço → Notificações → Permitir.
           </p>
+        </div>
+      )}
+      {isIos && !isStandalone && (
+        <div className="mb-4 flex items-start gap-3 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
+          <span className="text-xl shrink-0">📲</span>
+          <div>
+            <p className="text-sm font-semibold text-blue-800">Instale o app para receber notificações no iPhone/iPad</p>
+            <p className="text-xs text-blue-700 mt-0.5">
+              No Safari: toque em <strong>Compartilhar</strong> (ícone de caixinha com seta) → <strong>Adicionar à Tela de Início</strong> → Abrir pelo ícone criado.
+            </p>
+          </div>
         </div>
       )}
 
