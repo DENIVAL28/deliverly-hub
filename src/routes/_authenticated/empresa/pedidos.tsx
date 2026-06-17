@@ -400,6 +400,15 @@ function PedidosPage() {
     notificarWhatsApp({ ...p, status: "aguardando_pagamento" }, empresa);
   }
 
+  async function confirmarPagamento(p: any) {
+    const { error } = await supabase.from("pedidos").update({ status: "aceito" } as any).eq("id", p.id);
+    if (error) { toast.error(traduzirErro(error.message)); return; }
+    qc.invalidateQueries({ queryKey: ["pedidos-ativos", empresaId] });
+    qc.invalidateQueries({ queryKey: ["pedidos-pag", empresaId] });
+    toast.success(`Pagamento do pedido #${p.numero} confirmado!`);
+    notificarWhatsApp({ ...p, status: "aceito" }, empresa);
+  }
+
   async function cancel(id: string) {
     const { error } = await supabase.from("pedidos").update({ status: "cancelado" }).eq("id", id);
     if (error) { toast.error(traduzirErro(error.message)); return; }
@@ -727,6 +736,11 @@ function PedidosPage() {
                     {p.status === "aguardando_confirmacao" && (
                       <Button onClick={() => confirmarPedido(p)} className="bg-green-600 hover:bg-green-700 text-white gap-1.5">
                         ✓ Confirmar Pedido
+                      </Button>
+                    )}
+                    {p.status === "aguardando_pagamento" && (
+                      <Button onClick={() => confirmarPagamento(p)} className="bg-blue-600 hover:bg-blue-700 text-white gap-1.5">
+                        💰 Confirmar Pagamento
                       </Button>
                     )}
                     {(() => {
