@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { LogOut, Menu, X, AlertTriangle, XCircle } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/use-auth";
+import { AssistenteIA } from "@/components/AssistenteIA";
 
 export interface NavItem {
   to: string;
@@ -124,6 +125,7 @@ export function AppShell({ title, items, children }: { title: string; items: Nav
           <div className="p-4 md:p-10 max-w-7xl mx-auto">{children}</div>
         </div>
       </main>
+      <AssistenteIA />
     </div>
   );
 }
