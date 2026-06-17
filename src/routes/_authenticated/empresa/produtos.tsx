@@ -544,7 +544,7 @@ function OpcaoRow({ opcao, produtoId, grupoId }: { opcao: any; produtoId: string
         {Number(opcao.preco_adicional) > 0 && (
           <span className="text-green-600 font-semibold">+{fmt(Number(opcao.preco_adicional))}</span>
         )}
-        <button onClick={() => setEditando(true)} className="text-zinc-300 hover:text-brand transition-colors opacity-0 group-hover:opacity-100">
+        <button onClick={() => setEditando(true)} className="text-zinc-300 hover:text-brand transition-colors sm:opacity-0 sm:group-hover:opacity-100">
           <Pencil className="size-3.5" />
         </button>
         <button onClick={remove} className="text-zinc-300 hover:text-red-500 transition-colors">
