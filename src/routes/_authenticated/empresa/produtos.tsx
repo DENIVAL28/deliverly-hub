@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Trash2, Eye, EyeOff, ImagePlus, Settings2, ChevronDown, ChevronUp, Pencil, Package, PackageX, AlertTriangle, FileSpreadsheet } from "lucide-react";
+import { Plus, Trash2, Eye, EyeOff, ImagePlus, Settings2, ChevronDown, ChevronUp, Pencil, Package, PackageX, AlertTriangle, FileSpreadsheet, X } from "lucide-react";
 import { toast } from "sonner";
 import { UpgradeGuard, LimiteBanner } from "@/components/UpgradeGuard";
 import { PLANO_LIMITS, limiteAtingido, parsarErroSupabase } from "@/lib/plano";
@@ -499,18 +499,54 @@ function GruposOpcoes({ produtoId }: { produtoId: string }) {
 
 function OpcaoRow({ opcao, produtoId, grupoId }: { opcao: any; produtoId: string; grupoId: string }) {
   const qc = useQueryClient();
+  const [editando, setEditando] = useState(false);
+  const [nome, setNome] = useState(opcao.nome);
+  const [preco, setPreco] = useState(String(opcao.preco_adicional ?? "0"));
+
+  async function salvar() {
+    if (!nome.trim()) return;
+    const { error } = await (supabase.from("opcoes") as any)
+      .update({ nome: nome.trim(), preco_adicional: parseFloat(preco.replace(",", ".")) || 0 })
+      .eq("id", opcao.id);
+    if (error) { toast.error(error.message); return; }
+    qc.invalidateQueries({ queryKey: ["grupos-opcoes", produtoId] });
+    setEditando(false);
+  }
+
   async function remove() {
     await (supabase.from("opcoes") as any).delete().eq("id", opcao.id);
     qc.invalidateQueries({ queryKey: ["grupos-opcoes", produtoId] });
   }
+
   const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+  if (editando) {
+    return (
+      <div className="flex gap-2 items-center">
+        <Input value={nome} onChange={(e) => setNome(e.target.value)}
+          className="h-7 text-xs rounded-lg flex-1" onKeyDown={(e) => e.key === "Enter" && salvar()} autoFocus />
+        <Input value={preco} onChange={(e) => setPreco(e.target.value)}
+          placeholder="+R$" type="number" step="0.01"
+          className="h-7 text-xs rounded-lg w-20" onKeyDown={(e) => e.key === "Enter" && salvar()} />
+        <Button size="sm" onClick={salvar} className="h-7 bg-brand hover:bg-brand/90 px-2 text-xs">Salvar</Button>
+        <button onClick={() => { setEditando(false); setNome(opcao.nome); setPreco(String(opcao.preco_adicional ?? "0")); }}
+          className="text-zinc-400 hover:text-zinc-600 transition-colors">
+          <X className="size-3.5" />
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex items-center justify-between text-xs bg-zinc-50 rounded-lg px-3 py-1.5">
+    <div className="flex items-center justify-between text-xs bg-zinc-50 rounded-lg px-3 py-1.5 group">
       <span className="font-medium text-zinc-700">{opcao.nome}</span>
       <div className="flex items-center gap-2">
         {Number(opcao.preco_adicional) > 0 && (
           <span className="text-green-600 font-semibold">+{fmt(Number(opcao.preco_adicional))}</span>
         )}
+        <button onClick={() => setEditando(true)} className="text-zinc-300 hover:text-brand transition-colors opacity-0 group-hover:opacity-100">
+          <Pencil className="size-3.5" />
+        </button>
         <button onClick={remove} className="text-zinc-300 hover:text-red-500 transition-colors">
           <Trash2 className="size-3.5" />
         </button>
