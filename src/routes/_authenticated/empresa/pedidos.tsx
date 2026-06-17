@@ -23,19 +23,22 @@ const STATUS: { value: string; label: string; tone: string }[] = [
   { value: "cancelado",  label: "Cancelado",        tone: "bg-red-100 text-red-700" },
 ];
 
-// Delivery: Novo → Aceito → Em preparo → Saiu p/ entrega → Finalizado
-const NEXT: Record<string, string> = {
-  novo: "aceito", aceito: "preparo", preparo: "entrega", entrega: "finalizado",
-};
-// Mesa / Retirada: Novo → Aceito → Em preparo → Finalizado (sem entrega)
-const NEXT_MESA: Record<string, string> = {
-  novo: "aceito", aceito: "preparo", preparo: "finalizado", entrega: "finalizado",
-};
+// Com preparo
+const NEXT: Record<string, string> = { novo: "aceito", aceito: "preparo", preparo: "entrega", entrega: "finalizado" };
+const NEXT_MESA: Record<string, string> = { novo: "aceito", aceito: "preparo", preparo: "finalizado" };
 const NEXT_RETIRADA = NEXT_MESA;
-// PDV/Balcão: Novo → Aceito → Finalizado (sem preparo — atendente está ali)
-const NEXT_PDV: Record<string, string> = {
-  novo: "aceito", aceito: "finalizado",
-};
+// Sem preparo (todos itens da categoria "sem preparo")
+const NEXT_SEM_PREPARO: Record<string, string> = { novo: "aceito", aceito: "entrega", entrega: "finalizado" };
+const NEXT_MESA_SEM_PREPARO: Record<string, string> = { novo: "aceito", aceito: "finalizado" };
+const NEXT_RETIRADA_SEM_PREPARO = NEXT_MESA_SEM_PREPARO;
+// PDV: sempre sem preparo (atendente está ali)
+const NEXT_PDV: Record<string, string> = { novo: "aceito", aceito: "finalizado" };
+
+function precisaPreparo(pedido: any): boolean {
+  const itens: any[] = pedido.pedido_itens ?? [];
+  if (itens.length === 0) return true;
+  return itens.some((i) => i.requer_preparo !== false);
+}
 
 const ATIVOS = ["aguardando_confirmacao", "aguardando_pagamento", "novo", "aceito", "preparo", "entrega"];
 const PAGE_SIZE = 20;
@@ -380,7 +383,14 @@ function PedidosPage() {
   const totalItems  = pedidosPag?.total ?? 0;
 
   async function advance(p: any, entregadorId?: string) {
-    const nextMap = p.tipo === "pdv" ? NEXT_PDV : p.tipo === "retirada" ? NEXT_RETIRADA : p.mesa ? NEXT_MESA : NEXT;
+    const comPreparo = precisaPreparo(p);
+    const nextMap = p.tipo === "pdv"
+      ? NEXT_PDV
+      : p.tipo === "retirada"
+        ? (comPreparo ? NEXT_RETIRADA : NEXT_RETIRADA_SEM_PREPARO)
+        : p.mesa
+          ? (comPreparo ? NEXT_MESA : NEXT_MESA_SEM_PREPARO)
+          : (comPreparo ? NEXT : NEXT_SEM_PREPARO);
     const next = nextMap[p.status];
     if (!next) return;
     const update: any = { status: next };
@@ -733,7 +743,14 @@ function PedidosPage() {
                       </Button>
                     )}
                     {(() => {
-                      const nextMap = p.tipo === "pdv" ? NEXT_PDV : p.tipo === "retirada" ? NEXT_RETIRADA : p.mesa ? NEXT_MESA : NEXT;
+                      const comPreparo = precisaPreparo(p);
+                      const nextMap = p.tipo === "pdv"
+                        ? NEXT_PDV
+                        : p.tipo === "retirada"
+                          ? (comPreparo ? NEXT_RETIRADA : NEXT_RETIRADA_SEM_PREPARO)
+                          : p.mesa
+                            ? (comPreparo ? NEXT_MESA : NEXT_MESA_SEM_PREPARO)
+                            : (comPreparo ? NEXT : NEXT_SEM_PREPARO);
                       const nextStatus = nextMap[p.status];
                       if (!nextStatus) return null;
                       return (
