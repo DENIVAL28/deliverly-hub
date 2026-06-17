@@ -66,7 +66,7 @@ function LojaPage() {
   const [clienteCpf, setClienteCpf]         = useState("");
   const [clienteCep, setClienteCep]         = useState("");
   const [clienteCidade, setClienteCidade]   = useState("");
-  const [pixModal, setPixModal]           = useState<{ payload: string; qrUrl: string; total: number; waLink: string; pedidoNum: number } | null>(null);
+  const [pixModal, setPixModal]           = useState<{ payload: string; qrUrl: string; total: number; desconto: number; waLink: string; pedidoNum: number; pedidoId: string; pixChave: string; pixNome: string; pixCidade: string } | null>(null);
   const [acompanharOpen, setAcompanharOpen] = useState(false);
   const [telBusca, setTelBusca]           = useState("");
   const [pedidosBusca, setPedidosBusca]   = useState<any[] | null>(null);
@@ -75,6 +75,29 @@ function LojaPage() {
 
   // Analytics: visita ao cardápio
   useEffect(() => { trackEvento(empresa.id, "visita"); }, []);
+
+  // Realtime: atualiza QR PIX se o dono aplicar desconto enquanto modal está aberto
+  useEffect(() => {
+    if (!pixModal?.pedidoId) return;
+    const channel = supabase
+      .channel(`pix-desconto-${pixModal.pedidoId}`)
+      .on("postgres_changes",
+        { event: "UPDATE", schema: "public", table: "pedidos", filter: `id=eq.${pixModal.pedidoId}` },
+        async (payload) => {
+          const novoDesconto = Number((payload.new as any).desconto ?? 0);
+          if (novoDesconto === pixModal.desconto) return;
+          const novoTotal = pixModal.total - novoDesconto;
+          const novoPayload = gerarPixPayload(pixModal.pixChave, pixModal.pixNome, pixModal.pixCidade, novoTotal);
+          try {
+            const novoQr = await QRCode.toDataURL(novoPayload, { width: 240, margin: 2, color: { dark: "#18181b", light: "#ffffff" } });
+            setPixModal((m) => m ? { ...m, desconto: novoDesconto, payload: novoPayload, qrUrl: novoQr } : m);
+            toast.success(`Desconto de ${fmt(novoDesconto)} aplicado! Novo total: ${fmt(novoTotal)}`);
+          } catch {}
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [pixModal?.pedidoId]);
 
   const totalQty   = useMemo(() => Object.values(cart).reduce((s, i) => s + i.qty, 0), [cart]);
   const totalPrice = useMemo(
@@ -270,7 +293,7 @@ function LojaPage() {
           const payload   = gerarPixPayload(chave, nomeRec, cidadeRec, total);
           try {
             const qrUrl = await QRCode.toDataURL(payload, { width: 240, margin: 2, color: { dark: "#18181b", light: "#ffffff" } });
-            setPixModal({ payload, qrUrl, total, waLink: waUrl ?? "", pedidoNum: pedido.numero });
+            setPixModal({ payload, qrUrl, total, desconto: 0, waLink: waUrl ?? "", pedidoNum: pedido.numero, pedidoId: pedido.id, pixChave: chave, pixNome: nomeRec, pixCidade: cidadeRec });
           } catch {
             setPedidoFeito({ id: pedido.id, numero: pedido.numero, waUrl });
           }
@@ -783,7 +806,15 @@ function LojaPage() {
             </div>
             <h3 className="text-lg font-bold text-zinc-900">Pague via PIX</h3>
             <p className="text-sm text-zinc-500 mt-1 mb-1">Pedido #{pixModal.pedidoNum}</p>
-            <p className="text-2xl font-black text-zinc-900 mb-4">{fmt(pixModal.total)}</p>
+            {pixModal.desconto > 0 ? (
+              <div className="mb-4">
+                <p className="text-sm line-through text-zinc-400">{fmt(pixModal.total)}</p>
+                <p className="text-2xl font-black text-green-600">{fmt(pixModal.total - pixModal.desconto)}</p>
+                <p className="text-xs text-green-600 font-medium">🎁 Desconto de {fmt(pixModal.desconto)} aplicado!</p>
+              </div>
+            ) : (
+              <p className="text-2xl font-black text-zinc-900 mb-4">{fmt(pixModal.total)}</p>
+            )}
 
             {pixModal.qrUrl && (
               <div className="flex justify-center mb-4">
