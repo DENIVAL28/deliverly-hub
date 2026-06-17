@@ -228,8 +228,9 @@ function LojaPage() {
       setCheckoutErro("Esta loja está bloqueada e não aceita pedidos no momento.");
       return;
     }
-    if ((empresa as any).aberto === false) {
-      setCheckoutErro("Esta loja está fechada no momento.");
+    const { aberto: lojaAberta, label: lojaLabel } = verificarAberto(empresa);
+    if (!lojaAberta) {
+      setCheckoutErro(`Loja fechada. ${lojaLabel}`);
       return;
     }
 
@@ -718,9 +719,16 @@ function LojaPage() {
       </div>
 
       {/* Barra do carrinho */}
-      {totalQty > 0 && !selectedProduct && !checkoutOpen && (
+      {totalQty > 0 && !selectedProduct && !checkoutOpen && (() => {
+        const { aberto: lojaAberta, label: lojaLabel } = verificarAberto(empresa);
+        return (
         <div className="fixed bottom-0 left-0 right-0 z-30 px-4 pt-6 bg-gradient-to-t from-zinc-100 via-zinc-100/95 to-transparent" style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}>
           <div className="max-w-2xl mx-auto">
+            {!lojaAberta ? (
+              <div className="w-full bg-zinc-800 text-white rounded-2xl h-14 flex items-center justify-center gap-2 font-semibold shadow-xl text-sm">
+                🔴 {lojaLabel} — pedidos desativados
+              </div>
+            ) : (
             <button onClick={() => setCheckoutOpen(true)}
               className="w-full b-btn text-white rounded-2xl h-14 flex items-center justify-between px-5 font-semibold transition-colors shadow-xl">
               <span className="bg-white/20 text-white text-sm font-bold px-2.5 py-1 rounded-lg min-w-[28px] text-center">
@@ -731,9 +739,11 @@ function LojaPage() {
               </span>
               <span>{fmt(totalPrice)}</span>
             </button>
+            )}
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {/* Modal acompanhar pedido */}
       {acompanharOpen && (
