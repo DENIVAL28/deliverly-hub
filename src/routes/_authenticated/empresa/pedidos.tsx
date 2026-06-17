@@ -13,6 +13,8 @@ import { traduzirErro } from "@/lib/erros";
 import { PLANO_LIMITS } from "@/lib/plano";
 
 const STATUS: { value: string; label: string; tone: string }[] = [
+  { value: "aguardando_confirmacao", label: "Aguard. confirmação", tone: "bg-zinc-100 text-zinc-600" },
+  { value: "aguardando_pagamento",   label: "Aguard. pagamento",   tone: "bg-amber-100 text-amber-700" },
   { value: "novo",       label: "Novo",            tone: "bg-blue-100 text-blue-700" },
   { value: "aceito",     label: "Aceito",           tone: "bg-amber-100 text-amber-700" },
   { value: "preparo",    label: "Em preparo",       tone: "bg-orange-100 text-brand" },
@@ -32,7 +34,7 @@ const NEXT_MESA: Record<string, string> = {
 const NEXT_PDV      = NEXT_MESA;
 const NEXT_RETIRADA = NEXT_MESA;
 
-const ATIVOS = ["novo", "aceito", "preparo", "entrega"];
+const ATIVOS = ["aguardando_confirmacao", "aguardando_pagamento", "novo", "aceito", "preparo", "entrega"];
 const PAGE_SIZE = 20;
 
 const TABS = [
@@ -50,6 +52,12 @@ export const Route = createFileRoute("/_authenticated/empresa/pedidos")({
 
 /* ─── Mensagens WhatsApp por status ─── */
 const MSGS: Record<string, (p: any, nomeEmpresa: string) => string> = {
+  aguardando_pagamento: (p, e) => {
+    const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+    const desc = Number(p.desconto ?? 0);
+    const total = Number(p.total) - desc;
+    return `💳 *Pedido #${p.numero} confirmado — realize o pagamento!*\n\nOlá, *${p.cliente_nome}*!${desc > 0 ? `\n\n🎁 Desconto aplicado: *${fmt(desc)}*` : ""}\n*Total a pagar: ${fmt(total)}*\n\nAcesse seu pedido para pagar via PIX:\n${window.location.origin}/loja/${e}\n\n_${e}_`;
+  },
   aceito: (p, e) =>
     `✅ *Pedido #${p.numero} confirmado!*\n\nOlá, *${p.cliente_nome}*! Recebemos seu pedido e já estamos preparando tudo. 👨‍🍳\n\n_${e}_`,
   preparo: (p, e) =>
@@ -383,6 +391,15 @@ function PedidosPage() {
     qc.invalidateQueries({ queryKey: ["pedidos", empresaId] });
   }
 
+  async function confirmarPedido(p: any) {
+    const { error } = await supabase.from("pedidos").update({ status: "aguardando_pagamento" } as any).eq("id", p.id);
+    if (error) { toast.error(traduzirErro(error.message)); return; }
+    qc.invalidateQueries({ queryKey: ["pedidos-ativos", empresaId] });
+    qc.invalidateQueries({ queryKey: ["pedidos-pag", empresaId] });
+    toast.success(`Pedido #${p.numero} confirmado! Cliente será notificado.`);
+    notificarWhatsApp({ ...p, status: "aguardando_pagamento" }, empresa);
+  }
+
   async function cancel(id: string) {
     const { error } = await supabase.from("pedidos").update({ status: "cancelado" }).eq("id", id);
     if (error) { toast.error(traduzirErro(error.message)); return; }
@@ -707,6 +724,11 @@ function PedidosPage() {
                     <Button size="sm" variant="outline" onClick={() => cancel(p.id)} className="text-red-500 hover:text-red-600 border-red-200 hover:bg-red-50">
                       Cancelar
                     </Button>
+                    {p.status === "aguardando_confirmacao" && (
+                      <Button onClick={() => confirmarPedido(p)} className="bg-green-600 hover:bg-green-700 text-white gap-1.5">
+                        ✓ Confirmar Pedido
+                      </Button>
+                    )}
                     {(() => {
                       const nextMap = p.tipo === "pdv" ? NEXT_PDV : p.tipo === "retirada" ? NEXT_RETIRADA : p.mesa ? NEXT_MESA : NEXT;
                       const nextStatus = nextMap[p.status];

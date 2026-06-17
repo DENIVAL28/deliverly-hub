@@ -17,7 +17,7 @@ export const Route = createFileRoute("/loja/$slug")({
   loader: async ({ params }) => {
     const { data: empresa } = await supabase
       .from("empresas")
-      .select("id,nome_fantasia,slug,whatsapp,cor_primaria,taxa_entrega,status,aberto,logo_url,banner_url,tempo_entrega,pedido_minimo,horario_abertura,horario_fechamento,dias_semana,chave_pix,tipo_chave_pix,nome_recebedor,cidade_recebedor,retirada_ativa,taxa_entrega_tipo,taxa_entrega_por_km,taxa_entrega_base,empresa_lat,empresa_lng")
+      .select("id,nome_fantasia,slug,whatsapp,cor_primaria,taxa_entrega,status,aberto,logo_url,banner_url,tempo_entrega,pedido_minimo,horario_abertura,horario_fechamento,dias_semana,chave_pix,tipo_chave_pix,nome_recebedor,cidade_recebedor,retirada_ativa,taxa_entrega_tipo,taxa_entrega_por_km,taxa_entrega_base,empresa_lat,empresa_lng,fluxo_pedido")
       .eq("slug", params.slug)
       .maybeSingle();
     if (!empresa) throw notFound();
@@ -67,6 +67,7 @@ function LojaPage() {
   const [clienteCep, setClienteCep]         = useState("");
   const [clienteCidade, setClienteCidade]   = useState("");
   const [pixModal, setPixModal]           = useState<{ payload: string; qrUrl: string; total: number; desconto: number; waLink: string; pedidoNum: number; pedidoId: string; pixChave: string; pixNome: string; pixCidade: string } | null>(null);
+  const [aguardandoConfirmacao, setAguardandoConfirmacao] = useState<{ pedidoId: string; numero: number } | null>(null);
   const [acompanharOpen, setAcompanharOpen] = useState(false);
   const [telBusca, setTelBusca]           = useState("");
   const [pedidosBusca, setPedidosBusca]   = useState<any[] | null>(null);
@@ -98,6 +99,45 @@ function LojaPage() {
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [pixModal?.pedidoId]);
+
+  // Realtime: fluxo manual — detecta confirmação do estabelecimento
+  useEffect(() => {
+    if (!aguardandoConfirmacao?.pedidoId) return;
+    const channel = supabase
+      .channel(`fluxo-manual-${aguardandoConfirmacao.pedidoId}`)
+      .on("postgres_changes",
+        { event: "UPDATE", schema: "public", table: "pedidos", filter: `id=eq.${aguardandoConfirmacao.pedidoId}` },
+        async (payload) => {
+          const novo = payload.new as any;
+          if (novo.status === "aguardando_pagamento") {
+            const emp = empresa as any;
+            const chaveRaw = emp.chave_pix as string | null;
+            const chave = chaveRaw ? normalizarChavePix(chaveRaw.trim(), emp.tipo_chave_pix ?? "aleatoria") : null;
+            const desc = Number(novo.desconto ?? 0);
+            const total = Number(novo.total) - desc;
+            if (chave) {
+              const nomeRec   = (emp.nome_recebedor || emp.nome_fantasia || "Loja").normalize("NFD").replace(/[̀-ͯ]/g, "").substring(0, 25);
+              const cidadeRec = (emp.cidade_recebedor || "Brasil").normalize("NFD").replace(/[̀-ͯ]/g, "").substring(0, 15);
+              const payload2  = gerarPixPayload(chave, nomeRec, cidadeRec, total);
+              try {
+                const qrUrl = await QRCode.toDataURL(payload2, { width: 240, margin: 2, color: { dark: "#18181b", light: "#ffffff" } });
+                setAguardandoConfirmacao(null);
+                setPixModal({ payload: payload2, qrUrl, total, desconto: desc, waLink: "", pedidoNum: aguardandoConfirmacao.numero, pedidoId: aguardandoConfirmacao.pedidoId, pixChave: chave, pixNome: nomeRec, pixCidade: cidadeRec });
+                toast.success("Pedido confirmado! Realize o pagamento via PIX.");
+              } catch { setAguardandoConfirmacao(null); }
+            } else {
+              setAguardandoConfirmacao(null);
+              toast.success("Pedido confirmado pelo estabelecimento!");
+            }
+          } else if (novo.status === "cancelado") {
+            setAguardandoConfirmacao(null);
+            toast.error("Seu pedido foi cancelado pelo estabelecimento. Entre em contato para mais informações.");
+          }
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [aguardandoConfirmacao?.pedidoId]);
 
   const totalQty   = useMemo(() => Object.values(cart).reduce((s, i) => s + i.qty, 0), [cart]);
   const totalPrice = useMemo(
@@ -277,6 +317,13 @@ function LojaPage() {
       const waUrl = waNumFull ? `https://wa.me/${waNumFull}?text=${msg}` : null;
 
       setCart({}); setCheckoutOpen(false); setCupomAplicado(null); setCodigoCupom("");
+
+      // Fluxo Manual: não gera PIX agora, aguarda confirmação do estabelecimento
+      if ((empresa as any).fluxo_pedido === "manual" && forma_pagamento === "PIX") {
+        await supabase.from("pedidos").update({ status: "aguardando_confirmacao" } as any).eq("id", pedido.id);
+        setAguardandoConfirmacao({ pedidoId: pedido.id, numero: pedido.numero });
+        return;
+      }
 
       if (forma_pagamento === "PIX") {
         const emp = empresa as any;
@@ -752,6 +799,25 @@ function LojaPage() {
                 </div>
               )
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Modal fluxo manual — aguardando confirmação */}
+      {aguardandoConfirmacao && (
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-end sm:items-center justify-center">
+          <div className="bg-white w-full sm:max-w-sm sm:rounded-2xl rounded-t-2xl p-6 text-center">
+            <div className="size-16 rounded-full bg-zinc-100 flex items-center justify-center mx-auto mb-3">
+              <span className="text-3xl animate-pulse">⏳</span>
+            </div>
+            <h3 className="text-lg font-bold text-zinc-900">Pedido #{aguardandoConfirmacao.numero} enviado!</h3>
+            <p className="text-sm text-zinc-500 mt-1">Aguardando confirmação do estabelecimento.</p>
+            <p className="text-xs text-zinc-400 mt-2 mb-5">O valor poderá ser ajustado antes da confirmação final. Você será avisado automaticamente assim que o pedido for confirmado.</p>
+            <div className="flex items-center justify-center gap-2 text-xs text-zinc-400">
+              <span className="size-2 rounded-full bg-zinc-300 animate-pulse" />
+              <span className="size-2 rounded-full bg-zinc-400 animate-pulse [animation-delay:200ms]" />
+              <span className="size-2 rounded-full bg-zinc-300 animate-pulse [animation-delay:400ms]" />
+            </div>
           </div>
         </div>
       )}

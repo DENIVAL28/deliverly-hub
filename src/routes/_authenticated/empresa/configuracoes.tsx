@@ -60,6 +60,7 @@ function ConfiguracoesPage() {
   const [cnpj,           setCnpj]           = useState("");
   const [segmento,       setSegmento]       = useState("");
   const [retiradaAtiva,  setRetiradaAtiva]  = useState(false);
+  const [fluxoPedido,    setFluxoPedido]    = useState<"automatico" | "manual">("automatico");
   const [zapiTestando,   setZapiTestando]   = useState(false);
   const [taxaTipo,       setTaxaTipo]       = useState<"fixo" | "km">("fixo");
   const [taxaPorKm,      setTaxaPorKm]      = useState("2");
@@ -91,6 +92,7 @@ function ConfiguracoesPage() {
     setCnpj(emp.cnpj ?? "");
     setSegmento(emp.segmento ?? "");
     setRetiradaAtiva(emp.retirada_ativa ?? false);
+    setFluxoPedido(emp.fluxo_pedido ?? "automatico");
     setTaxaTipo(emp.taxa_entrega_tipo ?? "fixo");
     setTaxaPorKm(String(emp.taxa_entrega_por_km ?? 2));
     setTaxaBase(String(emp.taxa_entrega_base ?? 0));
@@ -146,6 +148,7 @@ function ConfiguracoesPage() {
       cnpj: cnpj.replace(/\D/g, "").length === 14 ? cnpj.trim() : (cnpj.trim() || null),
       segmento: segmento || null,
       retirada_ativa: retiradaAtiva,
+      fluxo_pedido: fluxoPedido,
       taxa_entrega_tipo: taxaTipo,
       taxa_entrega_por_km: Number(taxaPorKm) || 2,
       taxa_entrega_base: Number(taxaBase) || 0,
@@ -700,6 +703,28 @@ function ConfiguracoesPage() {
                 <span className="text-sm text-green-700 font-medium">Robô ativo — clientes serão notificados automaticamente</span>
               </div>
             )}
+          </section>
+
+          {/* Fluxo de Pedidos */}
+          <section className="bg-background rounded-2xl ring-1 ring-black/5 p-6 space-y-4">
+            <div>
+              <h2 className="font-semibold text-ink">Fluxo de Pedidos Online</h2>
+              <p className="text-xs text-zinc-500 mt-0.5">Define como os pedidos chegam e quando o PIX é gerado.</p>
+            </div>
+            <div className="grid sm:grid-cols-2 gap-3">
+              <button type="button" onClick={() => setFluxoPedido("automatico")}
+                className={`text-left rounded-xl border-2 p-4 transition-colors ${fluxoPedido === "automatico" ? "border-brand bg-brand/5" : "border-zinc-200 hover:border-zinc-300"}`}>
+                <div className="font-semibold text-sm text-ink mb-1">⚡ Automático</div>
+                <p className="text-xs text-zinc-500">Cliente pede → PIX gerado na hora → pagamento imediato.</p>
+                <p className="text-xs text-zinc-400 mt-1">Açaiterias, lanchonetes, hamburguerias…</p>
+              </button>
+              <button type="button" onClick={() => setFluxoPedido("manual")}
+                className={`text-left rounded-xl border-2 p-4 transition-colors ${fluxoPedido === "manual" ? "border-brand bg-brand/5" : "border-zinc-200 hover:border-zinc-300"}`}>
+                <div className="font-semibold text-sm text-ink mb-1">🔍 Manual</div>
+                <p className="text-xs text-zinc-500">Cliente pede → loja analisa e pode aplicar desconto → loja confirma → PIX gerado.</p>
+                <p className="text-xs text-zinc-400 mt-1">Marmitarias, restaurantes, comércios que negociam valores…</p>
+              </button>
+            </div>
           </section>
 
           {/* Link do cardápio */}
