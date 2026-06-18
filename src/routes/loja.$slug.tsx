@@ -265,6 +265,7 @@ function LojaPage() {
 
     if (!cliente_nome || cliente_nome.length < 2) { setCheckoutErro("Informe seu nome completo."); return; }
     if (!mesa && (!cliente_telefone || cliente_telefone.length < 8)) { setCheckoutErro("Informe um telefone válido."); return; }
+    if (!mesa && !isRetirada && clienteCep.replace(/\D/g,"").length !== 8) { setCheckoutErro("Informe o CEP da entrega."); return; }
     if (!mesa && !isRetirada && (!cliente_endereco || cliente_endereco.length < 10)) { setCheckoutErro("Informe o endereço completo (rua, número e bairro)."); return; }
     if (!["Dinheiro", "Cartão", "PIX"].includes(forma_pagamento)) { setCheckoutErro("Selecione a forma de pagamento."); return; }
 
@@ -1550,7 +1551,7 @@ function CepField({ cep, onCepChange, onCidadeChange, brandColor }: {
   return (
     <div className="grid grid-cols-2 gap-2">
       <div className="space-y-1.5">
-        <Label>CEP <span className="text-zinc-400 font-normal">(opcional)</span></Label>
+        <Label>CEP</Label>
         <div className="relative">
           <input
             type="text"
