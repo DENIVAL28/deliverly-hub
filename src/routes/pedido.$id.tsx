@@ -1,5 +1,5 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { CheckCircle2, Clock, ChefHat, Bike, XCircle, MapPin, MessageCircle, User, Copy } from "lucide-react";
 import QRCode from "qrcode";
@@ -104,6 +104,22 @@ function PedidoTracking() {
   const [pixData, setPixData] = useState<{ payload: string; qrUrl: string; total: number } | null>(null);
 
   const empresa = pedido.empresas as any;
+  const pedidoRef  = useRef(pedido);
+  const pixDataRef = useRef(pixData);
+  useEffect(() => { pedidoRef.current  = pedido;  }, [pedido]);
+  useEffect(() => { pixDataRef.current = pixData; }, [pixData]);
+
+  const aplicarAtualizacao = useCallback(async (novoStatus: string, dadosExtras: any = {}) => {
+    setPedido((prev: any) => {
+      const atualizado = { ...prev, ...dadosExtras, status: novoStatus };
+      pedidoRef.current = atualizado;
+      return atualizado;
+    });
+    if (novoStatus === "aguardando_pagamento" && !pixDataRef.current) {
+      await gerarPix({ ...pedidoRef.current, status: novoStatus, ...dadosExtras });
+      toast.success("Pedido confirmado! Realize o pagamento via PIX.");
+    }
+  }, []); // eslint-disable-line
 
   async function gerarPix(p: any) {
     const chaveRaw = empresa?.chave_pix as string | null;
@@ -127,7 +143,7 @@ function PedidoTracking() {
     }
   }, []);
 
-  // Realtime — atualiza status sem precisar recarregar
+  // Realtime — caminho rápido (pode não funcionar para usuários anônimos por RLS)
   useEffect(() => {
     const channel = supabase
       .channel(`tracking-${pedido.id}`)
@@ -135,17 +151,37 @@ function PedidoTracking() {
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "pedidos", filter: `id=eq.${pedido.id}` },
         async (payload) => {
-          const novo = { ...pedido, ...payload.new };
-          setPedido(novo);
-          if (payload.new.status === "aguardando_pagamento") {
-            await gerarPix(novo);
-            toast.success("Pedido confirmado! Realize o pagamento via PIX.");
+          if (payload.new.status !== pedidoRef.current.status) {
+            await aplicarAtualizacao(payload.new.status, payload.new);
           }
         }
       )
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [pedido.id]);
+  }, [pedido.id, aplicarAtualizacao]);
+
+  // Polling — fallback garantido a cada 5s (funciona mesmo sem realtime)
+  useEffect(() => {
+    const FINAIS = ["finalizado", "cancelado"];
+    if (FINAIS.includes(pedido.status)) return;
+
+    const interval = setInterval(async () => {
+      const curr = pedidoRef.current;
+      if (FINAIS.includes(curr.status)) { clearInterval(interval); return; }
+
+      const { data } = await (supabase as any)
+        .from("pedidos")
+        .select("status")
+        .eq("id", curr.id)
+        .maybeSingle();
+
+      if (data && data.status !== curr.status) {
+        await aplicarAtualizacao(data.status, data);
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [pedido.id, aplicarAtualizacao]);
 
   async function enviarAvaliacao() {
     if (!notaSel) return;
@@ -167,8 +203,8 @@ function PedidoTracking() {
   const isLocal    = !!pedido.mesa;
   const isManual   = MANUAL_STATUSES.includes(pedido.status) || (pedido.status === "aceito" && !pedido.mesa && false); // detecta pelo status inicial
 
-  // Detecta fluxo manual: se o pedido passou por aguardando_confirmacao/pagamento
-  const fluxoManual = MANUAL_STATUSES.includes(pedido.status);
+  // fluxo_pedido="manual" salvo no banco — não depende do status atual
+  const fluxoManual = pedido.fluxo_pedido === "manual" || MANUAL_STATUSES.includes(pedido.status);
 
   const etapas = isLocal ? ETAPAS_LOCAL : fluxoManual ? ETAPAS_MANUAL : ETAPAS_AUTO;
   const ordem  = isLocal ? ORDEM_LOCAL  : fluxoManual ? ORDEM_MANUAL  : ORDEM_AUTO;
