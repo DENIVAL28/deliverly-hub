@@ -141,6 +141,59 @@ function LojaPage() {
     return () => { supabase.removeChannel(channel); };
   }, [aguardandoConfirmacao?.pedidoId]);
 
+  // Polling fallback — RLS bloqueia realtime para usuários anônimos
+  const aguardandoRef = useRef(aguardandoConfirmacao);
+  useEffect(() => { aguardandoRef.current = aguardandoConfirmacao; }, [aguardandoConfirmacao]);
+
+  useEffect(() => {
+    if (!aguardandoConfirmacao?.pedidoId) return;
+    const pedidoId = aguardandoConfirmacao.pedidoId;
+    const numero   = aguardandoConfirmacao.numero;
+
+    const interval = setInterval(async () => {
+      if (!aguardandoRef.current) { clearInterval(interval); return; }
+      const { data } = await (supabase as any)
+        .from("pedidos")
+        .select("status, total, desconto")
+        .eq("id", pedidoId)
+        .maybeSingle();
+      if (!data) return;
+
+      if (data.status === "aguardando_pagamento") {
+        clearInterval(interval);
+        const emp = empresa as any;
+        const chaveRaw = emp.chave_pix as string | null;
+        const chave = chaveRaw ? normalizarChavePix(chaveRaw.trim(), emp.tipo_chave_pix ?? "aleatoria") : null;
+        const desc  = Number(data.desconto ?? 0);
+        const total = Number(data.total) - desc;
+        if (chave) {
+          const nomeRec   = (emp.nome_recebedor || emp.nome_fantasia || "Loja").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^\x20-\x7E]/g, "").substring(0, 25).trim() || "Loja";
+          const cidadeRec = (emp.cidade_recebedor || "Brasil").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^\x20-\x7E]/g, "").substring(0, 15).trim() || "Brasil";
+          const payload2  = gerarPixPayload(chave, nomeRec, cidadeRec, total);
+          try {
+            const qrUrl = await QRCode.toDataURL(payload2, { width: 240, margin: 2, color: { dark: "#18181b", light: "#ffffff" } });
+            setAguardandoConfirmacao(null);
+            setPixModal({ payload: payload2, qrUrl, total, desconto: desc, waLink: "", pedidoNum: numero, pedidoId, pixChave: chave, pixNome: nomeRec, pixCidade: cidadeRec });
+            toast.success("Pedido confirmado! Realize o pagamento via PIX.");
+          } catch { setAguardandoConfirmacao(null); }
+        } else {
+          setAguardandoConfirmacao(null);
+          toast.success("Pedido confirmado pelo estabelecimento!");
+        }
+      } else if (data.status === "aceito" || data.status === "preparo" || data.status === "entrega" || data.status === "finalizado") {
+        clearInterval(interval);
+        setAguardandoConfirmacao(null);
+        toast.success("Pedido confirmado pelo estabelecimento!");
+      } else if (data.status === "cancelado") {
+        clearInterval(interval);
+        setAguardandoConfirmacao(null);
+        toast.error("Seu pedido foi cancelado pelo estabelecimento.");
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [aguardandoConfirmacao?.pedidoId]);
+
   const totalQty   = useMemo(() => Object.values(cart).reduce((s, i) => s + i.qty, 0), [cart]);
   const totalPrice = useMemo(
     () => Object.values(cart).reduce((s, i) => s + Math.round(i.preco * 100) * i.qty, 0) / 100,
