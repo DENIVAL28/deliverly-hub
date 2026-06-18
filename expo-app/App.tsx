@@ -4,7 +4,6 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { enableScreens } from "react-native-screens";
-import * as Notifications from "expo-notifications";
 import { supabase } from "./src/lib/supabase";
 
 enableScreens();
@@ -15,14 +14,6 @@ import CheckoutScreen from "./src/screens/cliente/CheckoutScreen";
 import RastreioScreen from "./src/screens/cliente/RastreioScreen";
 import LoginScreen from "./src/screens/LoginScreen";
 import HomeScreen from "./src/screens/HomeScreen";
-
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-  }),
-});
 
 const Stack = createNativeStackNavigator();
 
