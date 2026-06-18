@@ -251,9 +251,12 @@ function EmpresaDashboard() {
   }
 
   async function advance(pedido: any) {
-    const next = NEXT[pedido.status];
+    // PIX manual: confirmar → aguardando_pagamento (não pular para aceito)
+    const next = pedido.status === "aguardando_confirmacao" && pedido.forma_pagamento === "PIX"
+      ? "aguardando_pagamento"
+      : NEXT[pedido.status];
     if (!next) return;
-    await supabase.from("pedidos").update({ status: next as "novo" | "aceito" | "preparo" | "entrega" | "finalizado" | "cancelado" }).eq("id", pedido.id);
+    await supabase.from("pedidos").update({ status: next as any }).eq("id", pedido.id);
     qc.invalidateQueries({ queryKey: ["dashboard-ativos", empresaId] });
     qc.invalidateQueries({ queryKey: ["dashboard-stats", empresaId] });
 

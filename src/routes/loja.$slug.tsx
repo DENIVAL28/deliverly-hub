@@ -102,38 +102,23 @@ function LojaPage() {
     return () => { supabase.removeChannel(channel); };
   }, [pixModal?.pedidoId]);
 
-  // Realtime: fluxo manual — detecta confirmação do estabelecimento
+  // Redireciona para a página de tracking quando o pedido sai de aguardando_confirmacao
+  function irParaTracking(pedidoId: string) {
+    window.location.href = `/pedido/${pedidoId}`;
+  }
+
+  // Realtime: fluxo manual — detecta confirmação (caminho rápido, pode não funcionar por RLS)
   useEffect(() => {
     if (!aguardandoConfirmacao?.pedidoId) return;
+    const { pedidoId } = aguardandoConfirmacao;
     const channel = supabase
-      .channel(`fluxo-manual-${aguardandoConfirmacao.pedidoId}`)
+      .channel(`fluxo-manual-${pedidoId}`)
       .on("postgres_changes",
-        { event: "UPDATE", schema: "public", table: "pedidos", filter: `id=eq.${aguardandoConfirmacao.pedidoId}` },
-        async (payload) => {
+        { event: "UPDATE", schema: "public", table: "pedidos", filter: `id=eq.${pedidoId}` },
+        (payload) => {
           const novo = payload.new as any;
-          if (novo.status === "aguardando_pagamento") {
-            const emp = empresa as any;
-            const chaveRaw = emp.chave_pix as string | null;
-            const chave = chaveRaw ? normalizarChavePix(chaveRaw.trim(), emp.tipo_chave_pix ?? "aleatoria") : null;
-            const desc = Number(novo.desconto ?? 0);
-            const total = Number(novo.total) - desc;
-            if (chave) {
-              const nomeRec   = (emp.nome_recebedor || emp.nome_fantasia || "Loja").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^\x20-\x7E]/g, "").substring(0, 25).trim() || "Loja";
-              const cidadeRec = (emp.cidade_recebedor || "Brasil").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^\x20-\x7E]/g, "").substring(0, 15).trim() || "Brasil";
-              const payload2  = gerarPixPayload(chave, nomeRec, cidadeRec, total);
-              try {
-                const qrUrl = await QRCode.toDataURL(payload2, { width: 240, margin: 2, color: { dark: "#18181b", light: "#ffffff" } });
-                setAguardandoConfirmacao(null);
-                setPixModal({ payload: payload2, qrUrl, total, desconto: desc, waLink: "", pedidoNum: aguardandoConfirmacao.numero, pedidoId: aguardandoConfirmacao.pedidoId, pixChave: chave, pixNome: nomeRec, pixCidade: cidadeRec });
-                toast.success("Pedido confirmado! Realize o pagamento via PIX.");
-              } catch { setAguardandoConfirmacao(null); }
-            } else {
-              setAguardandoConfirmacao(null);
-              toast.success("Pedido confirmado pelo estabelecimento!");
-            }
-          } else if (novo.status === "cancelado") {
-            setAguardandoConfirmacao(null);
-            toast.error("Seu pedido foi cancelado pelo estabelecimento. Entre em contato para mais informações.");
+          if (novo.status !== "aguardando_confirmacao") {
+            irParaTracking(pedidoId);
           }
         }
       )
@@ -148,46 +133,19 @@ function LojaPage() {
   useEffect(() => {
     if (!aguardandoConfirmacao?.pedidoId) return;
     const pedidoId = aguardandoConfirmacao.pedidoId;
-    const numero   = aguardandoConfirmacao.numero;
 
     const interval = setInterval(async () => {
       if (!aguardandoRef.current) { clearInterval(interval); return; }
       const { data } = await (supabase as any)
         .from("pedidos")
-        .select("status, total, desconto")
+        .select("status")
         .eq("id", pedidoId)
         .maybeSingle();
       if (!data) return;
 
-      if (data.status === "aguardando_pagamento") {
+      if (data.status !== "aguardando_confirmacao") {
         clearInterval(interval);
-        const emp = empresa as any;
-        const chaveRaw = emp.chave_pix as string | null;
-        const chave = chaveRaw ? normalizarChavePix(chaveRaw.trim(), emp.tipo_chave_pix ?? "aleatoria") : null;
-        const desc  = Number(data.desconto ?? 0);
-        const total = Number(data.total) - desc;
-        if (chave) {
-          const nomeRec   = (emp.nome_recebedor || emp.nome_fantasia || "Loja").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^\x20-\x7E]/g, "").substring(0, 25).trim() || "Loja";
-          const cidadeRec = (emp.cidade_recebedor || "Brasil").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^\x20-\x7E]/g, "").substring(0, 15).trim() || "Brasil";
-          const payload2  = gerarPixPayload(chave, nomeRec, cidadeRec, total);
-          try {
-            const qrUrl = await QRCode.toDataURL(payload2, { width: 240, margin: 2, color: { dark: "#18181b", light: "#ffffff" } });
-            setAguardandoConfirmacao(null);
-            setPixModal({ payload: payload2, qrUrl, total, desconto: desc, waLink: "", pedidoNum: numero, pedidoId, pixChave: chave, pixNome: nomeRec, pixCidade: cidadeRec });
-            toast.success("Pedido confirmado! Realize o pagamento via PIX.");
-          } catch { setAguardandoConfirmacao(null); }
-        } else {
-          setAguardandoConfirmacao(null);
-          toast.success("Pedido confirmado pelo estabelecimento!");
-        }
-      } else if (data.status === "aceito" || data.status === "preparo" || data.status === "entrega" || data.status === "finalizado") {
-        clearInterval(interval);
-        setAguardandoConfirmacao(null);
-        toast.success("Pedido confirmado pelo estabelecimento!");
-      } else if (data.status === "cancelado") {
-        clearInterval(interval);
-        setAguardandoConfirmacao(null);
-        toast.error("Seu pedido foi cancelado pelo estabelecimento.");
+        irParaTracking(pedidoId);
       }
     }, 5000);
 
@@ -915,7 +873,13 @@ function LojaPage() {
             </div>
             <h3 className="text-lg font-bold text-zinc-900">Pedido #{aguardandoConfirmacao.numero} enviado!</h3>
             <p className="text-sm text-zinc-500 mt-1">Aguardando confirmação do estabelecimento.</p>
-            <p className="text-xs text-zinc-400 mt-2 mb-5">O valor poderá ser ajustado antes da confirmação final. Você será avisado automaticamente assim que o pedido for confirmado.</p>
+            <p className="text-xs text-zinc-400 mt-2 mb-4">Você será redirecionado automaticamente assim que o pedido for confirmado.</p>
+            <button
+              onClick={() => irParaTracking(aguardandoConfirmacao.pedidoId)}
+              className="w-full bg-zinc-900 hover:bg-zinc-700 text-white rounded-2xl h-12 font-semibold text-sm transition-colors mb-3"
+            >
+              📦 Acompanhar pedido agora
+            </button>
             <div className="flex items-center justify-center gap-2 text-xs text-zinc-400">
               <span className="size-2 rounded-full bg-zinc-300 animate-pulse" />
               <span className="size-2 rounded-full bg-zinc-400 animate-pulse [animation-delay:200ms]" />
