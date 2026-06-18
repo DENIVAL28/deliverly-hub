@@ -9,7 +9,7 @@ import {
   ResponsiveContainer, BarChart, Bar, Cell,
 } from "recharts";
 import { TrendingUp, ShoppingBag, Users, DollarSign } from "lucide-react";
-import { UpgradeGuard } from "@/components/UpgradeGuard";
+import { PreviewBloqueado } from "@/components/UpgradeGuard";
 
 export const Route = createFileRoute("/_authenticated/empresa/relatorios")({
   component: RelatoriosEmpresaPage,
@@ -23,13 +23,28 @@ const PERIODOS = [
 
 const CORES = ["#F97316","#fb923c","#fdba74","#fed7aa","#ffedd5"];
 
+const FAKE_POR_DIA = [
+  { dia: "10/06", total: 320 }, { dia: "11/06", total: 480 }, { dia: "12/06", total: 290 },
+  { dia: "13/06", total: 650 }, { dia: "14/06", total: 870 }, { dia: "15/06", total: 540 },
+  { dia: "16/06", total: 730 }, { dia: "17/06", total: 920 }, { dia: "18/06", total: 610 },
+];
+const FAKE_PRODUTOS = [
+  { nome: "X-Burguer",        qty: 34, total: 850  },
+  { nome: "Batata Frita",     qty: 28, total: 336  },
+  { nome: "Frango Grelhado",  qty: 21, total: 630  },
+  { nome: "Refrigerante",     qty: 19, total: 114  },
+  { nome: "Salada Caesar",    qty: 12, total: 300  },
+];
+const FAKE_PAGAMENTO = [
+  { nome: "PIX",     qty: 42 },
+  { nome: "Cartão",  qty: 27 },
+  { nome: "Dinheiro",qty: 11 },
+];
+
 function RelatoriosEmpresaPage() {
   const { empresaId, plano } = useAuth();
   const [periodo, setPeriodo] = useState<7 | 30 | 90>(30);
-
-  if (plano === "basico") {
-    return <UpgradeGuard feature="Relatórios" minPlano="profissional" descricao="Acompanhe faturamento, ticket médio, produtos mais vendidos e muito mais. Disponível a partir do plano Profissional." />;
-  }
+  const bloqueado = plano === "basico";
 
   const desde = useMemo(() => {
     const d = new Date();
@@ -39,7 +54,7 @@ function RelatoriosEmpresaPage() {
 
   const { data: pedidos = [] } = useQuery({
     queryKey: ["emp-relatorio-pedidos", empresaId, periodo],
-    enabled: !!empresaId,
+    enabled: !!empresaId && !bloqueado,
     queryFn: async () =>
       (await supabase
         .from("pedidos")
@@ -52,7 +67,7 @@ function RelatoriosEmpresaPage() {
 
   const { data: itens = [] } = useQuery({
     queryKey: ["emp-relatorio-itens", empresaId, periodo],
-    enabled: !!empresaId,
+    enabled: !!empresaId && !bloqueado,
     queryFn: async () =>
       (await supabase
         .from("pedido_itens")
@@ -64,24 +79,23 @@ function RelatoriosEmpresaPage() {
 
   const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-  // Métricas
-  const totalFaturamento = pedidos.reduce((s: number, p: any) => s + Number(p.total), 0);
-  const totalPedidos     = pedidos.length;
-  const ticketMedio      = totalPedidos > 0 ? totalFaturamento / totalPedidos : 0;
-  const totalClientes    = new Set(pedidos.map((p: any) => p.cliente_nome)).size;
+  const totalFaturamento = bloqueado ? 5410 : pedidos.reduce((s: number, p: any) => s + Number(p.total), 0);
+  const totalPedidos     = bloqueado ? 80   : pedidos.length;
+  const ticketMedio      = bloqueado ? 67.6 : (totalPedidos > 0 ? totalFaturamento / totalPedidos : 0);
+  const totalClientes    = bloqueado ? 38   : new Set(pedidos.map((p: any) => p.cliente_nome)).size;
 
-  // Faturamento por dia
   const porDia = useMemo(() => {
+    if (bloqueado) return FAKE_POR_DIA;
     const map: Record<string, number> = {};
     pedidos.forEach((p: any) => {
       const dia = new Date(p.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
       map[dia] = (map[dia] ?? 0) + Number(p.total);
     });
     return Object.entries(map).map(([dia, total]) => ({ dia, total }));
-  }, [pedidos]);
+  }, [pedidos, bloqueado]);
 
-  // Produtos mais vendidos
   const topProdutos = useMemo(() => {
+    if (bloqueado) return FAKE_PRODUTOS;
     const map: Record<string, { qty: number; total: number }> = {};
     itens.forEach((i: any) => {
       if (!map[i.nome]) map[i.nome] = { qty: 0, total: 0 };
@@ -92,10 +106,10 @@ function RelatoriosEmpresaPage() {
       .map(([nome, v]) => ({ nome, ...v }))
       .sort((a, b) => b.qty - a.qty)
       .slice(0, 8);
-  }, [itens]);
+  }, [itens, bloqueado]);
 
-  // Forma de pagamento
   const porPagamento = useMemo(() => {
+    if (bloqueado) return FAKE_PAGAMENTO;
     const map: Record<string, number> = {};
     pedidos.forEach((p: any) => {
       const f = p.forma_pagamento ?? "Outros";
@@ -104,36 +118,17 @@ function RelatoriosEmpresaPage() {
     return Object.entries(map)
       .map(([nome, qty]) => ({ nome, qty }))
       .sort((a, b) => b.qty - a.qty);
-  }, [pedidos]);
+  }, [pedidos, bloqueado]);
 
-  return (
+  const content = (
     <>
-      <PageHeader
-        title="Relatórios"
-        subtitle="Desempenho do seu estabelecimento"
-        action={
-          <div className="flex gap-1 bg-surface rounded-lg p-1 ring-1 ring-black/5">
-            {PERIODOS.map(({ label, days }) => (
-              <button key={days} onClick={() => setPeriodo(days as any)}
-                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                  periodo === days ? "bg-background text-ink shadow-sm" : "text-zinc-500 hover:text-ink"
-                }`}>
-                {label}
-              </button>
-            ))}
-          </div>
-        }
-      />
-
-      {/* Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <StatCard icon={DollarSign}  label="Faturamento"  value={fmt(totalFaturamento)} color="text-green-600"  bg="bg-green-50"  />
-        <StatCard icon={ShoppingBag} label="Pedidos"      value={totalPedidos}           color="text-blue-600"  bg="bg-blue-50"  />
-        <StatCard icon={TrendingUp}  label="Ticket médio" value={fmt(ticketMedio)}       color="text-brand"     bg="bg-orange-50"/>
-        <StatCard icon={Users}       label="Clientes"     value={totalClientes}          color="text-purple-600" bg="bg-purple-50"/>
+        <StatCard icon={DollarSign}  label="Faturamento"  value={fmt(totalFaturamento)} color="text-green-600"   bg="bg-green-50"   />
+        <StatCard icon={ShoppingBag} label="Pedidos"      value={totalPedidos}           color="text-blue-600"   bg="bg-blue-50"    />
+        <StatCard icon={TrendingUp}  label="Ticket médio" value={fmt(ticketMedio)}       color="text-brand"      bg="bg-orange-50"  />
+        <StatCard icon={Users}       label="Clientes"     value={totalClientes}          color="text-purple-600" bg="bg-purple-50"  />
       </div>
 
-      {/* Gráfico faturamento por dia */}
       <div className="bg-background rounded-2xl ring-1 ring-black/5 p-6 mb-6">
         <h2 className="text-sm font-semibold text-ink mb-4">Faturamento diário</h2>
         {porDia.length === 0 ? (
@@ -160,7 +155,6 @@ function RelatoriosEmpresaPage() {
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
-        {/* Produtos mais vendidos */}
         <div className="bg-background rounded-2xl ring-1 ring-black/5 p-6">
           <h2 className="text-sm font-semibold text-ink mb-4">Produtos mais vendidos</h2>
           {topProdutos.length === 0 ? (
@@ -182,7 +176,6 @@ function RelatoriosEmpresaPage() {
           )}
         </div>
 
-        {/* Forma de pagamento + últimos pedidos */}
         <div className="space-y-6">
           <div className="bg-background rounded-2xl ring-1 ring-black/5 p-6">
             <h2 className="text-sm font-semibold text-ink mb-4">Forma de pagamento</h2>
@@ -210,7 +203,6 @@ function RelatoriosEmpresaPage() {
             )}
           </div>
 
-          {/* Top produtos por faturamento */}
           <div className="bg-background rounded-2xl ring-1 ring-black/5 p-6">
             <h2 className="text-sm font-semibold text-ink mb-3">Top por faturamento</h2>
             {topProdutos.length === 0 ? (
@@ -234,6 +226,31 @@ function RelatoriosEmpresaPage() {
           </div>
         </div>
       </div>
+    </>
+  );
+
+  return (
+    <>
+      <PageHeader
+        title="Relatórios"
+        subtitle="Desempenho do seu estabelecimento"
+        action={
+          <div className="flex gap-1 bg-surface rounded-lg p-1 ring-1 ring-black/5">
+            {PERIODOS.map(({ label, days }) => (
+              <button key={days} onClick={() => setPeriodo(days as any)}
+                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                  periodo === days ? "bg-background text-ink shadow-sm" : "text-zinc-500 hover:text-ink"
+                }`}>
+                {label}
+              </button>
+            ))}
+          </div>
+        }
+      />
+      {bloqueado
+        ? <PreviewBloqueado feature="Relatórios" minPlano="profissional">{content}</PreviewBloqueado>
+        : content
+      }
     </>
   );
 }

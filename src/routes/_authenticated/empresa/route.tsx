@@ -26,18 +26,18 @@ function EmpresaLayout() {
       title="Estabelecimento"
       items={[
         { to: "/empresa",               label: "Dashboard",                                    icon: LayoutDashboard },
-        { to: "/empresa/pedidos",       label: "Pedidos",                                      icon: ShoppingBag },
+        { to: "/empresa/pedidos",       label: "Pedidos",                                      icon: ShoppingBag,    section: "Operação" },
         { to: "/empresa/mesas",         label: "Mesas",                                        icon: Grid2x2 },
         { to: "/empresa/pdv",           label: "Caixa / PDV",                                  icon: ReceiptText },
-        { to: "/empresa/categorias",    label: "Categorias",                                   icon: FolderTree },
+        { to: "/empresa/categorias",    label: "Categorias",                                   icon: FolderTree,     section: "Cardápio" },
         { to: "/empresa/produtos",      label: "Produtos",                                     icon: UtensilsCrossed },
-        { to: "/empresa/clientes",      label: "Clientes",                                     icon: Users },
+        { to: "/empresa/clientes",      label: "Clientes",                                     icon: Users,          section: "Clientes" },
         { to: "/empresa/cupons",        label: "Cupons",                                       icon: Tag },
-        { to: "/empresa/entregadores",  label: basico ? "Entregadores 🔒" : "Entregadores",    icon: Bike },
-        { to: "/empresa/avaliacoes",    label: basico ? "Avaliações 🔒"   : "Avaliações",      icon: Star },
+        { to: "/empresa/entregadores",  label: basico ? "Entregadores 🔒" : "Entregadores",    icon: Bike,           section: "Equipe" },
+        { to: "/empresa/avaliacoes",    label: basico ? "Avaliações 🔒"   : "Avaliações",      icon: Star,           section: "Desempenho" },
         { to: "/empresa/relatorios",    label: basico ? "Relatórios 🔒"   : "Relatórios",      icon: BarChart2 },
         { to: "/empresa/analytics",     label: basico ? "Analytics 🔒"    : "Analytics",       icon: TrendingUp },
-        { to: "/empresa/planos",        label: "Plano & Cobrança",                             icon: CreditCard },
+        { to: "/empresa/planos",        label: "Plano & Cobrança",                             icon: CreditCard,     section: "Conta" },
         { to: "/empresa/configuracoes", label: "Configurações",                                icon: Settings },
       ]}
     >

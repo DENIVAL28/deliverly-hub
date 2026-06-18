@@ -11,6 +11,7 @@ export interface NavItem {
   to: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
+  section?: string;
 }
 
 export function AppShell({ title, items, children }: { title: string; items: NavItem[]; children: ReactNode }) {
@@ -32,20 +33,27 @@ export function AppShell({ title, items, children }: { title: string; items: Nav
 
   const NavLinks = () => (
     <>
-      {items.map(({ to, label, icon: Icon }) => {
+      {items.map(({ to, label, icon: Icon, section }, idx) => {
+        const showHeader = section !== undefined && (idx === 0 || section !== items[idx - 1].section);
         const active = pathname === to || (to !== "/master" && to !== "/empresa" && pathname.startsWith(to));
         return (
-          <Link
-            key={to}
-            to={to}
-            onClick={() => setMobileOpen(false)}
-            className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-              active ? "bg-brand/10 text-brand" : "text-zinc-600 hover:bg-zinc-100 hover:text-ink"
-            }`}
-          >
-            <Icon className="size-4 shrink-0" />
-            {label}
-          </Link>
+          <div key={to}>
+            {showHeader && (
+              <div className={`px-3 pb-1 text-[10px] font-semibold uppercase tracking-widest text-zinc-400 ${idx > 0 ? "pt-4 border-t border-zinc-100 mt-2" : "pt-2"}`}>
+                {section}
+              </div>
+            )}
+            <Link
+              to={to}
+              onClick={() => setMobileOpen(false)}
+              className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                active ? "bg-brand/10 text-brand" : "text-zinc-600 hover:bg-zinc-100 hover:text-ink"
+              }`}
+            >
+              <Icon className="size-4 shrink-0" />
+              {label}
+            </Link>
+          </div>
         );
       })}
     </>

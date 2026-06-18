@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/use-auth";
 import { PageHeader } from "@/components/AppShell";
-import { ShoppingBag, TrendingUp, Clock, CheckCircle2, ChefHat, Bike, ArrowRight, Store, Copy, ExternalLink, UtensilsCrossed, Share2, Power, MessageCircle } from "lucide-react";
+import { ShoppingBag, TrendingUp, Clock, CheckCircle2, ChefHat, Bike, ArrowRight, Store, Copy, ExternalLink, UtensilsCrossed, Share2, Power, MessageCircle, Wallet, MapPin, RotateCcw, Hourglass } from "lucide-react";
 import { toast } from "sonner";
 import { copiarTexto } from "@/lib/validacoes";
 
@@ -12,15 +12,19 @@ export const Route = createFileRoute("/_authenticated/empresa/")({
   component: EmpresaDashboard,
 });
 
-const STATUS_CONFIG: Record<string, { label: string; cor: string; icon: any }> = {
-  novo:       { label: "Novo",           cor: "bg-blue-100 text-blue-700 border-blue-200",   icon: ShoppingBag },
-  aceito:     { label: "Aceito",         cor: "bg-amber-100 text-amber-700 border-amber-200", icon: CheckCircle2 },
-  preparo:    { label: "Em preparo",     cor: "bg-orange-100 text-orange-700 border-orange-200", icon: ChefHat },
+const STATUS_CONFIG: Record<string, { label: string; cor: string; icon: any; urgente?: boolean }> = {
+  aguardando_confirmacao: { label: "Confirmar",        cor: "bg-amber-100 text-amber-700 border-amber-200",   icon: Hourglass, urgente: true },
+  aguardando_pagamento:   { label: "Aguard. PIX",      cor: "bg-blue-100 text-blue-700 border-blue-200",      icon: Wallet,    urgente: true },
+  novo:       { label: "Novo",            cor: "bg-blue-100 text-blue-700 border-blue-200",   icon: ShoppingBag },
+  aceito:     { label: "Aceito",          cor: "bg-amber-100 text-amber-700 border-amber-200", icon: CheckCircle2 },
+  preparo:    { label: "Em preparo",      cor: "bg-orange-100 text-orange-700 border-orange-200", icon: ChefHat },
   entrega:    { label: "Saiu p/ entrega", cor: "bg-purple-100 text-purple-700 border-purple-200", icon: Bike },
-  finalizado: { label: "Finalizado",     cor: "bg-green-100 text-green-700 border-green-200", icon: CheckCircle2 },
+  finalizado: { label: "Finalizado",      cor: "bg-green-100 text-green-700 border-green-200", icon: CheckCircle2 },
 };
 
 const NEXT: Record<string, string> = {
+  aguardando_confirmacao: "aceito",
+  aguardando_pagamento:   "aceito",
   novo: "aceito", aceito: "preparo", preparo: "entrega", entrega: "finalizado",
 };
 
@@ -87,12 +91,12 @@ function EmpresaDashboard() {
   const [lojaAberta, setLojaAberta] = useState<boolean | null | "auto">("auto");
   const [toggling, setToggling] = useState(false);
 
-  // Dados da empresa (slug + nome + aberto + Z-API)
+  // Dados da empresa (slug + nome + aberto + Z-API + horário)
   const { data: empresa } = useQuery({
     queryKey: ["empresa-info-dash", empresaId],
     enabled: !!empresaId,
     queryFn: async () =>
-      (await supabase.from("empresas").select("nome_fantasia,slug,aberto,zapi_instance,zapi_token,zapi_client_token").eq("id", empresaId!).single()).data,
+      (await supabase.from("empresas").select("nome_fantasia,slug,aberto,zapi_instance,zapi_token,zapi_client_token,horario_abertura,horario_fechamento").eq("id", empresaId!).single()).data,
   });
 
   useEffect(() => {
@@ -152,13 +156,13 @@ function EmpresaDashboard() {
       const todos = pedidosHoje ?? [];
       const faturamento = todos.filter(p => p.status !== "cancelado").reduce((s, p) => s + Number(p.total ?? 0), 0);
       const qtd = todos.filter(p => p.status !== "cancelado").length;
-      const abertos = todos.filter(p => ["novo","aceito","preparo","entrega"].includes(p.status)).length;
+      const abertos = todos.filter(p => ["aguardando_confirmacao","aguardando_pagamento","novo","aceito","preparo","entrega"].includes(p.status)).length;
       const fatOntem = (ontem ?? []).filter(p => (p as any).status !== "cancelado").reduce((s, p) => s + Number(p.total ?? 0), 0);
       return { faturamento, qtd, abertos, ticket: qtd ? faturamento / qtd : 0, fatOntem };
     },
   });
 
-  // Pedidos ativos (ao vivo)
+  // Pedidos ativos (ao vivo) — inclui aguardando_confirmacao e aguardando_pagamento
   const { data: ativos = [] } = useQuery({
     queryKey: ["dashboard-ativos", empresaId],
     enabled: !!empresaId,
@@ -166,7 +170,7 @@ function EmpresaDashboard() {
     queryFn: async () =>
       (await supabase.from("pedidos").select("*, pedido_itens(*)")
         .eq("empresa_id", empresaId!)
-        .in("status", ["novo","aceito","preparo","entrega"])
+        .in("status", ["aguardando_confirmacao","aguardando_pagamento","novo","aceito","preparo","entrega"] as any[])
         .order("created_at", { ascending: true })
       ).data ?? [],
   });
@@ -342,7 +346,11 @@ function EmpresaDashboard() {
             </button>
           </div>
           <p className="text-[10px] text-zinc-400 text-center -mt-1">
-            {lojaAberta === "auto" ? "Seguindo horário configurado" : lojaAberta === true ? "Aberta fora do horário" : "Fechada manualmente"}
+            {lojaAberta === "auto"
+              ? (empresa as any)?.horario_abertura && (empresa as any)?.horario_fechamento
+                ? `Automático · ${(empresa as any).horario_abertura}h – ${(empresa as any).horario_fechamento}h`
+                : "Automático · configure o horário"
+              : lojaAberta === true ? "Aberta manualmente" : "Fechada manualmente"}
           </p>
           {lojaUrl && (
             <div className="flex gap-2">
@@ -387,9 +395,9 @@ function EmpresaDashboard() {
             />
             <PrimeiroPasso
               numero={3}
-              feito={false}
+              feito={(totalPedidos ?? 0) > 0}
               titulo="Compartilhe o link"
-              desc="Envie o link da sua loja para os seus clientes."
+              desc="Envie o link da sua loja para os seus clientes e comece a receber pedidos."
               onClick={lojaUrl ? async () => { await copiarTexto(lojaUrl) ? toast.success("Link copiado! Agora é só enviar.") : toast.error("Falha ao copiar"); } : undefined}
               label="Copiar link da loja"
               icon={Share2}
@@ -415,7 +423,15 @@ function EmpresaDashboard() {
         {ativos.length === 0 ? (
           <div className="bg-background rounded-2xl ring-1 ring-black/5 p-10 text-center">
             <CheckCircle2 className="size-10 text-zinc-200 mx-auto mb-3" />
-            <p className="text-sm text-zinc-400">Nenhum pedido em aberto no momento.</p>
+            <p className="text-sm text-zinc-500 font-medium">Tudo em dia — nenhum pedido em aberto.</p>
+            {lojaUrl && (
+              <button
+                onClick={async () => { await copiarTexto(lojaUrl!) ? toast.success("Link copiado! Envie para seus clientes.") : toast.error("Falha ao copiar"); }}
+                className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold text-brand hover:underline"
+              >
+                <Copy className="size-3" /> Copiar link da loja para divulgar
+              </button>
+            )}
           </div>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -423,21 +439,50 @@ function EmpresaDashboard() {
               const cfg = STATUS_CONFIG[p.status];
               const Icon = cfg?.icon ?? ShoppingBag;
               const tempoMin = Math.floor((Date.now() - new Date(p.created_at).getTime()) / 60000);
+              const tipoIcon = p.tipo === "retirada" ? "🏪" : p.tipo === "mesa" ? "🪑" : "🛵";
+              const tipoLabel = p.tipo === "retirada" ? "Retirada" : p.tipo === "mesa" ? `Mesa` : "Delivery";
+              const pgIcon = p.forma_pagamento === "PIX" ? "💳 PIX" : p.forma_pagamento === "Dinheiro" ? "💵 Dinheiro" : "💳 Cartão";
+              const isUrgente = cfg?.urgente;
               return (
-                <div key={p.id} className="bg-background rounded-2xl ring-1 ring-black/5 p-4 flex flex-col gap-3">
+                <div key={p.id} className={`bg-background rounded-2xl p-4 flex flex-col gap-3 transition-all ${
+                  isUrgente ? "ring-2 ring-amber-400 shadow-amber-100 shadow-md" : "ring-1 ring-black/5"
+                }`}>
+                  {/* Badge urgente */}
+                  {isUrgente && (
+                    <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 -mb-1">
+                      <span className="size-1.5 rounded-full bg-amber-500 animate-pulse" />
+                      <span className="text-[11px] font-bold text-amber-700">
+                        {p.status === "aguardando_confirmacao" ? "⚡ Cliente aguardando sua confirmação" : "⚡ Cliente aguardando pagamento PIX"}
+                      </span>
+                    </div>
+                  )}
+
                   {/* Cabeçalho */}
                   <div className="flex items-start justify-between">
                     <div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-bold text-zinc-900">#{p.numero}</span>
                         <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${cfg?.cor}`}>
                           <Icon className="size-2.5" />
                           {cfg?.label}
                         </span>
                       </div>
-                      <div className="text-sm text-zinc-600 mt-0.5">{p.cliente_nome}</div>
+                      <div className="text-sm text-zinc-700 font-medium mt-0.5">{p.cliente_nome}</div>
+                      <div className="flex items-center gap-2 mt-1 flex-wrap">
+                        <span className="text-[11px] text-zinc-500">{tipoIcon} {tipoLabel}</span>
+                        <span className="text-zinc-300">·</span>
+                        <span className="text-[11px] text-zinc-500">{pgIcon}</span>
+                        {p.tipo === "delivery" && p.cliente_endereco && (
+                          <>
+                            <span className="text-zinc-300">·</span>
+                            <span className="text-[11px] text-zinc-400 flex items-center gap-0.5 max-w-[120px] truncate">
+                              <MapPin className="size-2.5 shrink-0" />{p.cliente_endereco}
+                            </span>
+                          </>
+                        )}
+                      </div>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right shrink-0 ml-2">
                       <div className="font-bold text-zinc-900">{fmt(Number(p.total))}</div>
                       <div className="text-[10px] text-zinc-400 mt-0.5">
                         {tempoMin < 60 ? `${tempoMin} min atrás` : `${Math.floor(tempoMin/60)}h atrás`}
@@ -457,8 +502,15 @@ function EmpresaDashboard() {
                   <div className="flex gap-2">
                     {NEXT[p.status] && (
                       <button onClick={() => advance(p)}
-                        className="flex-1 bg-brand hover:bg-brand/90 text-white rounded-xl h-9 text-xs font-bold transition-colors flex items-center justify-center gap-1.5">
-                        Avançar → {STATUS_CONFIG[NEXT[p.status]]?.label}
+                        className={`flex-1 text-white rounded-xl h-9 text-xs font-bold transition-colors flex items-center justify-center gap-1.5 ${
+                          isUrgente ? "bg-amber-500 hover:bg-amber-400" : "bg-brand hover:bg-brand/90"
+                        }`}>
+                        {p.status === "aguardando_confirmacao"
+                          ? <><RotateCcw className="size-3.5" /> Confirmar pedido</>
+                          : p.status === "aguardando_pagamento"
+                          ? <><CheckCircle2 className="size-3.5" /> PIX recebido</>
+                          : <>Avançar → {STATUS_CONFIG[NEXT[p.status]]?.label}</>
+                        }
                       </button>
                     )}
                     {p.cliente_telefone && WA_NOTIF[p.status] && (

@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/use-auth";
 import { PageHeader } from "@/components/AppShell";
 import { Star } from "lucide-react";
-import { UpgradeGuard } from "@/components/UpgradeGuard";
+import { PreviewBloqueado } from "@/components/UpgradeGuard";
 
 export const Route = createFileRoute("/_authenticated/empresa/avaliacoes")({
   component: AvaliacoesPage,
@@ -20,47 +20,49 @@ function Estrelas({ nota }: { nota: number }) {
   );
 }
 
+const FAKE_AVALIACOES = [
+  { id: "1", cliente_nome: "Ana Lima",    nota: 5, comentario: "Entrega rápida e lanche delicioso! Voltarei sempre.", created_at: "2026-06-15T14:30:00Z" },
+  { id: "2", cliente_nome: "Carlos M.",   nota: 4, comentario: "Muito bom! Só o molho poderia ter mais sabor.",        created_at: "2026-06-14T20:10:00Z" },
+  { id: "3", cliente_nome: "Júlia Costa", nota: 5, comentario: "Pedido chegou quente e bem embalado. Nota 10!",        created_at: "2026-06-13T19:05:00Z" },
+  { id: "4", cliente_nome: "Rafael T.",   nota: 3, comentario: "Demorou um pouco, mas o sabor compensou.",             created_at: "2026-06-12T21:45:00Z" },
+];
+
 function AvaliacoesPage() {
   const { empresaId, plano } = useAuth();
-
-  if (plano === "basico") {
-    return <UpgradeGuard feature="Avaliações" minPlano="profissional" descricao="Veja o que seus clientes estão dizendo sobre cada pedido. Disponível a partir do plano Profissional." />;
-  }
+  const bloqueado = plano === "basico";
 
   const { data: avaliacoes = [] } = useQuery({
     queryKey: ["avaliacoes", empresaId],
-    enabled: !!empresaId,
+    enabled: !!empresaId && !bloqueado,
     queryFn: async () =>
       (await supabase.from("avaliacoes").select("*").eq("empresa_id", empresaId!).order("created_at", { ascending: false })).data ?? [],
   });
 
-  const media = avaliacoes.length
-    ? avaliacoes.reduce((s: number, a: any) => s + a.nota, 0) / avaliacoes.length
+  const lista = bloqueado ? FAKE_AVALIACOES : avaliacoes;
+  const media = lista.length
+    ? lista.reduce((s: number, a: any) => s + a.nota, 0) / lista.length
     : 0;
 
   const contagem = [5,4,3,2,1].map((n) => ({
     nota: n,
-    total: avaliacoes.filter((a: any) => a.nota === n).length,
+    total: lista.filter((a: any) => a.nota === n).length,
   }));
 
-  return (
+  const content = (
     <>
-      <PageHeader title="Avaliações" subtitle="Veja o que seus clientes estão dizendo" />
-
-      {avaliacoes.length === 0 ? (
+      {lista.length === 0 ? (
         <div className="text-center py-20 text-sm text-zinc-400 bg-background rounded-2xl ring-1 ring-black/5">
           <Star className="size-10 mx-auto mb-3 text-zinc-200" />
           Nenhuma avaliação ainda.
         </div>
       ) : (
         <>
-          {/* Resumo */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
             <div className="bg-background rounded-2xl ring-1 ring-black/5 p-6 flex items-center gap-6">
               <div className="text-center">
                 <div className="text-5xl font-bold text-zinc-900">{media.toFixed(1)}</div>
                 <Estrelas nota={Math.round(media)} />
-                <div className="text-xs text-zinc-400 mt-1">{avaliacoes.length} avaliação{avaliacoes.length !== 1 ? "ões" : ""}</div>
+                <div className="text-xs text-zinc-400 mt-1">{lista.length} avaliação{lista.length !== 1 ? "ões" : ""}</div>
               </div>
               <div className="flex-1 space-y-1.5">
                 {contagem.map(({ nota, total }) => (
@@ -70,7 +72,7 @@ function AvaliacoesPage() {
                     <div className="flex-1 bg-zinc-100 rounded-full h-2 overflow-hidden">
                       <div
                         className="h-2 bg-yellow-400 rounded-full transition-all"
-                        style={{ width: avaliacoes.length ? `${(total / avaliacoes.length) * 100}%` : "0%" }}
+                        style={{ width: lista.length ? `${(total / lista.length) * 100}%` : "0%" }}
                       />
                     </div>
                     <span className="text-xs text-zinc-400 w-4">{total}</span>
@@ -80,9 +82,8 @@ function AvaliacoesPage() {
             </div>
           </div>
 
-          {/* Lista */}
           <div className="space-y-3">
-            {avaliacoes.map((a: any) => (
+            {lista.map((a: any) => (
               <div key={a.id} className="bg-background rounded-2xl ring-1 ring-black/5 p-5">
                 <div className="flex items-start justify-between gap-3">
                   <div>
@@ -101,6 +102,16 @@ function AvaliacoesPage() {
           </div>
         </>
       )}
+    </>
+  );
+
+  return (
+    <>
+      <PageHeader title="Avaliações" subtitle="Veja o que seus clientes estão dizendo" />
+      {bloqueado
+        ? <PreviewBloqueado feature="Avaliações" minPlano="profissional">{content}</PreviewBloqueado>
+        : content
+      }
     </>
   );
 }
