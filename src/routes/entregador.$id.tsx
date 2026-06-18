@@ -164,12 +164,7 @@ function EntregadorPage() {
   const statusAtual = STATUS_OPTIONS.find((s) => s.value === entregador.status) ?? STATUS_OPTIONS[0];
 
   async function carregarPedidos() {
-    const { data } = await (supabase as any)
-      .from("pedidos")
-      .select("id, numero, cliente_nome, cliente_endereco, taxa_entrega, status, created_at, cliente_lat, cliente_lng")
-      .eq("entregador_id", entregador.id)
-      .order("created_at", { ascending: false })
-      .limit(20);
+    const { data } = await (supabase as any).rpc("entregador_meus_pedidos", { p_token: entregador.public_token });
     setPedidos((data ?? []) as PedidoEntregador[]);
   }
 
@@ -207,12 +202,20 @@ function EntregadorPage() {
     carregarPedidos();
     if (isFreelancer) carregarDisponiveis();
 
+    // Polling a cada 15s — realtime não funciona para entregadores (anon sem sessão)
+    const poll = setInterval(() => {
+      carregarPedidos();
+      if (isFreelancer) carregarDisponiveis();
+    }, 15000);
+
+    // Realtime como caminho rápido (quando funcionar)
     const ch = supabase.channel(`entregador-pedidos-${entregador.id}`)
       .on("postgres_changes",
         { event: "*", schema: "public", table: "pedidos" },
         () => { carregarPedidos(); if (isFreelancer) carregarDisponiveis(); }
       ).subscribe();
-    return () => { supabase.removeChannel(ch); };
+
+    return () => { clearInterval(poll); supabase.removeChannel(ch); };
   }, [entregador.id]);
 
   const pedidosAtivos    = pedidos.filter((p) => p.status === "entrega");
