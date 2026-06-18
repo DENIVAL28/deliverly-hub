@@ -1535,15 +1535,26 @@ function CepField({ cep, onCepChange, onCidadeChange, brandColor }: {
     const digits = valor.replace(/\D/g, "");
     if (digits.length !== 8) return;
     setLoading(true); setErro("");
+    let cidade = "";
     try {
       const res  = await fetch(`https://viacep.com.br/ws/${digits}/json/`);
       const data = await res.json();
-      if (data.erro) { setErro("CEP não encontrado."); setLoading(false); return; }
-      const cidade = `${data.localidade}/${data.uf}`;
+      if (!data.erro) cidade = `${data.localidade}/${data.uf}`;
+    } catch { /* tenta BrasilAPI abaixo */ }
+    if (!cidade) {
+      try {
+        const res  = await fetch(`https://brasilapi.com.br/api/cep/v1/${digits}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.city) cidade = `${data.city}/${data.state}`;
+        }
+      } catch { /* sem fallback */ }
+    }
+    if (cidade) {
       onCidadeChange(cidade);
       if (cidadeRef.current) cidadeRef.current.value = cidade;
-    } catch {
-      setErro("Não foi possível consultar o CEP.");
+    } else {
+      setErro("CEP não encontrado. Preencha a cidade manualmente.");
     }
     setLoading(false);
   }
@@ -1576,7 +1587,8 @@ function CepField({ cep, onCepChange, onCidadeChange, brandColor }: {
         <input
           ref={cidadeRef}
           type="text"
-          placeholder="São Paulo/SP"
+          placeholder="Preenchida pelo CEP"
+          autoComplete="off"
           defaultValue=""
           onChange={(e) => onCidadeChange(e.target.value)}
           className="w-full h-12 rounded-xl border border-zinc-200 bg-white px-3 text-base focus:outline-none focus:ring-2 focus:ring-orange-400/40"
