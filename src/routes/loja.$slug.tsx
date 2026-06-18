@@ -76,6 +76,13 @@ function LojaPage() {
   const [buscandoPedidos, setBuscandoPedidos] = useState(false);
   const catRefs = useRef<Record<string, HTMLElement | null>>({});
 
+  // Sessão anônima autenticada — necessário para realtime e RLS em pedidos
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) supabase.auth.signInAnonymously();
+    });
+  }, []);
+
   // Analytics: visita ao cardápio
   useEffect(() => { trackEvento(empresa.id, "visita"); }, []);
 
@@ -295,6 +302,10 @@ function LojaPage() {
     trackEvento(empresa.id, "checkout_iniciado");
     setCheckoutLoading(true);
     try {
+      // Garante sessão autenticada antes do RPC (signInAnonymously já foi chamado no mount)
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) await supabase.auth.signInAnonymously();
+
       const itensRpc = items.map((i) => ({
         produto_id:  i.id,
         quantidade:  i.qty,
@@ -325,7 +336,7 @@ function LojaPage() {
       }
 
       trackEvento(empresa.id, "pedido_finalizado");
-      const pedido = pedidoJson as { id: string; numero: number; subtotal: number | string; taxa_entrega: number | string; desconto: number | string; total: number | string };
+      const pedido = pedidoJson as { id: string; numero: number; subtotal: number | string; taxa_entrega: number | string; desconto: number | string; total: number | string; status: string; fluxo_pedido: string };
       const subtotal = Number(pedido.subtotal ?? 0);
       const taxa     = Number(pedido.taxa_entrega ?? 0);
       const desconto = Number(pedido.desconto ?? 0);
@@ -349,9 +360,8 @@ function LojaPage() {
 
       setCart({}); setCheckoutOpen(false); setCupomAplicado(null); setCodigoCupom("");
 
-      // Fluxo Manual: não gera PIX agora, aguarda confirmação do estabelecimento
-      if ((empresa as any).fluxo_pedido === "manual" && forma_pagamento === "PIX") {
-        await supabase.from("pedidos").update({ status: "aguardando_confirmacao" } as any).eq("id", pedido.id);
+      // Fluxo manual: função já inseriu com status aguardando_confirmacao; aguarda dono confirmar
+      if (pedido.status === "aguardando_confirmacao") {
         setAguardandoConfirmacao({ pedidoId: pedido.id, numero: pedido.numero });
         return;
       }
