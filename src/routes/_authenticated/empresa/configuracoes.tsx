@@ -57,6 +57,7 @@ function ConfiguracoesPage() {
   const [zapiInstance,   setZapiInstance]   = useState("");
   const [zapiToken,      setZapiToken]      = useState("");
   const [zapiClientToken, setZapiClientToken] = useState("");
+  const [email,          setEmail]          = useState("");
   const [cnpj,           setCnpj]           = useState("");
   const [segmento,       setSegmento]       = useState("");
   const [retiradaAtiva,  setRetiradaAtiva]  = useState(false);
@@ -89,6 +90,7 @@ function ConfiguracoesPage() {
     setZapiInstance(emp.zapi_instance ?? "");
     setZapiToken(emp.zapi_token ?? "");
     setZapiClientToken(emp.zapi_client_token ?? "");
+    setEmail(empresa.email ?? "");
     setCnpj(emp.cnpj ?? "");
     setSegmento(emp.segmento ?? "");
     setRetiradaAtiva(emp.retirada_ativa ?? false);
@@ -129,6 +131,7 @@ function ConfiguracoesPage() {
 
     const updates: any = {
       nome_fantasia: nome.trim(),
+      email: email.trim() || null,
       whatsapp: whatsapp.replace(/\D/g, ""),
       cidade: cidade.trim() || null,
       taxa_entrega: Number(taxa) || 0,
@@ -362,6 +365,13 @@ function ConfiguracoesPage() {
               <Label htmlFor="whatsapp">WhatsApp (com DDD, sem espaços)</Label>
               <Input id="whatsapp" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)}
                 placeholder="Ex: 66981289787" className="h-10 rounded-xl" />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="email">E-mail do estabelecimento</Label>
+              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+                placeholder="contato@suaempresa.com.br" className="h-10 rounded-xl" />
+              <p className="text-xs text-zinc-400">E-mail de contato visível para clientes (opcional)</p>
             </div>
 
             <div className="space-y-1.5">
