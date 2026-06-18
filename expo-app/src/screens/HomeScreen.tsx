@@ -5,7 +5,6 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "../lib/supabase";
-import { registerExpoPushToken, removeExpoPushToken } from "../lib/notifications";
 
 const STATUS: Record<string, { bg: string; text: string; label: string }> = {
   aguardando_confirmacao: { bg: "#f4f4f5", text: "#71717a", label: "Aguard. confirmação" },
@@ -90,7 +89,6 @@ export default function HomeScreen() {
         setNomeEmpresa(empresa.nome_fantasia ?? "Minha Loja");
         setLojaAberta(empresa.aberto ?? true);
       }
-      await registerExpoPushToken(profile.empresa_id, user.id);
     }
     init();
   }, []);
@@ -179,7 +177,6 @@ export default function HomeScreen() {
       {
         text: "Sair", style: "destructive",
         onPress: async () => {
-          if (userId) await removeExpoPushToken(userId);
           await supabase.auth.signOut();
         },
       },
