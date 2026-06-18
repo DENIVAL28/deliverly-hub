@@ -199,17 +199,13 @@ function AuthPage() {
     const numero = buscaWhats.replace(/\D/g, "");
     if (numero.length < 10) { toast.error("Digite o WhatsApp com DDD (ex: 66981289787)"); return; }
     setBuscando(true);
-    const { data } = await supabase
-      .from("empresas")
-      .select("email")
-      .eq("whatsapp", numero)
-      .maybeSingle();
+    const { data, error } = await supabase.rpc("buscar_email_por_whatsapp", { p_whatsapp: numero });
     setBuscando(false);
-    if (!data?.email) {
+    if (error || !data) {
       toast.error("Nenhuma conta encontrada com esse WhatsApp.");
       setEmailEncontrado(null);
     } else {
-      setEmailEncontrado(data.email);
+      setEmailEncontrado(data as string);
     }
   }
 
@@ -433,13 +429,9 @@ function AuthPage() {
                         <p className="text-xs text-green-700 font-semibold">E-mail encontrado:</p>
                         <p className="font-mono text-sm text-green-900">{emailEncontrado}</p>
                         <button type="button"
-                          onClick={() => {
-                            setEsqueceuOque("senha");
-                            setEmailReset(emailEncontrado);
-                            setEmailEncontrado(null);
-                          }}
+                          onClick={() => { setEsqueceuOque("senha"); setEmailEncontrado(null); }}
                           className="text-xs text-orange-500 hover:underline font-semibold pt-1 block">
-                          Redefinir senha com esse e-mail →
+                          Já lembrei — redefinir senha →
                         </button>
                       </div>
                     )}
