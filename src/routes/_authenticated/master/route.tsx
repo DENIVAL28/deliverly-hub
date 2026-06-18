@@ -1,10 +1,24 @@
-import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useAuth } from "@/lib/use-auth";
 import { AppShell } from "@/components/AppShell";
 import { LayoutDashboard, Building2, Package, Receipt, BarChart2, ShieldCheck, Users } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/master")({
+  beforeLoad: async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw redirect({ to: "/auth" });
+
+    const { data } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .eq("role", "master")
+      .maybeSingle();
+
+    if (!data) throw redirect({ to: "/empresa", replace: true });
+  },
   component: MasterLayout,
 });
 
