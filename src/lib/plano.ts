@@ -1,8 +1,8 @@
 export type Plano = "basico" | "profissional" | "premium";
 
 export const PLANO_LIMITS = {
-  basico:       { produtos: 50,  cupons: 3,    pedidos: 600,  entregadores: 0 },
-  profissional: { produtos: 150, cupons: null, pedidos: null, entregadores: 10 },
+  basico:       { produtos: 50,  cupons: 3,    pedidos: 400,  entregadores: 3  },
+  profissional: { produtos: 150, cupons: null, pedidos: 600,  entregadores: 20 },
   premium:      { produtos: null, cupons: null, pedidos: null, entregadores: null },
 } as const;
 

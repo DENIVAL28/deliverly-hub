@@ -144,10 +144,6 @@ function EntregadoresPage() {
 
   const comGps = (todos as any[]).filter(e => e.lat != null && e.lng != null);
 
-  if (plano === "basico") {
-    return <UpgradeGuard feature="Entregadores" minPlano="profissional" descricao="Gerencie sua equipe de entregadores com status ao vivo. Disponível a partir do plano Profissional." />;
-  }
-
   const listaAtual = aba === "fixos" ? fixos : aba === "freelancers" ? freelancers : pendentes;
 
   return (
