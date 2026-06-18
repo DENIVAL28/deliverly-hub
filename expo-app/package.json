@@ -5,7 +5,8 @@
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
-    "build:apk": "eas build --platform android --profile preview"
+    "build:apk": "eas build --platform android --profile preview",
+    "build:local": "expo prebuild --platform android --clean && cd android && ./gradlew assembleDebug"
   },
   "dependencies": {
     "@react-navigation/native": "^6.1.18",
