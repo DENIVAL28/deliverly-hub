@@ -122,13 +122,21 @@ function PedidoTracking() {
   }, []); // eslint-disable-line
 
   async function gerarPix(p: any) {
-    const chaveRaw = empresa?.chave_pix as string | null;
+    // empresa pode ser null (RLS bloqueia JOIN para anon) — tenta sessionStorage como fallback
+    let emp = empresa as any;
+    if (!emp?.chave_pix) {
+      try {
+        const cached = sessionStorage.getItem(`pix_empresa_${p.id}`);
+        if (cached) emp = JSON.parse(cached);
+      } catch {}
+    }
+    const chaveRaw = emp?.chave_pix as string | null;
     if (!chaveRaw) return;
-    const chave = normalizarChavePix(chaveRaw.trim(), empresa?.tipo_chave_pix ?? "aleatoria");
+    const chave = normalizarChavePix(chaveRaw.trim(), emp?.tipo_chave_pix ?? "aleatoria");
     const desc = Number(p.desconto ?? 0);
     const total = Number(p.total) - desc;
-    const nomeRec   = (empresa?.nome_recebedor || empresa?.nome_fantasia || "Loja").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^\x20-\x7E]/g, "").substring(0, 25).trim() || "Loja";
-    const cidadeRec = (empresa?.cidade_recebedor || "Brasil").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^\x20-\x7E]/g, "").substring(0, 15).trim() || "Brasil";
+    const nomeRec   = (emp?.nome_recebedor || emp?.nome_fantasia || "Loja").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^\x20-\x7E]/g, "").substring(0, 25).trim() || "Loja";
+    const cidadeRec = (emp?.cidade_recebedor || "Brasil").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^\x20-\x7E]/g, "").substring(0, 15).trim() || "Brasil";
     const payload = gerarPixPayload(chave, nomeRec, cidadeRec, total);
     try {
       const qrUrl = await QRCode.toDataURL(payload, { width: 240, margin: 2, color: { dark: "#18181b", light: "#ffffff" } });
@@ -282,8 +290,12 @@ function PedidoTracking() {
                 </div>
               </>
             ) : (
-              <div className="flex justify-center items-center gap-2 py-8 text-zinc-400 text-sm">
-                <span className="animate-spin">⟳</span> Gerando QR Code…
+              <div className="py-6 text-zinc-400 text-sm text-center space-y-2">
+                <span className="block text-2xl animate-spin">⟳</span>
+                <p>Gerando QR Code…</p>
+                {empresa?.whatsapp && (
+                  <p className="text-xs">Se demorar, <a href={`https://wa.me/${empresa.whatsapp.replace(/\D/g,"")}`} target="_blank" rel="noreferrer" className="text-green-600 underline">fale com o estabelecimento</a> para receber o PIX.</p>
+                )}
               </div>
             )}
 

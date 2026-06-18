@@ -102,8 +102,20 @@ function LojaPage() {
     return () => { supabase.removeChannel(channel); };
   }, [pixModal?.pedidoId]);
 
-  // Redireciona para a página de tracking quando o pedido sai de aguardando_confirmacao
+  // Salva dados PIX no sessionStorage e redireciona para tracking
   function irParaTracking(pedidoId: string) {
+    const emp = empresa as any;
+    if (emp?.chave_pix) {
+      try {
+        sessionStorage.setItem(`pix_empresa_${pedidoId}`, JSON.stringify({
+          chave_pix:       emp.chave_pix,
+          tipo_chave_pix:  emp.tipo_chave_pix ?? "aleatoria",
+          nome_recebedor:  emp.nome_recebedor  ?? emp.nome_fantasia ?? "",
+          cidade_recebedor: emp.cidade_recebedor ?? "Brasil",
+          nome_fantasia:   emp.nome_fantasia ?? "",
+        }));
+      } catch {}
+    }
     window.location.href = `/pedido/${pedidoId}`;
   }
 
