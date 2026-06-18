@@ -10,6 +10,7 @@
         "backgroundColor": "#f97316"
       },
       "package": "com.deliverlyhub.app",
+      "newArchEnabled": false,
       "googleServicesFile": "./google-services.json",
       "permissions": [
         "android.permission.RECEIVE_BOOT_COMPLETED",
