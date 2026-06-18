@@ -1590,7 +1590,11 @@ function CepField({ cep, onCepChange, onCidadeChange, brandColor }: {
           placeholder="Preenchida pelo CEP"
           autoComplete="off"
           defaultValue=""
-          onChange={(e) => onCidadeChange(e.target.value)}
+          onChange={(e) => {
+            const v = e.target.value.replace(/[0-9]/g, "");
+            e.target.value = v;
+            onCidadeChange(v);
+          }}
           className="w-full h-12 rounded-xl border border-zinc-200 bg-white px-3 text-base focus:outline-none focus:ring-2 focus:ring-orange-400/40"
           style={{ "--tw-ring-color": brandColor } as any}
         />
