@@ -34,15 +34,29 @@ jobs:
       - name: Expo Prebuild
         run: npx expo prebuild --platform android --clean --no-install
 
-      - name: Build APK
+      - name: Generate signing keystore
+        run: |
+          keytool -genkey -noprompt -v \
+            -keystore android/app/release.keystore \
+            -alias releasekey \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass android123 -keypass android123 \
+            -dname "CN=Deliverly Hub,O=SOS Sistemas,C=BR"
+
+      - name: Build APK (release — JS bundle sempre incluido)
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug -PbundleInDebug=true --no-daemon
+          ./gradlew assembleRelease \
+            -Pandroid.injected.signing.store.file=$(pwd)/app/release.keystore \
+            -Pandroid.injected.signing.store.password=android123 \
+            -Pandroid.injected.signing.key.alias=releasekey \
+            -Pandroid.injected.signing.key.password=android123 \
+            --no-daemon
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: deliverly-hub-debug
-          path: expo-app/android/app/build/outputs/apk/debug/app-debug.apk
+          name: deliverly-hub-release
+          path: expo-app/android/app/build/outputs/apk/release/app-release.apk
           retention-days: 7
