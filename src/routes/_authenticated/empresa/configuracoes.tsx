@@ -7,7 +7,7 @@ import { PageHeader } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ImagePlus, Store, ExternalLink, CheckCircle2, Palette, QrCode, Bot, FlaskConical, XCircle, MapPin } from "lucide-react";
+import { ImagePlus, Store, ExternalLink, CheckCircle2, Palette, QrCode, Bot, FlaskConical, XCircle, MapPin, Mail, KeyRound } from "lucide-react";
 import { mascaraCNPJ, cnpjStatus, copiarTexto } from "@/lib/validacoes";
 import { toast } from "sonner";
 
@@ -16,7 +16,7 @@ export const Route = createFileRoute("/_authenticated/empresa/configuracoes")({
 });
 
 function ConfiguracoesPage() {
-  const { empresaId } = useAuth();
+  const { empresaId, user } = useAuth();
   const qc = useQueryClient();
   const logoRef   = useRef<HTMLInputElement>(null);
   const bannerRef = useRef<HTMLInputElement>(null);
@@ -69,6 +69,13 @@ function ConfiguracoesPage() {
   const [empresaLat,     setEmpresaLat]     = useState("");
   const [empresaLng,     setEmpresaLng]     = useState("");
   const [detectandoLoc,  setDetectandoLoc]  = useState(false);
+
+  // Conta
+  const [novoEmail,       setNovoEmail]       = useState("");
+  const [salvandoEmail,   setSalvandoEmail]   = useState(false);
+  const [novaSenha,       setNovaSenha]       = useState("");
+  const [confirmarSenha,  setConfirmarSenha]  = useState("");
+  const [salvandoSenha,   setSalvandoSenha]   = useState(false);
 
   const [synced, setSynced] = useState(false);
   if (empresa && !synced) {
@@ -205,6 +212,30 @@ function ConfiguracoesPage() {
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
     setSaving(false);
+  }
+
+  async function trocarEmail(e: React.FormEvent) {
+    e.preventDefault();
+    if (!novoEmail.trim()) { toast.error("Digite o novo e-mail"); return; }
+    setSalvandoEmail(true);
+    const { error } = await supabase.auth.updateUser({ email: novoEmail.trim() });
+    setSalvandoEmail(false);
+    if (error) { toast.error("Erro: " + error.message); return; }
+    toast.success("Confirmação enviada! Verifique o novo e-mail para confirmar a troca.");
+    setNovoEmail("");
+  }
+
+  async function trocarSenha(e: React.FormEvent) {
+    e.preventDefault();
+    if (novaSenha.length < 8) { toast.error("A senha deve ter ao menos 8 caracteres"); return; }
+    if (novaSenha !== confirmarSenha) { toast.error("As senhas não coincidem"); return; }
+    setSalvandoSenha(true);
+    const { error } = await supabase.auth.updateUser({ password: novaSenha });
+    setSalvandoSenha(false);
+    if (error) { toast.error("Erro: " + error.message); return; }
+    toast.success("Senha alterada com sucesso!");
+    setNovaSenha("");
+    setConfirmarSenha("");
   }
 
   if (!empresa) return <div className="p-8 text-sm text-zinc-500">Carregando configurações…</div>;
@@ -735,6 +766,59 @@ function ConfiguracoesPage() {
                 <p className="text-xs text-zinc-400 mt-1">Marmitarias, restaurantes, comércios que negociam valores…</p>
               </button>
             </div>
+          </section>
+
+          {/* Dados da conta */}
+          <section className="bg-background rounded-2xl ring-1 ring-black/5 p-6 space-y-6">
+            <h2 className="font-semibold text-ink">Dados da conta</h2>
+
+            {/* Trocar e-mail */}
+            <form onSubmit={trocarEmail} className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Mail className="size-4 text-zinc-400" />
+                <span className="text-sm font-medium text-zinc-700">Alterar e-mail de acesso</span>
+              </div>
+              <div className="bg-zinc-50 rounded-xl px-3 py-2 text-xs text-zinc-500">
+                E-mail atual: <span className="font-mono font-semibold text-zinc-700">{user?.email ?? "—"}</span>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="novo-email">Novo e-mail</Label>
+                <Input id="novo-email" type="email" value={novoEmail}
+                  onChange={(e) => setNovoEmail(e.target.value)}
+                  placeholder="novoemail@exemplo.com" className="h-10 rounded-xl" />
+                <p className="text-xs text-zinc-400">Um link de confirmação será enviado para o novo e-mail antes de efetivar a troca.</p>
+              </div>
+              <Button type="submit" disabled={salvandoEmail || !novoEmail.trim()}
+                variant="outline" className="h-9 rounded-xl text-sm">
+                {salvandoEmail ? "Enviando…" : "Alterar e-mail"}
+              </Button>
+            </form>
+
+            <div className="border-t border-zinc-100" />
+
+            {/* Trocar senha */}
+            <form onSubmit={trocarSenha} className="space-y-3">
+              <div className="flex items-center gap-2">
+                <KeyRound className="size-4 text-zinc-400" />
+                <span className="text-sm font-medium text-zinc-700">Alterar senha</span>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="nova-senha">Nova senha</Label>
+                <Input id="nova-senha" type="password" value={novaSenha}
+                  onChange={(e) => setNovaSenha(e.target.value)}
+                  placeholder="Mín. 8 caracteres" className="h-10 rounded-xl" />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="confirmar-senha">Confirmar nova senha</Label>
+                <Input id="confirmar-senha" type="password" value={confirmarSenha}
+                  onChange={(e) => setConfirmarSenha(e.target.value)}
+                  placeholder="Repita a senha" className="h-10 rounded-xl" />
+              </div>
+              <Button type="submit" disabled={salvandoSenha || !novaSenha}
+                variant="outline" className="h-9 rounded-xl text-sm">
+                {salvandoSenha ? "Alterando…" : "Alterar senha"}
+              </Button>
+            </form>
           </section>
 
           {/* Link do cardápio */}
