@@ -1634,25 +1634,33 @@ function AddressField({ brandColor, onCapture }: {
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         const { latitude, longitude } = pos.coords;
+        onCapture(latitude, longitude);
         try {
           const res  = await fetch(
             `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
-            { headers: { "Accept-Language": "pt-BR,pt;q=0.9" } }
+            { headers: { "Accept-Language": "pt-BR,pt;q=0.9", "User-Agent": "DeliverlyHub/1.0" } }
           );
           const data = await res.json();
           const a    = data.address ?? {};
           const partes = [
             a.road ? (a.house_number ? `${a.road}, ${a.house_number}` : a.road) : null,
             a.suburb ?? a.neighbourhood ?? a.quarter ?? null,
-            a.city ?? a.town ?? a.municipality ?? null,
+            a.city ?? a.town ?? a.village ?? a.municipality ?? null,
           ].filter(Boolean);
-          const addr = partes.length ? partes.join(" — ") : data.display_name ?? `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
-          if (inputRef.current) inputRef.current.value = addr;
+          const addr = partes.length >= 2
+            ? partes.join(", ")
+            : (data.display_name ?? "").split(",").slice(0, 3).join(",").trim();
+          if (addr && inputRef.current) {
+            inputRef.current.value = addr;
+            setCapturado(true);
+          } else {
+            if (inputRef.current) inputRef.current.value = "";
+            setErro("GPS captado, mas endereço não identificado. Digite o endereço manualmente.");
+          }
         } catch {
-          if (inputRef.current) inputRef.current.value = `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+          if (inputRef.current) inputRef.current.value = "";
+          setErro("Não foi possível converter a localização. Digite o endereço manualmente.");
         }
-        onCapture(latitude, longitude);
-        setCapturado(true);
         setLoading(false);
       },
       (err) => {
