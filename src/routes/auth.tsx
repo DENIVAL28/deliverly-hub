@@ -95,8 +95,12 @@ function AuthPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [esqueceu, setEsqueceu] = useState(false);
+  const [esqueceuOque, setEsqueceuOque] = useState<"escolha" | "senha" | "email">("escolha");
   const [emailReset, setEmailReset] = useState("");
   const [enviado, setEnviado] = useState(false);
+  const [buscaWhats, setBuscaWhats] = useState("");
+  const [emailEncontrado, setEmailEncontrado] = useState<string | null>(null);
+  const [buscando, setBuscando] = useState(false);
 
   // MFA
   const [mfaStep, setMfaStep]           = useState(false);
@@ -186,6 +190,27 @@ function AuthPage() {
     if (error) { toast.error("Código inválido ou expirado."); setMfaCode(""); return; }
     toast.success("Bem-vindo de volta!");
     navigate({ to: "/app" });
+  }
+
+  // ── Busca e-mail por WhatsApp ────────────────────────────────────────────
+
+  async function handleBuscarEmail(e: React.FormEvent) {
+    e.preventDefault();
+    const numero = buscaWhats.replace(/\D/g, "");
+    if (numero.length < 10) { toast.error("Digite o WhatsApp com DDD (ex: 66981289787)"); return; }
+    setBuscando(true);
+    const { data } = await supabase
+      .from("empresas")
+      .select("email")
+      .eq("whatsapp", numero)
+      .maybeSingle();
+    setBuscando(false);
+    if (!data?.email) {
+      toast.error("Nenhuma conta encontrada com esse WhatsApp.");
+      setEmailEncontrado(null);
+    } else {
+      setEmailEncontrado(data.email);
+    }
   }
 
   // ── Esqueceu senha ───────────────────────────────────────────────────────
@@ -355,12 +380,30 @@ function AuthPage() {
                     <div className="text-4xl">📧</div>
                     <p className="font-semibold text-zinc-900">E-mail enviado!</p>
                     <p className="text-sm text-zinc-500">Verifique sua caixa de entrada e clique no link para redefinir sua senha.</p>
-                    <button onClick={() => { setEsqueceu(false); setEnviado(false); setEmailReset(""); }}
+                    <button onClick={() => { setEsqueceu(false); setEnviado(false); setEmailReset(""); setEsqueceuOque("escolha"); }}
                       className="text-sm text-orange-500 hover:underline">
                       Voltar ao login
                     </button>
                   </div>
-                ) : (
+                ) : esqueceuOque === "escolha" ? (
+                  <div className="space-y-3">
+                    <p className="text-sm text-zinc-500 text-center">O que você esqueceu?</p>
+                    <button type="button" onClick={() => setEsqueceuOque("senha")}
+                      className="w-full text-left rounded-xl border-2 border-zinc-200 hover:border-orange-400 p-4 transition-colors group">
+                      <div className="font-semibold text-sm text-zinc-900 group-hover:text-orange-500">🔑 Esqueci a senha</div>
+                      <p className="text-xs text-zinc-400 mt-0.5">Vou te enviar um link por e-mail para criar uma nova senha.</p>
+                    </button>
+                    <button type="button" onClick={() => setEsqueceuOque("email")}
+                      className="w-full text-left rounded-xl border-2 border-zinc-200 hover:border-orange-400 p-4 transition-colors group">
+                      <div className="font-semibold text-sm text-zinc-900 group-hover:text-orange-500">📧 Esqueci o e-mail</div>
+                      <p className="text-xs text-zinc-400 mt-0.5">Vou buscar seu e-mail pelo número de WhatsApp cadastrado.</p>
+                    </button>
+                    <button type="button" onClick={() => { setEsqueceu(false); setEsqueceuOque("escolha"); }}
+                      className="w-full text-sm text-zinc-400 hover:text-zinc-600 transition-colors pt-1">
+                      ← Voltar ao login
+                    </button>
+                  </div>
+                ) : esqueceuOque === "senha" ? (
                   <form onSubmit={handleResetPassword} className="space-y-4">
                     <p className="text-sm text-zinc-500">Digite seu e-mail e enviaremos um link para redefinir sua senha.</p>
                     <div className="space-y-1.5">
@@ -371,9 +414,41 @@ function AuthPage() {
                     <Button type="submit" disabled={loading} className="w-full bg-orange-500 hover:bg-orange-400 h-11 font-bold rounded-xl">
                       {loading ? "Enviando…" : "Enviar link de redefinição"}
                     </Button>
-                    <button type="button" onClick={() => setEsqueceu(false)}
+                    <button type="button" onClick={() => setEsqueceuOque("escolha")}
                       className="w-full text-sm text-zinc-400 hover:text-zinc-600 transition-colors">
-                      ← Voltar ao login
+                      ← Voltar
+                    </button>
+                  </form>
+                ) : (
+                  <form onSubmit={handleBuscarEmail} className="space-y-4">
+                    <p className="text-sm text-zinc-500">Digite o WhatsApp cadastrado na sua loja e vamos encontrar o e-mail associado.</p>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="whats-busca">WhatsApp (com DDD)</Label>
+                      <Input id="whats-busca" type="tel" value={buscaWhats}
+                        onChange={(e) => setBuscaWhats(e.target.value)}
+                        placeholder="Ex: 66981289787" className="h-10 rounded-xl" />
+                    </div>
+                    {emailEncontrado && (
+                      <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 space-y-1">
+                        <p className="text-xs text-green-700 font-semibold">E-mail encontrado:</p>
+                        <p className="font-mono text-sm text-green-900">{emailEncontrado}</p>
+                        <button type="button"
+                          onClick={() => {
+                            setEsqueceuOque("senha");
+                            setEmailReset(emailEncontrado);
+                            setEmailEncontrado(null);
+                          }}
+                          className="text-xs text-orange-500 hover:underline font-semibold pt-1 block">
+                          Redefinir senha com esse e-mail →
+                        </button>
+                      </div>
+                    )}
+                    <Button type="submit" disabled={buscando} className="w-full bg-orange-500 hover:bg-orange-400 h-11 font-bold rounded-xl">
+                      {buscando ? "Buscando…" : "Buscar e-mail"}
+                    </Button>
+                    <button type="button" onClick={() => { setEsqueceuOque("escolha"); setEmailEncontrado(null); setBuscaWhats(""); }}
+                      className="w-full text-sm text-zinc-400 hover:text-zinc-600 transition-colors">
+                      ← Voltar
                     </button>
                   </form>
                 )
@@ -384,9 +459,9 @@ function AuthPage() {
                   <Field name="password" label="Senha" type="password" placeholder="••••••••"
                     value={loginSenha} onChange={setLoginSenha} erro={errosLogin.senha} />
                   <div className="text-right -mt-1">
-                    <button type="button" onClick={() => setEsqueceu(true)}
+                    <button type="button" onClick={() => { setEsqueceu(true); setEsqueceuOque("escolha"); }}
                       className="text-xs text-zinc-400 hover:text-orange-500 transition-colors">
-                      Esqueceu a senha?
+                      Esqueceu a senha ou e-mail?
                     </button>
                   </div>
                   <Button type="submit" disabled={loading} className="w-full bg-orange-500 hover:bg-orange-400 h-11 text-base font-bold rounded-xl">
