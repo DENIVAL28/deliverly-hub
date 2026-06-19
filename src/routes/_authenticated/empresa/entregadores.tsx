@@ -7,7 +7,7 @@ import { PageHeader } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Trash2, Bike, Phone, Share2, Link, Navigation, Copy, CheckCircle2, Clock, UserCheck, UserX } from "lucide-react";
+import { Plus, Trash2, Bike, Phone, Share2, Link, Navigation, Copy, CheckCircle2, Clock, UserCheck, UserX, User } from "lucide-react";
 import { copiarTexto } from "@/lib/validacoes";
 import { toast } from "sonner";
 import { UpgradeGuard, LimiteBanner } from "@/components/UpgradeGuard";
@@ -29,7 +29,7 @@ const VEICULO_LABEL: Record<string, string> = {
   moto: "🏍️ Moto", bicicleta: "🚲 Bicicleta", carro: "🚗 Carro", a_pe: "🚶 A pé",
 };
 
-type Aba = "fixos" | "freelancers" | "pendentes";
+type Aba = "fixos" | "freelancers" | "pendentes" | "parcerias";
 
 function EntregadoresPage() {
   const { empresaId, plano } = useAuth();
@@ -44,6 +44,7 @@ function EntregadoresPage() {
   const [aba, setAba]           = useState<Aba>("fixos");
   const [slug, setSlug]         = useState("");
   const [linkCopiado, setLinkCopiado] = useState(false);
+  const [respondendo, setRespondendo] = useState<string | null>(null);
 
   useEffect(() => {
     if (!empresaId) return;
@@ -62,6 +63,32 @@ function EntregadoresPage() {
   const fixos       = (todos as any[]).filter(e => e.tipo !== "freelancer" && e.ativo !== false);
   const freelancers = (todos as any[]).filter(e => e.tipo === "freelancer" && e.aprovado === true && e.ativo !== false);
   const pendentes   = (todos as any[]).filter(e => e.tipo === "freelancer" && e.aprovado === false);
+
+  const { data: parcerias = [], refetch: refetchParcerias } = useQuery({
+    queryKey: ["parcerias-empresa", empresaId],
+    enabled: !!empresaId,
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("entregador_parcerias")
+        .select("id, status, entregador_id, entregadores(nome, veiculo, foto_rosto_url, verificado, status_cadastro)")
+        .eq("empresa_id", empresaId!)
+        .order("created_at", { ascending: false });
+      return (data ?? []) as any[];
+    },
+  });
+
+  const parceriasPendentes = (parcerias as any[]).filter((p: any) => p.status === "pendente");
+
+  async function responderParceria(parceiaId: string, status: "aceita" | "recusada") {
+    setRespondendo(parceiaId);
+    try {
+      await supabase.rpc("empresa_responder_parceria" as any, { p_parceria_id: parceiaId, p_status: status });
+      toast.success(status === "aceita" ? "Parceria aceita!" : "Parceria recusada");
+      refetchParcerias();
+    } finally {
+      setRespondendo(null);
+    }
+  }
 
   const { data: stats = {} } = useQuery({
     queryKey: ["entregadores-stats", empresaId],
@@ -179,6 +206,7 @@ function EntregadoresPage() {
           { key: "fixos",       label: "Fixos",       count: fixos.length },
           { key: "freelancers", label: "Freelancers",  count: freelancers.length },
           { key: "pendentes",   label: "Pendentes",    count: pendentes.length, alert: pendentes.length > 0 },
+          { key: "parcerias",   label: "Parcerias",    count: parceriasPendentes.length, alert: parceriasPendentes.length > 0 },
         ] as const).map(t => (
           <button key={t.key} onClick={() => setAba(t.key)}
             className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold transition-colors ${
@@ -294,8 +322,78 @@ function EntregadoresPage() {
         )
       )}
 
+      {/* Parcerias */}
+      {aba === "parcerias" && (
+        parcerias.length === 0 ? (
+          <div className="text-center py-16 text-sm text-zinc-400 bg-background rounded-2xl ring-1 ring-black/5">
+            <User className="size-10 mx-auto mb-3 text-zinc-200" />
+            Nenhuma solicitação de parceria ainda.
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {parceriasPendentes.length > 0 && (
+              <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Aguardando resposta ({parceriasPendentes.length})</h3>
+            )}
+            {parcerias.map((p: any) => {
+              const ent = p.entregadores;
+              const STATUS_PARC: Record<string, string> = {
+                pendente: "text-yellow-700 bg-yellow-50 border-yellow-200",
+                aceita:   "text-green-700 bg-green-50 border-green-200",
+                recusada: "text-red-600 bg-red-50 border-red-200",
+                cancelada: "text-zinc-500 bg-zinc-50 border-zinc-200",
+              };
+              return (
+                <div key={p.id} className="bg-background rounded-2xl ring-1 ring-black/5 p-5">
+                  <div className="flex items-start gap-4">
+                    {ent?.foto_rosto_url ? (
+                      <img src={ent.foto_rosto_url} alt={ent?.nome} className="w-12 h-12 rounded-2xl object-cover border border-zinc-200 shrink-0" />
+                    ) : (
+                      <div className="w-12 h-12 rounded-2xl bg-zinc-100 flex items-center justify-center shrink-0">
+                        <User className="size-6 text-zinc-400" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-bold text-zinc-900">{ent?.nome ?? "Entregador"}</span>
+                        {ent?.verificado && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200">✓ Verificado</span>
+                        )}
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${STATUS_PARC[p.status] ?? STATUS_PARC.pendente}`}>
+                          {p.status === "pendente" ? "Aguardando" : p.status === "aceita" ? "Aceita" : p.status === "recusada" ? "Recusada" : "Cancelada"}
+                        </span>
+                      </div>
+                      <p className="text-xs text-zinc-500 mt-0.5">
+                        {VEICULO_LABEL[ent?.veiculo] ?? ent?.veiculo ?? "—"}
+                      </p>
+                    </div>
+                    {p.status === "pendente" && (
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          disabled={respondendo === p.id}
+                          onClick={() => responderParceria(p.id, "aceita")}
+                          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-green-500 text-white text-xs font-bold hover:bg-green-600 disabled:opacity-60 transition-colors"
+                        >
+                          <UserCheck className="size-3.5" /> Aceitar
+                        </button>
+                        <button
+                          disabled={respondendo === p.id}
+                          onClick={() => responderParceria(p.id, "recusada")}
+                          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-50 text-red-500 border border-red-200 text-xs font-bold hover:bg-red-100 disabled:opacity-60 transition-colors"
+                        >
+                          <UserX className="size-3.5" /> Recusar
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )
+      )}
+
       {/* Lista fixos / freelancers */}
-      {aba !== "pendentes" && (
+      {aba !== "pendentes" && aba !== "parcerias" && (
         listaAtual.length === 0 ? (
           <div className="text-center py-16 text-sm text-zinc-400 bg-background rounded-2xl ring-1 ring-black/5">
             <Bike className="size-10 mx-auto mb-3 text-zinc-200" />

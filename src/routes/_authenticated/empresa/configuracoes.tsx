@@ -68,6 +68,7 @@ function ConfiguracoesPage() {
   const [taxaBase,       setTaxaBase]       = useState("0");
   const [empresaLat,     setEmpresaLat]     = useState("");
   const [empresaLng,     setEmpresaLng]     = useState("");
+  const [tipoOperacaoEntrega, setTipoOperacaoEntrega] = useState<"plataforma" | "fixos">("plataforma");
   const [detectandoLoc,  setDetectandoLoc]  = useState(false);
 
   // Conta
@@ -107,6 +108,7 @@ function ConfiguracoesPage() {
     setTaxaBase(String(emp.taxa_entrega_base ?? 0));
     setEmpresaLat(emp.empresa_lat != null ? String(emp.empresa_lat) : "");
     setEmpresaLng(emp.empresa_lng != null ? String(emp.empresa_lng) : "");
+    setTipoOperacaoEntrega((emp.tipo_operacao_entrega ?? "plataforma") as "plataforma" | "fixos");
     setSynced(true);
   }
 
@@ -164,6 +166,7 @@ function ConfiguracoesPage() {
       taxa_entrega_base: Number(taxaBase) || 0,
       empresa_lat: empresaLat ? Number(empresaLat) : null,
       empresa_lng: empresaLng ? Number(empresaLng) : null,
+      tipo_operacao_entrega: tipoOperacaoEntrega,
     };
 
     const logoFile   = logoRef.current?.files?.[0];
@@ -607,6 +610,37 @@ function ConfiguracoesPage() {
               <p className="text-xs text-zinc-400">
                 Aparece no cardápio como <strong>"Aberto · Fecha às {fechamento}"</strong> ou <strong>"Fechado · Abre às {abertura}"</strong>
               </p>
+            </div>
+          </section>
+
+          {/* Tipo de operação de entrega */}
+          <section className="bg-background rounded-2xl ring-1 ring-black/5 p-6 space-y-4">
+            <div>
+              <h2 className="font-semibold text-ink">Tipo de operação de entrega</h2>
+              <p className="text-xs text-zinc-500 mt-0.5">Define de onde vêm os entregadores para os seus pedidos.</p>
+            </div>
+            <div className="space-y-3">
+              {([
+                { value: "plataforma", label: "Entregadores da plataforma (padrão)", desc: "Entregadores cadastrados e aprovados na plataforma Delivery Hub podem aceitar pedidos da sua loja." },
+                { value: "fixos",      label: "Entregadores fixos da loja",           desc: "Apenas entregadores vinculados diretamente à sua loja (fixos e freelancers aprovados) recebem pedidos." },
+              ] as const).map((opt) => (
+                <label key={opt.value} className={`flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-colors ${
+                  tipoOperacaoEntrega === opt.value ? "border-brand bg-brand/5" : "border-zinc-200 hover:border-zinc-300"
+                }`}>
+                  <input
+                    type="radio"
+                    name="tipo_operacao_entrega"
+                    value={opt.value}
+                    checked={tipoOperacaoEntrega === opt.value}
+                    onChange={() => setTipoOperacaoEntrega(opt.value)}
+                    className="mt-0.5 accent-brand shrink-0"
+                  />
+                  <div>
+                    <p className="text-sm font-semibold text-zinc-900">{opt.label}</p>
+                    <p className="text-xs text-zinc-500 mt-0.5">{opt.desc}</p>
+                  </div>
+                </label>
+              ))}
             </div>
           </section>
 

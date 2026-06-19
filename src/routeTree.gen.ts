@@ -14,11 +14,19 @@ import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as PrivacidadeRouteImport } from './routes/privacidade'
 import { Route as NovaSenhaRouteImport } from './routes/nova-senha'
 import { Route as LojasRouteImport } from './routes/lojas'
+import { Route as EntregadoresRouteImport } from './routes/entregadores'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as EntregadoresIndexRouteImport } from './routes/entregadores.index'
+import { Route as EntregadorIndexRouteImport } from './routes/entregador.index'
 import { Route as PedidoIdRouteImport } from './routes/pedido.$id'
 import { Route as LojaSlugRouteImport } from './routes/loja.$slug'
+import { Route as EntregadoresPerfilRouteImport } from './routes/entregadores.perfil'
+import { Route as EntregadoresParceirosRouteImport } from './routes/entregadores.parceiros'
+import { Route as EntregadoresPainelRouteImport } from './routes/entregadores.painel'
+import { Route as EntregadoresLoginRouteImport } from './routes/entregadores.login'
+import { Route as EntregadoresCadastroRouteImport } from './routes/entregadores.cadastro'
 import { Route as EntregadorIdRouteImport } from './routes/entregador.$id'
 import { Route as EntrarEntregadorSlugRouteImport } from './routes/entrar-entregador.$slug'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
@@ -32,6 +40,7 @@ import { Route as AuthenticatedMasterSegurancaRouteImport } from './routes/_auth
 import { Route as AuthenticatedMasterRelatoriosRouteImport } from './routes/_authenticated/master/relatorios'
 import { Route as AuthenticatedMasterPlanosRouteImport } from './routes/_authenticated/master/planos'
 import { Route as AuthenticatedMasterMensalidadesRouteImport } from './routes/_authenticated/master/mensalidades'
+import { Route as AuthenticatedMasterEntregadoresRouteImport } from './routes/_authenticated/master/entregadores'
 import { Route as AuthenticatedMasterEmpresasRouteImport } from './routes/_authenticated/master/empresas'
 import { Route as AuthenticatedEmpresaRelatoriosRouteImport } from './routes/_authenticated/empresa/relatorios'
 import { Route as AuthenticatedEmpresaProdutosRouteImport } from './routes/_authenticated/empresa/produtos'
@@ -72,6 +81,11 @@ const LojasRoute = LojasRouteImport.update({
   path: '/lojas',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EntregadoresRoute = EntregadoresRouteImport.update({
+  id: '/entregadores',
+  path: '/entregadores',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
@@ -86,6 +100,16 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EntregadoresIndexRoute = EntregadoresIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => EntregadoresRoute,
+} as any)
+const EntregadorIndexRoute = EntregadorIndexRouteImport.update({
+  id: '/entregador/',
+  path: '/entregador/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PedidoIdRoute = PedidoIdRouteImport.update({
   id: '/pedido/$id',
   path: '/pedido/$id',
@@ -95,6 +119,31 @@ const LojaSlugRoute = LojaSlugRouteImport.update({
   id: '/loja/$slug',
   path: '/loja/$slug',
   getParentRoute: () => rootRouteImport,
+} as any)
+const EntregadoresPerfilRoute = EntregadoresPerfilRouteImport.update({
+  id: '/perfil',
+  path: '/perfil',
+  getParentRoute: () => EntregadoresRoute,
+} as any)
+const EntregadoresParceirosRoute = EntregadoresParceirosRouteImport.update({
+  id: '/parceiros',
+  path: '/parceiros',
+  getParentRoute: () => EntregadoresRoute,
+} as any)
+const EntregadoresPainelRoute = EntregadoresPainelRouteImport.update({
+  id: '/painel',
+  path: '/painel',
+  getParentRoute: () => EntregadoresRoute,
+} as any)
+const EntregadoresLoginRoute = EntregadoresLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => EntregadoresRoute,
+} as any)
+const EntregadoresCadastroRoute = EntregadoresCadastroRouteImport.update({
+  id: '/cadastro',
+  path: '/cadastro',
+  getParentRoute: () => EntregadoresRoute,
 } as any)
 const EntregadorIdRoute = EntregadorIdRouteImport.update({
   id: '/entregador/$id',
@@ -168,6 +217,12 @@ const AuthenticatedMasterMensalidadesRoute =
   AuthenticatedMasterMensalidadesRouteImport.update({
     id: '/mensalidades',
     path: '/mensalidades',
+    getParentRoute: () => AuthenticatedMasterRouteRoute,
+  } as any)
+const AuthenticatedMasterEntregadoresRoute =
+  AuthenticatedMasterEntregadoresRouteImport.update({
+    id: '/entregadores',
+    path: '/entregadores',
     getParentRoute: () => AuthenticatedMasterRouteRoute,
   } as any)
 const AuthenticatedMasterEmpresasRoute =
@@ -257,6 +312,7 @@ const AuthenticatedEmpresaAnalyticsRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/entregadores': typeof EntregadoresRouteWithChildren
   '/lojas': typeof LojasRoute
   '/nova-senha': typeof NovaSenhaRoute
   '/privacidade': typeof PrivacidadeRoute
@@ -268,8 +324,15 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/entrar-entregador/$slug': typeof EntrarEntregadorSlugRoute
   '/entregador/$id': typeof EntregadorIdRoute
+  '/entregadores/cadastro': typeof EntregadoresCadastroRoute
+  '/entregadores/login': typeof EntregadoresLoginRoute
+  '/entregadores/painel': typeof EntregadoresPainelRoute
+  '/entregadores/parceiros': typeof EntregadoresParceirosRoute
+  '/entregadores/perfil': typeof EntregadoresPerfilRoute
   '/loja/$slug': typeof LojaSlugRoute
   '/pedido/$id': typeof PedidoIdRoute
+  '/entregador/': typeof EntregadorIndexRoute
+  '/entregadores/': typeof EntregadoresIndexRoute
   '/empresa/analytics': typeof AuthenticatedEmpresaAnalyticsRoute
   '/empresa/avaliacoes': typeof AuthenticatedEmpresaAvaliacoesRoute
   '/empresa/categorias': typeof AuthenticatedEmpresaCategoriasRoute
@@ -284,6 +347,7 @@ export interface FileRoutesByFullPath {
   '/empresa/produtos': typeof AuthenticatedEmpresaProdutosRoute
   '/empresa/relatorios': typeof AuthenticatedEmpresaRelatoriosRoute
   '/master/empresas': typeof AuthenticatedMasterEmpresasRoute
+  '/master/entregadores': typeof AuthenticatedMasterEntregadoresRoute
   '/master/mensalidades': typeof AuthenticatedMasterMensalidadesRoute
   '/master/planos': typeof AuthenticatedMasterPlanosRoute
   '/master/relatorios': typeof AuthenticatedMasterRelatoriosRoute
@@ -304,8 +368,15 @@ export interface FileRoutesByTo {
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/entrar-entregador/$slug': typeof EntrarEntregadorSlugRoute
   '/entregador/$id': typeof EntregadorIdRoute
+  '/entregadores/cadastro': typeof EntregadoresCadastroRoute
+  '/entregadores/login': typeof EntregadoresLoginRoute
+  '/entregadores/painel': typeof EntregadoresPainelRoute
+  '/entregadores/parceiros': typeof EntregadoresParceirosRoute
+  '/entregadores/perfil': typeof EntregadoresPerfilRoute
   '/loja/$slug': typeof LojaSlugRoute
   '/pedido/$id': typeof PedidoIdRoute
+  '/entregador': typeof EntregadorIndexRoute
+  '/entregadores': typeof EntregadoresIndexRoute
   '/empresa/analytics': typeof AuthenticatedEmpresaAnalyticsRoute
   '/empresa/avaliacoes': typeof AuthenticatedEmpresaAvaliacoesRoute
   '/empresa/categorias': typeof AuthenticatedEmpresaCategoriasRoute
@@ -320,6 +391,7 @@ export interface FileRoutesByTo {
   '/empresa/produtos': typeof AuthenticatedEmpresaProdutosRoute
   '/empresa/relatorios': typeof AuthenticatedEmpresaRelatoriosRoute
   '/master/empresas': typeof AuthenticatedMasterEmpresasRoute
+  '/master/entregadores': typeof AuthenticatedMasterEntregadoresRoute
   '/master/mensalidades': typeof AuthenticatedMasterMensalidadesRoute
   '/master/planos': typeof AuthenticatedMasterPlanosRoute
   '/master/relatorios': typeof AuthenticatedMasterRelatoriosRoute
@@ -333,6 +405,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/entregadores': typeof EntregadoresRouteWithChildren
   '/lojas': typeof LojasRoute
   '/nova-senha': typeof NovaSenhaRoute
   '/privacidade': typeof PrivacidadeRoute
@@ -344,8 +417,15 @@ export interface FileRoutesById {
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
   '/entrar-entregador/$slug': typeof EntrarEntregadorSlugRoute
   '/entregador/$id': typeof EntregadorIdRoute
+  '/entregadores/cadastro': typeof EntregadoresCadastroRoute
+  '/entregadores/login': typeof EntregadoresLoginRoute
+  '/entregadores/painel': typeof EntregadoresPainelRoute
+  '/entregadores/parceiros': typeof EntregadoresParceirosRoute
+  '/entregadores/perfil': typeof EntregadoresPerfilRoute
   '/loja/$slug': typeof LojaSlugRoute
   '/pedido/$id': typeof PedidoIdRoute
+  '/entregador/': typeof EntregadorIndexRoute
+  '/entregadores/': typeof EntregadoresIndexRoute
   '/_authenticated/empresa/analytics': typeof AuthenticatedEmpresaAnalyticsRoute
   '/_authenticated/empresa/avaliacoes': typeof AuthenticatedEmpresaAvaliacoesRoute
   '/_authenticated/empresa/categorias': typeof AuthenticatedEmpresaCategoriasRoute
@@ -360,6 +440,7 @@ export interface FileRoutesById {
   '/_authenticated/empresa/produtos': typeof AuthenticatedEmpresaProdutosRoute
   '/_authenticated/empresa/relatorios': typeof AuthenticatedEmpresaRelatoriosRoute
   '/_authenticated/master/empresas': typeof AuthenticatedMasterEmpresasRoute
+  '/_authenticated/master/entregadores': typeof AuthenticatedMasterEntregadoresRoute
   '/_authenticated/master/mensalidades': typeof AuthenticatedMasterMensalidadesRoute
   '/_authenticated/master/planos': typeof AuthenticatedMasterPlanosRoute
   '/_authenticated/master/relatorios': typeof AuthenticatedMasterRelatoriosRoute
@@ -373,6 +454,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/entregadores'
     | '/lojas'
     | '/nova-senha'
     | '/privacidade'
@@ -384,8 +466,15 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/entrar-entregador/$slug'
     | '/entregador/$id'
+    | '/entregadores/cadastro'
+    | '/entregadores/login'
+    | '/entregadores/painel'
+    | '/entregadores/parceiros'
+    | '/entregadores/perfil'
     | '/loja/$slug'
     | '/pedido/$id'
+    | '/entregador/'
+    | '/entregadores/'
     | '/empresa/analytics'
     | '/empresa/avaliacoes'
     | '/empresa/categorias'
@@ -400,6 +489,7 @@ export interface FileRouteTypes {
     | '/empresa/produtos'
     | '/empresa/relatorios'
     | '/master/empresas'
+    | '/master/entregadores'
     | '/master/mensalidades'
     | '/master/planos'
     | '/master/relatorios'
@@ -420,8 +510,15 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/entrar-entregador/$slug'
     | '/entregador/$id'
+    | '/entregadores/cadastro'
+    | '/entregadores/login'
+    | '/entregadores/painel'
+    | '/entregadores/parceiros'
+    | '/entregadores/perfil'
     | '/loja/$slug'
     | '/pedido/$id'
+    | '/entregador'
+    | '/entregadores'
     | '/empresa/analytics'
     | '/empresa/avaliacoes'
     | '/empresa/categorias'
@@ -436,6 +533,7 @@ export interface FileRouteTypes {
     | '/empresa/produtos'
     | '/empresa/relatorios'
     | '/master/empresas'
+    | '/master/entregadores'
     | '/master/mensalidades'
     | '/master/planos'
     | '/master/relatorios'
@@ -448,6 +546,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/entregadores'
     | '/lojas'
     | '/nova-senha'
     | '/privacidade'
@@ -459,8 +558,15 @@ export interface FileRouteTypes {
     | '/_authenticated/onboarding'
     | '/entrar-entregador/$slug'
     | '/entregador/$id'
+    | '/entregadores/cadastro'
+    | '/entregadores/login'
+    | '/entregadores/painel'
+    | '/entregadores/parceiros'
+    | '/entregadores/perfil'
     | '/loja/$slug'
     | '/pedido/$id'
+    | '/entregador/'
+    | '/entregadores/'
     | '/_authenticated/empresa/analytics'
     | '/_authenticated/empresa/avaliacoes'
     | '/_authenticated/empresa/categorias'
@@ -475,6 +581,7 @@ export interface FileRouteTypes {
     | '/_authenticated/empresa/produtos'
     | '/_authenticated/empresa/relatorios'
     | '/_authenticated/master/empresas'
+    | '/_authenticated/master/entregadores'
     | '/_authenticated/master/mensalidades'
     | '/_authenticated/master/planos'
     | '/_authenticated/master/relatorios'
@@ -488,6 +595,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  EntregadoresRoute: typeof EntregadoresRouteWithChildren
   LojasRoute: typeof LojasRoute
   NovaSenhaRoute: typeof NovaSenhaRoute
   PrivacidadeRoute: typeof PrivacidadeRoute
@@ -497,6 +605,7 @@ export interface RootRouteChildren {
   EntregadorIdRoute: typeof EntregadorIdRoute
   LojaSlugRoute: typeof LojaSlugRoute
   PedidoIdRoute: typeof PedidoIdRoute
+  EntregadorIndexRoute: typeof EntregadorIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -536,6 +645,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LojasRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/entregadores': {
+      id: '/entregadores'
+      path: '/entregadores'
+      fullPath: '/entregadores'
+      preLoaderRoute: typeof EntregadoresRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth': {
       id: '/auth'
       path: '/auth'
@@ -557,6 +673,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/entregadores/': {
+      id: '/entregadores/'
+      path: '/'
+      fullPath: '/entregadores/'
+      preLoaderRoute: typeof EntregadoresIndexRouteImport
+      parentRoute: typeof EntregadoresRoute
+    }
+    '/entregador/': {
+      id: '/entregador/'
+      path: '/entregador'
+      fullPath: '/entregador/'
+      preLoaderRoute: typeof EntregadorIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/pedido/$id': {
       id: '/pedido/$id'
       path: '/pedido/$id'
@@ -570,6 +700,41 @@ declare module '@tanstack/react-router' {
       fullPath: '/loja/$slug'
       preLoaderRoute: typeof LojaSlugRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/entregadores/perfil': {
+      id: '/entregadores/perfil'
+      path: '/perfil'
+      fullPath: '/entregadores/perfil'
+      preLoaderRoute: typeof EntregadoresPerfilRouteImport
+      parentRoute: typeof EntregadoresRoute
+    }
+    '/entregadores/parceiros': {
+      id: '/entregadores/parceiros'
+      path: '/parceiros'
+      fullPath: '/entregadores/parceiros'
+      preLoaderRoute: typeof EntregadoresParceirosRouteImport
+      parentRoute: typeof EntregadoresRoute
+    }
+    '/entregadores/painel': {
+      id: '/entregadores/painel'
+      path: '/painel'
+      fullPath: '/entregadores/painel'
+      preLoaderRoute: typeof EntregadoresPainelRouteImport
+      parentRoute: typeof EntregadoresRoute
+    }
+    '/entregadores/login': {
+      id: '/entregadores/login'
+      path: '/login'
+      fullPath: '/entregadores/login'
+      preLoaderRoute: typeof EntregadoresLoginRouteImport
+      parentRoute: typeof EntregadoresRoute
+    }
+    '/entregadores/cadastro': {
+      id: '/entregadores/cadastro'
+      path: '/cadastro'
+      fullPath: '/entregadores/cadastro'
+      preLoaderRoute: typeof EntregadoresCadastroRouteImport
+      parentRoute: typeof EntregadoresRoute
     }
     '/entregador/$id': {
       id: '/entregador/$id'
@@ -660,6 +825,13 @@ declare module '@tanstack/react-router' {
       path: '/mensalidades'
       fullPath: '/master/mensalidades'
       preLoaderRoute: typeof AuthenticatedMasterMensalidadesRouteImport
+      parentRoute: typeof AuthenticatedMasterRouteRoute
+    }
+    '/_authenticated/master/entregadores': {
+      id: '/_authenticated/master/entregadores'
+      path: '/entregadores'
+      fullPath: '/master/entregadores'
+      preLoaderRoute: typeof AuthenticatedMasterEntregadoresRouteImport
       parentRoute: typeof AuthenticatedMasterRouteRoute
     }
     '/_authenticated/master/empresas': {
@@ -807,6 +979,7 @@ const AuthenticatedEmpresaRouteRouteWithChildren =
 
 interface AuthenticatedMasterRouteRouteChildren {
   AuthenticatedMasterEmpresasRoute: typeof AuthenticatedMasterEmpresasRoute
+  AuthenticatedMasterEntregadoresRoute: typeof AuthenticatedMasterEntregadoresRoute
   AuthenticatedMasterMensalidadesRoute: typeof AuthenticatedMasterMensalidadesRoute
   AuthenticatedMasterPlanosRoute: typeof AuthenticatedMasterPlanosRoute
   AuthenticatedMasterRelatoriosRoute: typeof AuthenticatedMasterRelatoriosRoute
@@ -818,6 +991,7 @@ interface AuthenticatedMasterRouteRouteChildren {
 const AuthenticatedMasterRouteRouteChildren: AuthenticatedMasterRouteRouteChildren =
   {
     AuthenticatedMasterEmpresasRoute: AuthenticatedMasterEmpresasRoute,
+    AuthenticatedMasterEntregadoresRoute: AuthenticatedMasterEntregadoresRoute,
     AuthenticatedMasterMensalidadesRoute: AuthenticatedMasterMensalidadesRoute,
     AuthenticatedMasterPlanosRoute: AuthenticatedMasterPlanosRoute,
     AuthenticatedMasterRelatoriosRoute: AuthenticatedMasterRelatoriosRoute,
@@ -848,10 +1022,33 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
 const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
+interface EntregadoresRouteChildren {
+  EntregadoresCadastroRoute: typeof EntregadoresCadastroRoute
+  EntregadoresLoginRoute: typeof EntregadoresLoginRoute
+  EntregadoresPainelRoute: typeof EntregadoresPainelRoute
+  EntregadoresParceirosRoute: typeof EntregadoresParceirosRoute
+  EntregadoresPerfilRoute: typeof EntregadoresPerfilRoute
+  EntregadoresIndexRoute: typeof EntregadoresIndexRoute
+}
+
+const EntregadoresRouteChildren: EntregadoresRouteChildren = {
+  EntregadoresCadastroRoute: EntregadoresCadastroRoute,
+  EntregadoresLoginRoute: EntregadoresLoginRoute,
+  EntregadoresPainelRoute: EntregadoresPainelRoute,
+  EntregadoresParceirosRoute: EntregadoresParceirosRoute,
+  EntregadoresPerfilRoute: EntregadoresPerfilRoute,
+  EntregadoresIndexRoute: EntregadoresIndexRoute,
+}
+
+const EntregadoresRouteWithChildren = EntregadoresRoute._addFileChildren(
+  EntregadoresRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  EntregadoresRoute: EntregadoresRouteWithChildren,
   LojasRoute: LojasRoute,
   NovaSenhaRoute: NovaSenhaRoute,
   PrivacidadeRoute: PrivacidadeRoute,
@@ -861,6 +1058,7 @@ const rootRouteChildren: RootRouteChildren = {
   EntregadorIdRoute: EntregadorIdRoute,
   LojaSlugRoute: LojaSlugRoute,
   PedidoIdRoute: PedidoIdRoute,
+  EntregadorIndexRoute: EntregadorIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

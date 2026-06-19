@@ -2,7 +2,7 @@ import { createFileRoute, Outlet, redirect, useNavigate } from "@tanstack/react-
 import { useEffect } from "react";
 import { useAuth } from "@/lib/use-auth";
 import { AppShell } from "@/components/AppShell";
-import { LayoutDashboard, Building2, Package, Receipt, BarChart2, ShieldCheck, Users } from "lucide-react";
+import { LayoutDashboard, Building2, Package, Receipt, BarChart2, ShieldCheck, Users, Bike } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/master")({
@@ -52,6 +52,7 @@ function MasterLayout() {
         { to: "/master/planos", label: "Planos", icon: Package },
         { to: "/master/mensalidades", label: "Mensalidades", icon: Receipt },
         { to: "/master/relatorios", label: "Relatórios", icon: BarChart2 },
+        { to: "/master/entregadores", label: "Entregadores", icon: Bike },
         { to: "/master/seguranca", label: "Segurança", icon: ShieldCheck },
       ]}
     >

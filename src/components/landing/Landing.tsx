@@ -720,12 +720,12 @@ function SejaEntregador() {
             <div className="bg-gradient-to-br from-orange-500/12 to-orange-600/6 border border-orange-500/20 rounded-3xl p-8">
               <p className="text-sm font-bold text-orange-300 mb-2">Como começar?</p>
               <p className="text-sm text-zinc-400 leading-relaxed mb-5">
-                Procure um restaurante da sua cidade que use o Delivery Hub e peça o link de cadastro. Ou fale com nossa equipe — indicamos parceiros próximos a você.
+                Crie seu cadastro diretamente na plataforma em menos de 5 minutos. Após aprovação, você começa a receber pedidos dos restaurantes parceiros.
               </p>
-              <a href={WA_LINK} target="_blank" rel="noreferrer"
+              <Link to="/entregadores/cadastro"
                 className="flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 text-white font-bold px-6 py-4 rounded-2xl text-sm transition-all duration-300 hover:scale-[1.02] shadow-2xl shadow-orange-500/30 w-full">
-                <MessageCircle className="size-4" /> Quero ser entregador — falar no WhatsApp
-              </a>
+                Quero ser entregador — Criar cadastro
+              </Link>
               <p className="text-xs text-zinc-600 text-center mt-3">Gratuito · Sem contrato · Trabalhe quando quiser</p>
             </div>
 
