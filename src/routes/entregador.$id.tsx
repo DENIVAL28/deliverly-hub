@@ -201,14 +201,18 @@ function EntregadorPage() {
   useEffect(() => {
     // Sessão anônima autenticada: permite realtime + RLS em pedidos
     async function iniciar() {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) await supabase.auth.signInAnonymously();
-      // Vincula a sessão ao entregador para que as políticas RLS funcionem
-      await (supabase as any).rpc("entregador_vincular_sessao", {
-        p_token: entregador.public_token,
-      });
-      carregarPedidos();
-      if (isFreelancer) carregarDisponiveis();
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) await supabase.auth.signInAnonymously();
+        await (supabase as any).rpc("entregador_vincular_sessao", {
+          p_token: entregador.public_token,
+        });
+      } catch {
+        // Falha silenciosa — polling garante atualização mesmo sem realtime
+      } finally {
+        carregarPedidos();
+        if (isFreelancer) carregarDisponiveis();
+      }
     }
     iniciar();
 
