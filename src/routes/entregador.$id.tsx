@@ -199,16 +199,26 @@ function EntregadorPage() {
   }
 
   useEffect(() => {
-    carregarPedidos();
-    if (isFreelancer) carregarDisponiveis();
+    // Sessão anônima autenticada: permite realtime + RLS em pedidos
+    async function iniciar() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) await supabase.auth.signInAnonymously();
+      // Vincula a sessão ao entregador para que as políticas RLS funcionem
+      await (supabase as any).rpc("entregador_vincular_sessao", {
+        p_token: entregador.public_token,
+      });
+      carregarPedidos();
+      if (isFreelancer) carregarDisponiveis();
+    }
+    iniciar();
 
-    // Polling a cada 15s — realtime não funciona para entregadores (anon sem sessão)
+    // Polling 15s como fallback garantido
     const poll = setInterval(() => {
       carregarPedidos();
       if (isFreelancer) carregarDisponiveis();
     }, 15000);
 
-    // Realtime como caminho rápido (quando funcionar)
+    // Realtime — funciona após vincular sessão autenticada
     const ch = supabase.channel(`entregador-pedidos-${entregador.id}`)
       .on("postgres_changes",
         { event: "*", schema: "public", table: "pedidos" },
