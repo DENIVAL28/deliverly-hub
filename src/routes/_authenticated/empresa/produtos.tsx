@@ -405,6 +405,11 @@ function GruposOpcoes({ produtoId }: { produtoId: string }) {
   const [novoGrupoMax,   setNovoGrupoMax]   = useState(1);
   const [novoGrupoMulti, setNovoGrupoMulti] = useState(false);
   const [expandido, setExpandido] = useState<string | null>(null);
+  const [editandoGrupo, setEditandoGrupo] = useState<string | null>(null);
+  const [editGrupoNome,  setEditGrupoNome]  = useState("");
+  const [editGrupoObrg,  setEditGrupoObrg]  = useState(true);
+  const [editGrupoMulti, setEditGrupoMulti] = useState(false);
+  const [editGrupoMax,   setEditGrupoMax]   = useState(1);
 
   const { data: grupos = [] } = useQuery({
     queryKey: ["grupos-opcoes", produtoId],
@@ -429,6 +434,29 @@ function GruposOpcoes({ produtoId }: { produtoId: string }) {
     qc.invalidateQueries({ queryKey: ["grupos-opcoes", produtoId] });
   }
 
+  function abrirEditGrupo(g: any) {
+    setEditandoGrupo(g.id);
+    setEditGrupoNome(g.nome);
+    setEditGrupoObrg(g.obrigatorio ?? true);
+    setEditGrupoMulti(g.multiplo ?? false);
+    setEditGrupoMax(g.max_escolhas ?? 1);
+  }
+
+  async function salvarGrupo(id: string) {
+    const { error } = await (supabase.from("grupos_opcoes") as any)
+      .update({
+        nome: editGrupoNome.trim(),
+        obrigatorio: editGrupoObrg,
+        multiplo: editGrupoMulti,
+        max_escolhas: editGrupoMulti ? editGrupoMax : 1,
+      })
+      .eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    qc.invalidateQueries({ queryKey: ["grupos-opcoes", produtoId] });
+    setEditandoGrupo(null);
+    toast.success("Grupo atualizado");
+  }
+
   return (
     <div className="mt-3 space-y-3">
       {/* Lista de grupos */}
@@ -449,13 +477,57 @@ function GruposOpcoes({ produtoId }: { produtoId: string }) {
             </div>
             <div className="flex items-center gap-1">
               <span className="text-[10px] text-zinc-400">{g.opcoes?.length ?? 0} opções</span>
+              <button onClick={(e) => { e.stopPropagation(); abrirEditGrupo(g); }}
+                className="ml-2 text-zinc-300 hover:text-blue-500 transition-colors" title="Editar grupo">
+                <Pencil className="size-3.5" />
+              </button>
               <button onClick={(e) => { e.stopPropagation(); removeGrupo(g.id); }}
-                className="ml-2 text-zinc-300 hover:text-red-500 transition-colors">
+                className="text-zinc-300 hover:text-red-500 transition-colors" title="Excluir grupo">
                 <Trash2 className="size-3.5" />
               </button>
             </div>
           </div>
-          {expandido === g.id && (
+
+          {/* Formulário de edição do grupo */}
+          {editandoGrupo === g.id && (
+            <div className="p-3 bg-blue-50 border-t border-blue-100 space-y-2" onClick={(e) => e.stopPropagation()}>
+              <div className="text-[10px] font-bold uppercase tracking-widest text-blue-500">Editar grupo</div>
+              <Input value={editGrupoNome} onChange={(e) => setEditGrupoNome(e.target.value)}
+                className="h-8 text-xs rounded-lg" placeholder="Nome do grupo" />
+              <div className="flex gap-3 flex-wrap text-xs">
+                <label className="flex items-center gap-1.5 cursor-pointer">
+                  <input type="checkbox" checked={editGrupoObrg} onChange={(e) => setEditGrupoObrg(e.target.checked)} className="rounded" />
+                  Obrigatório
+                </label>
+                <label className="flex items-center gap-1.5 cursor-pointer">
+                  <input type="checkbox" checked={editGrupoMulti}
+                    onChange={(e) => { setEditGrupoMulti(e.target.checked); if (!e.target.checked) setEditGrupoMax(1); }}
+                    className="rounded" />
+                  Múltipla escolha
+                </label>
+                {editGrupoMulti && (
+                  <label className="flex items-center gap-1.5">
+                    Máx:
+                    <input type="number" min={1} max={10} value={editGrupoMax}
+                      onChange={(e) => setEditGrupoMax(Number(e.target.value))}
+                      className="w-12 h-6 text-xs border rounded px-1" />
+                  </label>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <Button size="sm" onClick={() => salvarGrupo(g.id)}
+                  className="flex-1 bg-blue-500 hover:bg-blue-600 h-7 text-xs">
+                  Salvar
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => setEditandoGrupo(null)}
+                  className="h-7 text-xs">
+                  Cancelar
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {expandido === g.id && editandoGrupo !== g.id && (
             <div className="p-3 space-y-2">
               {(g.opcoes ?? []).map((o: any) => (
                 <OpcaoRow key={o.id} opcao={o} produtoId={produtoId} grupoId={g.id} />
