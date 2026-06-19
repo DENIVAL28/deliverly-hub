@@ -144,7 +144,7 @@ function PedidoTracking() {
     if (!chaveRaw) return;
     const chave = normalizarChavePix(chaveRaw.trim(), emp?.tipo_chave_pix ?? "aleatoria");
     const desc = Number(p.desconto ?? 0);
-    const total = Number(p.total) - desc;
+    const total = Math.max(0, Number(p.subtotal) + Number(p.taxa_entrega) - desc);
     const nomeRec   = (emp?.nome_recebedor || emp?.nome_fantasia || "Loja").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^\x20-\x7E]/g, "").substring(0, 25).trim() || "Loja";
     const cidadeRec = (emp?.cidade_recebedor || "Brasil").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^\x20-\x7E]/g, "").substring(0, 15).trim() || "Brasil";
     const payload = gerarPixPayload(chave, nomeRec, cidadeRec, total);
@@ -282,7 +282,7 @@ function PedidoTracking() {
   async function enviarAvaliacao() {
     if (!notaSel) return;
     setAvaliando(true);
-    await supabase.from("avaliacoes").insert({
+    const { error } = await supabase.from("avaliacoes").insert({
       pedido_id: pedido.id,
       empresa_id: pedido.empresa_id,
       nota: notaSel,
@@ -290,6 +290,14 @@ function PedidoTracking() {
       cliente_nome: pedido.cliente_nome,
     });
     setAvaliando(false);
+    if (error) {
+      if (error.code === "23505") {
+        setAvaliado(true); // já avaliado (constraint única)
+        return;
+      }
+      toast.error("Não foi possível enviar a avaliação. Tente novamente.");
+      return;
+    }
     setAvaliado(true);
   }
 
@@ -307,7 +315,10 @@ function PedidoTracking() {
   const idxAtual = ordem.indexOf(pedido.status);
 
   const desconto = Number(pedido.desconto ?? 0);
-  const totalFinal = Number(pedido.total) - desconto;
+  // subtotal + taxa_entrega são sempre os valores brutos; desconto é o desconto vigente.
+  // Não usar pedido.total porque ele já foi gravado com desconto deduzido pelo RPC,
+  // mas o campo desconto pode ser sobrescrito manualmente pelo dono depois.
+  const totalFinal = Math.max(0, Number(pedido.subtotal) + Number(pedido.taxa_entrega) - desconto);
 
   return (
     <div className="min-h-screen bg-zinc-100">
@@ -352,7 +363,7 @@ function PedidoTracking() {
             <p className="text-sm text-zinc-500 mt-1 mb-1">Pedido #{pedido.numero}</p>
             {desconto > 0 ? (
               <div className="mb-4">
-                <p className="text-sm line-through text-zinc-400">{fmt(Number(pedido.total))}</p>
+                <p className="text-sm line-through text-zinc-400">{fmt(Number(pedido.subtotal) + Number(pedido.taxa_entrega))}</p>
                 <p className="text-2xl font-black text-green-600">{fmt(totalFinal)}</p>
                 <p className="text-xs text-green-600 font-medium">🎁 Desconto de {fmt(desconto)} aplicado!</p>
               </div>

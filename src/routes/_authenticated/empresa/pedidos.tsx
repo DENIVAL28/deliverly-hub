@@ -101,21 +101,33 @@ async function notificarWhatsApp(p: any, empresa: any) {
   window.open(`https://wa.me/55${tel}?text=${encodeURIComponent(msg)}`, "_blank");
 }
 
+/* ─── Escape HTML para evitar XSS no print ─── */
+function esc(s: unknown): string {
+  return String(s ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
 /* ─── Impressão do pedido ─── */
 function imprimirPedido(p: any, nomeEmpresa: string) {
   const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
   const data = new Date(p.created_at).toLocaleString("pt-BR", {
     day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit",
   });
+  const descPrint = Number(p.desconto ?? 0);
+  const totalLiquido = Math.max(0, Number(p.subtotal) + Number(p.taxa_entrega) - descPrint);
+
   const itens = (p.pedido_itens ?? [])
     .map((i: any) => `
       <tr>
-        <td style="padding:3px 0">${i.quantidade}x ${i.nome}${i.observacao ? `<br><small style="color:#666">${i.observacao}</small>` : ""}</td>
+        <td style="padding:3px 0">${esc(i.quantidade)}x ${esc(i.nome)}${i.observacao ? `<br><small style="color:#666">${esc(i.observacao)}</small>` : ""}</td>
         <td style="text-align:right;padding:3px 0;white-space:nowrap">${fmt(Number(i.subtotal))}</td>
       </tr>`).join("");
 
   const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
-  <title>Pedido #${p.numero}</title>
+  <title>Pedido #${esc(p.numero)}</title>
   <style>
     * { margin:0; padding:0; box-sizing:border-box; }
     body { font-family: 'Courier New', monospace; font-size: 13px; color: #000; width: 80mm; padding: 8px; }
@@ -129,25 +141,26 @@ function imprimirPedido(p: any, nomeEmpresa: string) {
     @media print { body { width: 80mm; } }
   </style>
   </head><body>
-  <div class="center bold" style="font-size:15px">${nomeEmpresa}</div>
-  <div class="center" style="margin-top:2px;font-size:11px">${data}</div>
+  <div class="center bold" style="font-size:15px">${esc(nomeEmpresa)}</div>
+  <div class="center" style="margin-top:2px;font-size:11px">${esc(data)}</div>
   <div class="line"></div>
-  <div class="center bold" style="font-size:18px">PEDIDO #${p.numero}</div>
+  <div class="center bold" style="font-size:18px">PEDIDO #${esc(p.numero)}</div>
   <div class="line"></div>
-  <div><b>Cliente:</b> ${p.cliente_nome}</div>
-  ${p.cliente_telefone ? `<div><b>Telefone:</b> ${p.cliente_telefone}</div>` : ""}
-  ${p.cliente_endereco ? `<div><b>Endereço:</b> ${p.cliente_endereco}</div>` : ""}
+  <div><b>Cliente:</b> ${esc(p.cliente_nome)}</div>
+  ${p.cliente_telefone ? `<div><b>Telefone:</b> ${esc(p.cliente_telefone)}</div>` : ""}
+  ${p.cliente_endereco ? `<div><b>Endereço:</b> ${esc(p.cliente_endereco)}</div>` : ""}
   <div class="line"></div>
   <table>${itens}</table>
   <div class="line"></div>
   <table>
     <tr><td>Subtotal</td><td style="text-align:right">${fmt(Number(p.subtotal))}</td></tr>
     ${Number(p.taxa_entrega) > 0 ? `<tr><td>Taxa de entrega</td><td style="text-align:right">${fmt(Number(p.taxa_entrega))}</td></tr>` : ""}
-    <tr><td class="total">TOTAL</td><td class="total" style="text-align:right">${fmt(Number(p.total))}</td></tr>
+    ${descPrint > 0 ? `<tr><td>Desconto</td><td style="text-align:right">-${fmt(descPrint)}</td></tr>` : ""}
+    <tr><td class="total">TOTAL</td><td class="total" style="text-align:right">${fmt(totalLiquido)}</td></tr>
   </table>
   <div class="line"></div>
-  <div><b>Pagamento:</b> ${p.forma_pagamento ?? "—"}</div>
-  ${p.observacao ? `<div><b>Obs:</b> ${p.observacao}</div>` : ""}
+  <div><b>Pagamento:</b> ${esc(p.forma_pagamento ?? "—")}</div>
+  ${p.observacao ? `<div><b>Obs:</b> ${esc(p.observacao)}</div>` : ""}
   <div class="line"></div>
   <div class="center" style="font-size:11px">Obrigado pela preferência!</div>
   <script>window.onload = function(){ window.print(); window.onafterprint = function(){ window.close(); }; }<\/script>
@@ -401,7 +414,8 @@ function PedidosPage() {
     }
     const { error } = await supabase.from("pedidos").update(update).eq("id", p.id);
     if (error) { toast.error(traduzirErro(error.message)); return; }
-    qc.invalidateQueries({ queryKey: ["pedidos", empresaId] });
+    qc.invalidateQueries({ queryKey: ["pedidos-ativos", empresaId] });
+    qc.invalidateQueries({ queryKey: ["pedidos-pag", empresaId] });
   }
 
   async function confirmarPedido(p: any) {
@@ -424,14 +438,16 @@ function PedidosPage() {
     const { error } = await supabase.from("pedidos").update({ status: "cancelado" }).eq("id", id);
     if (error) { toast.error(traduzirErro(error.message)); return; }
     toast.success("Pedido cancelado");
-    qc.invalidateQueries({ queryKey: ["pedidos", empresaId] });
+    qc.invalidateQueries({ queryKey: ["pedidos-ativos", empresaId] });
+    qc.invalidateQueries({ queryKey: ["pedidos-pag", empresaId] });
   }
 
   async function aplicarDesconto(pedido: any) {
     const raw = (descontoInput[pedido.id] ?? "").replace(",", ".");
     const valor = parseFloat(raw);
+    const totalBruto = Number(pedido.subtotal) + Number(pedido.taxa_entrega);
     if (isNaN(valor) || valor < 0) { toast.error("Valor de desconto inválido"); return; }
-    if (valor >= Number(pedido.total)) { toast.error("Desconto não pode ser maior que o total"); return; }
+    if (valor >= totalBruto) { toast.error("Desconto não pode ser maior que o total"); return; }
     const { error } = await supabase.from("pedidos").update({ desconto: valor } as any).eq("id", pedido.id);
     if (error) { toast.error(traduzirErro(error.message)); return; }
     setDescontoInput((s) => ({ ...s, [pedido.id]: "" }));
@@ -444,7 +460,8 @@ function PedidosPage() {
     const { error } = await supabase.from("pedidos").delete().eq("id", id);
     if (error) { toast.error(traduzirErro(error.message)); return; }
     toast.success("Pedido excluído");
-    qc.invalidateQueries({ queryKey: ["pedidos", empresaId] });
+    qc.invalidateQueries({ queryKey: ["pedidos-ativos", empresaId] });
+    qc.invalidateQueries({ queryKey: ["pedidos-pag", empresaId] });
   }
 
   async function exportarCSV() {
