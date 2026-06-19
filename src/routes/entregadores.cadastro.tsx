@@ -134,6 +134,29 @@ function EntregadoresCadastro() {
     set("fotoRostoUrl", preview);
   }
 
+  // Converte qualquer imagem para JPEG (resolve HEIC do iPhone e restrições de MIME)
+  async function toJpeg(file: File): Promise<File> {
+    return new Promise((resolve) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const MAX = 1200;
+        const ratio = Math.min(MAX / img.naturalWidth, MAX / img.naturalHeight, 1);
+        canvas.width  = Math.round(img.naturalWidth  * ratio);
+        canvas.height = Math.round(img.naturalHeight * ratio);
+        canvas.getContext("2d")?.drawImage(img, 0, 0, canvas.width, canvas.height);
+        URL.revokeObjectURL(url);
+        canvas.toBlob(
+          (blob) => resolve(blob ? new File([blob], "rosto.jpg", { type: "image/jpeg" }) : file),
+          "image/jpeg", 0.85
+        );
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+      img.src = url;
+    });
+  }
+
   // ── Submit final ───────────────────────────────────────────
   async function handleSubmit() {
     const erro = validarEtapaAtual();
@@ -161,16 +184,17 @@ function EntregadoresCadastro() {
       const userId = authData.user?.id;
       if (!userId) { toast.error("Erro ao criar conta. Tente novamente."); return; }
 
-      // 2. Upload foto de rosto
+      // 2. Upload foto de rosto (converte para JPEG antes)
       let fotoUrl: string | null = null;
       if (form.fotoRostoFile) {
-        const ext = form.fotoRostoFile.name.split(".").pop() ?? "jpg";
-        const path = `${userId}/rosto_${Date.now()}.${ext}`;
+        const fileJpeg = await toJpeg(form.fotoRostoFile);
+        const path = `${userId}/rosto_${Date.now()}.jpg`;
         const { error: uploadErr } = await supabase.storage
           .from("entregadores")
-          .upload(path, form.fotoRostoFile, { upsert: true });
+          .upload(path, fileJpeg, { upsert: true, contentType: "image/jpeg" });
         if (uploadErr) {
-          toast.error("Falha ao enviar a foto. Verifique sua conexão e tente novamente.");
+          console.error("Upload foto erro:", uploadErr);
+          toast.error(`Falha ao enviar a foto: ${uploadErr.message}`);
           return;
         }
         const { data: pub } = supabase.storage.from("entregadores").getPublicUrl(path);
