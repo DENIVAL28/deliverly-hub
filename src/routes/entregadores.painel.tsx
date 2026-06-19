@@ -1,12 +1,12 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { requireEntregador, type EntregadorData } from "@/lib/entregador-auth";
 import {
-  LogOut, MapPin, Package, CheckCircle2, Clock,
+  LogOut, CheckCircle2, Clock,
   AlertTriangle, XCircle, Ban, Phone, Navigation,
-  RefreshCw, Bike, ChevronLeft,
+  RefreshCw, Bike, ChevronLeft, Store,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -20,10 +20,27 @@ const STATUS_CADASTRO: Record<string, { label: string; cor: string; icon: React.
   cadastro_incompleto: { label: "Incompleto",         cor: "text-zinc-400 bg-zinc-800 border-zinc-700", icon: <AlertTriangle className="size-4" />, desc: "Complete seu cadastro para continuar." },
   aguardando_analise:  { label: "Aguardando análise", cor: "text-blue-400 bg-blue-950 border-blue-800",  icon: <Clock className="size-4" />,         desc: "Seu cadastro foi enviado e está na fila de análise. Em breve você receberá uma resposta." },
   em_analise:          { label: "Em análise",          cor: "text-yellow-400 bg-yellow-950 border-yellow-800", icon: <RefreshCw className="size-4" />, desc: "Nossa equipe está analisando seus dados." },
-  aprovado:            { label: "Aprovado ✓",          cor: "text-green-400 bg-green-950 border-green-800",   icon: <CheckCircle2 className="size-4" />, desc: "Cadastro aprovado! Agora você pode solicitar parcerias com lojas." },
+  aprovado:            { label: "Aprovado ✓",          cor: "text-green-400 bg-green-950 border-green-800",   icon: <CheckCircle2 className="size-4" />, desc: "Cadastro aprovado! Você já aparece automaticamente para restaurantes que usam entregadores da plataforma." },
   recusado:            { label: "Recusado",            cor: "text-red-400 bg-red-950 border-red-800",         icon: <XCircle className="size-4" />,     desc: "Seu cadastro foi recusado." },
   bloqueado:           { label: "Bloqueado",           cor: "text-red-400 bg-red-950 border-red-800",         icon: <Ban className="size-4" />,         desc: "Conta bloqueada. Entre em contato com o suporte." },
 };
+
+function playBeep() {
+  try {
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const play = (freq: number, start: number, dur: number) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.frequency.value = freq; osc.type = "sine";
+      gain.gain.setValueAtTime(0.35, ctx.currentTime + start);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
+      osc.start(ctx.currentTime + start);
+      osc.stop(ctx.currentTime + start + dur);
+    };
+    play(880, 0, 0.15); play(1108, 0.18, 0.15); play(1320, 0.36, 0.3);
+  } catch (_) {}
+}
 
 const STATUS_PEDIDO: Record<string, { label: string; cor: string }> = {
   aceito:   { label: "Confirmado",      cor: "text-blue-600 bg-blue-50" },
@@ -41,6 +58,8 @@ function PainelEntregador() {
   const aprovado = entregador.status_cadastro === "aprovado";
 
   const [atualizandoStatus, setAtualizandoStatus] = useState(false);
+  const prevIdsRef = useRef<string[]>([]);
+  const primeiroCarregamento = useRef(true);
 
   // Pedidos ativos
   const { data: pedidosAtivos = [], refetch: refetchAtivos } = useQuery({
@@ -63,6 +82,35 @@ function PainelEntregador() {
       return (data ?? []) as any[];
     },
   });
+
+  // Notificação quando novo pedido disponível aparece
+  useEffect(() => {
+    const currentIds = pedidosDisp.map((p: any) => p.id as string);
+    if (!primeiroCarregamento.current) {
+      const novos = currentIds.filter(id => !prevIdsRef.current.includes(id));
+      if (novos.length > 0) {
+        playBeep();
+        toast(`Nova entrega disponível! (${novos.length})`, { duration: 8000 });
+      }
+    } else if (currentIds.length > 0) {
+      primeiroCarregamento.current = false;
+    }
+    if (currentIds.length > 0) primeiroCarregamento.current = false;
+    prevIdsRef.current = currentIds;
+  }, [pedidosDisp]);
+
+  // Realtime: refetch imediato quando qualquer pedido muda
+  useEffect(() => {
+    if (!aprovado || !token) return;
+    const channel = supabase
+      .channel("pedidos-entregador-disp")
+      .on("postgres_changes",
+        { event: "*", schema: "public", table: "pedidos" },
+        () => { refetchDisp(); refetchAtivos(); }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [aprovado, token, refetchDisp, refetchAtivos]);
 
   // Histórico + métricas
   const { data: historico = [] } = useQuery({
@@ -188,8 +236,8 @@ function PainelEntregador() {
         {/* Nav rápida */}
         <div className="grid grid-cols-2 gap-3">
           <Link to="/entregadores/parceiros" className="flex flex-col items-center gap-1 p-4 bg-zinc-900 border border-zinc-800 rounded-2xl hover:border-orange-500 transition text-center">
-            <Package className="size-5 text-orange-400" />
-            <span className="text-xs font-semibold text-zinc-300">Parcerias</span>
+            <Store className="size-5 text-orange-400" />
+            <span className="text-xs font-semibold text-zinc-300">Restaurantes</span>
           </Link>
           <Link to="/entregadores/perfil" className="flex flex-col items-center gap-1 p-4 bg-zinc-900 border border-zinc-800 rounded-2xl hover:border-orange-500 transition text-center">
             <Bike className="size-5 text-orange-400" />
