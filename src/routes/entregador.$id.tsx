@@ -85,6 +85,8 @@ function EntregadorPage() {
   const [atualizando, setAtualizando] = useState(false);
   const [disponiveis, setDisponiveis] = useState<PedidoDisponivel[]>([]);
   const [pegando, setPegando] = useState<string | null>(null);
+  const [erroDisponiveis, setErroDisponiveis] = useState<string | null>(null);
+  const [ultimaAtualizacao, setUltimaAtualizacao] = useState<Date | null>(null);
   const isFreelancer = entregador.tipo === "freelancer";
 
   const [pixKey,     setPixKey]     = useState(entregador.chave_pix ?? "");
@@ -170,7 +172,13 @@ function EntregadorPage() {
 
   async function carregarDisponiveis() {
     if (!isFreelancer) return;
-    const { data } = await (supabase as any).rpc("freelancer_pedidos_disponiveis", { p_token: entregador.public_token });
+    const { data, error } = await (supabase as any).rpc("freelancer_pedidos_disponiveis", { p_token: entregador.public_token });
+    setUltimaAtualizacao(new Date());
+    if (error) {
+      setErroDisponiveis(error.message ?? "Erro ao buscar pedidos");
+      return;
+    }
+    setErroDisponiveis(null);
     setDisponiveis((data ?? []) as PedidoDisponivel[]);
   }
 
@@ -410,10 +418,27 @@ function EntregadorPage() {
         {/* Pedidos disponíveis para freelancer pegar */}
         {isFreelancer && entregador.aprovado === true && (
           <div>
-            <h2 className="font-bold text-zinc-900 mb-3 flex items-center gap-2">
-              <span className="size-2 rounded-full bg-green-500 animate-pulse" />
-              Pedidos disponíveis ({disponiveis.length})
-            </h2>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-bold text-zinc-900 flex items-center gap-2">
+                <span className="size-2 rounded-full bg-green-500 animate-pulse" />
+                Pedidos disponíveis ({disponiveis.length})
+              </h2>
+              <button
+                onClick={carregarDisponiveis}
+                className="text-xs text-blue-600 font-semibold hover:text-blue-800 flex items-center gap-1">
+                ↻ Atualizar
+              </button>
+            </div>
+            {ultimaAtualizacao && (
+              <p className="text-[10px] text-zinc-400 mb-2">
+                Atualizado às {ultimaAtualizacao.toLocaleTimeString("pt-BR")}
+              </p>
+            )}
+            {erroDisponiveis && (
+              <div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-3 text-xs text-red-600">
+                Erro ao buscar pedidos: {erroDisponiveis}
+              </div>
+            )}
             {disponiveis.length === 0 ? (
               <div className="bg-white rounded-2xl shadow-sm p-6 text-center">
                 <Package className="size-8 text-zinc-200 mx-auto mb-2" />
