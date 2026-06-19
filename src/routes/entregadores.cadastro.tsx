@@ -148,9 +148,14 @@ function EntregadoresCadastro() {
         options: { data: { nome: form.nome.trim() } },
       });
       if (authError) {
-        toast.error(authError.message === "User already registered"
-          ? "E-mail já cadastrado. Faça login."
-          : authError.message);
+        const rateLimit = authError.message.match(/after (\d+) seconds/);
+        if (rateLimit) {
+          toast.error(`Aguarde ${rateLimit[1]} segundos e tente novamente.`);
+        } else if (authError.message.includes("already registered") || authError.message.includes("already exists")) {
+          toast.error("E-mail já cadastrado. Faça login.");
+        } else {
+          toast.error("Erro ao criar conta. Tente novamente.");
+        }
         return;
       }
       const userId = authData.user?.id;
