@@ -55,7 +55,7 @@ export const Route = createFileRoute("/entregador/$id")({
     meta: [{ name: "apple-mobile-web-app-title", content: "Entregador" }],
     links: [
       { rel: "manifest", href: "/manifest-entregador.json" },
-      { rel: "apple-touch-icon", href: "/icon-entregador.svg" },
+      { rel: "apple-touch-icon", href: "/icon-entregador-192.png" },
     ],
   }),
   loader: async ({ params }) => {
@@ -92,6 +92,11 @@ const STATUS_PEDIDO: Record<string, { label: string; cor: string; icon: React.Co
 function EntregadorPage() {
   const entregadorInicial = Route.useLoaderData();
   const [entregador, setEntregador] = useState<Entregador>(entregadorInicial);
+
+  // Salva token no localStorage para o PWA conseguir redirecionar de volta
+  useEffect(() => {
+    localStorage.setItem("entregador_token", entregadorInicial.public_token);
+  }, [entregadorInicial.public_token]);
   const [pedidos, setPedidos] = useState<PedidoEntregador[]>([]);
   const [atualizando, setAtualizando] = useState(false);
   const [disponiveis, setDisponiveis] = useState<PedidoDisponivel[]>([]);

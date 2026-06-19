@@ -2,7 +2,7 @@
   "name": "Entregador — Delivery Hub",
   "short_name": "Entregador",
   "description": "Painel do entregador — veja pedidos disponíveis e acompanhe suas entregas",
-  "start_url": "/",
+  "start_url": "/entregador",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
