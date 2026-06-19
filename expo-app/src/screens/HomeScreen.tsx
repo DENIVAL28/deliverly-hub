@@ -7,7 +7,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "../lib/supabase";
 
 const STATUS: Record<string, { bg: string; text: string; label: string }> = {
-  aguardando_confirmacao: { bg: "#f4f4f5", text: "#71717a", label: "Aguard. confirmação" },
+  aguardando_confirmacao: { bg: "#f4f4f5", text: "#71717a", label: "Aguard. confirmaÃ§Ã£o" },
   aguardando_pagamento:   { bg: "#dbeafe", text: "#1d4ed8", label: "Aguard. pagamento" },
   novo:       { bg: "#dbeafe", text: "#1d4ed8",  label: "Novo" },
   aceito:     { bg: "#fef3c7", text: "#d97706",  label: "Aceito" },
@@ -48,7 +48,7 @@ function getNextLabel(pedido: any): string {
     preparo: pedido.tipo === "mesa" || pedido.tipo === "retirada" ? "Finalizar" : "Saiu p/ entrega",
     entrega: "Finalizar entrega",
   };
-  return labels[s] ?? "Avançar";
+  return labels[s] ?? "AvanÃ§ar";
 }
 
 const ATIVOS = ["aguardando_confirmacao", "aguardando_pagamento", "novo", "aceito", "preparo", "entrega"];
@@ -56,16 +56,17 @@ const fmt = (v: number) => `R$ ${Number(v).toLocaleString("pt-BR", { minimumFrac
 const timeAgo = (date: string) => {
   const mins = Math.floor((Date.now() - new Date(date).getTime()) / 60000);
   if (mins < 1) return "agora";
-  if (mins < 60) return `${mins}min atrás`;
-  return `${Math.floor(mins / 60)}h atrás`;
+  if (mins < 60) return `${mins}min atrÃ¡s`;
+  return `${Math.floor(mins / 60)}h atrÃ¡s`;
 };
 
-export default function HomeScreen() {
+export default function HomeScreen({ navigation }: any) {
   const [empresaId, setEmpresaId]         = useState<string | null>(null);
   const [userId, setUserId]               = useState<string | null>(null);
   const [nomeEmpresa, setNomeEmpresa]     = useState("Minha Loja");
   const [lojaAberta, setLojaAberta]       = useState(true);
   const [pedidos, setPedidos]             = useState<any[]>([]);
+  const [entregadores, setEntregadores]   = useState<any[]>([]);
   const [loading, setLoading]             = useState(true);
   const [refreshing, setRefreshing]       = useState(false);
   const [abaAtiva, setAbaAtiva]           = useState<"ativos" | "hoje" | "todos">("ativos");
@@ -95,22 +96,43 @@ export default function HomeScreen() {
 
   const buscarPedidos = useCallback(async () => {
     if (!empresaId) return;
-    let query = supabase
-      .from("pedidos")
-      .select("id, numero, cliente_nome, cliente_telefone, total, subtotal, desconto, taxa_entrega, status, tipo, forma_pagamento, observacao, cliente_endereco, created_at")
-      .eq("empresa_id", empresaId)
-      .order("created_at", { ascending: false })
-      .limit(100);
 
     if (abaAtiva === "ativos") {
-      query = query.in("status", ATIVOS);
-    } else if (abaAtiva === "hoje") {
-      const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
-      query = query.gte("created_at", hoje.toISOString());
+      // RPC SECURITY DEFINER: bypassa RLS e ja filtra pelos status ativos
+      const { data, error } = await (supabase as any).rpc("empresa_pedidos_ativos");
+      if (!error) {
+        setPedidos(data ?? []);
+        setLoading(false);
+        setRefreshing(false);
+      } else {
+        Alert.alert("Erro", `Nao foi possivel carregar os pedidos: ${error.message}`);
+        setLoading(false);
+        setRefreshing(false);
+      }
+    } else {
+      let query = supabase
+        .from("pedidos")
+        .select("id, numero, cliente_nome, cliente_telefone, total, subtotal, desconto, taxa_entrega, status, tipo, forma_pagamento, observacao, cliente_endereco, entregador_id, entregador_nome, created_at, mesa")
+        .eq("empresa_id", empresaId)
+        .order("created_at", { ascending: false })
+        .limit(100);
+
+      if (abaAtiva === "hoje") {
+        const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+        query = query.gte("created_at", hoje.toISOString());
+      }
+
+      const { data } = await query;
+      setPedidos(data ?? []);
     }
 
-    const { data } = await query;
-    setPedidos(data ?? []);
+    const { data: ents } = await supabase
+      .from("entregadores")
+      .select("id, nome, telefone, status, tipo, aprovado, ativo")
+      .eq("empresa_id", empresaId)
+      .neq("ativo", false)
+      .order("nome");
+    setEntregadores((ents ?? []).filter((e: any) => e.tipo !== "freelancer" || e.aprovado !== false));
     setLoading(false);
     setRefreshing(false);
   }, [empresaId, abaAtiva]);
@@ -150,7 +172,7 @@ export default function HomeScreen() {
 
   async function cancelarPedido(pedido: any) {
     Alert.alert("Cancelar pedido", `Cancelar pedido #${pedido.numero}?`, [
-      { text: "Não", style: "cancel" },
+      { text: "NÃ£o", style: "cancel" },
       {
         text: "Cancelar pedido", style: "destructive",
         onPress: async () => {
@@ -160,6 +182,27 @@ export default function HomeScreen() {
         },
       },
     ]);
+  }
+
+  async function atribuirEntregador(entregador: any) {
+    if (!pedidoDetalhe) return;
+    setAvancando(true);
+    const { error } = await supabase
+      .from("pedidos")
+      .update({
+        entregador_id: entregador.id,
+        entregador_nome: entregador.nome,
+        status: "entrega",
+      })
+      .eq("id", pedidoDetalhe.id);
+    setAvancando(false);
+    if (error) {
+      Alert.alert("Erro", "Nao foi possivel atribuir o entregador.");
+      return;
+    }
+    const atualizado = { ...pedidoDetalhe, entregador_id: entregador.id, entregador_nome: entregador.nome, status: "entrega" };
+    setPedidoDetalhe(atualizado);
+    buscarPedidos();
   }
 
   async function toggleLoja() {
@@ -206,15 +249,15 @@ export default function HomeScreen() {
         </View>
         <Text style={styles.cliente}>{p.cliente_nome}</Text>
         {p.cliente_endereco && p.tipo === "delivery" && (
-          <Text style={styles.endereco} numberOfLines={1}>📍 {p.cliente_endereco}</Text>
+          <Text style={styles.endereco} numberOfLines={1}>ðŸ“ {p.cliente_endereco}</Text>
         )}
         <View style={styles.cardFooter}>
           <Text style={styles.total}>{fmt(p.total)}</Text>
-          <Text style={styles.horario}>{hora} · {timeAgo(p.created_at)}</Text>
+          <Text style={styles.horario}>{hora} Â· {timeAgo(p.created_at)}</Text>
         </View>
         {proximo && (
           <TouchableOpacity style={styles.avancarBtn} onPress={() => avancarStatus(p)}>
-            <Text style={styles.avancarTexto}>{getNextLabel(p)} →</Text>
+            <Text style={styles.avancarTexto}>{getNextLabel(p)} â†’</Text>
           </TouchableOpacity>
         )}
       </TouchableOpacity>
@@ -233,11 +276,42 @@ export default function HomeScreen() {
         </View>
         <TouchableOpacity style={[styles.toggleLoja, { backgroundColor: lojaAberta ? "#dcfce7" : "#fee2e2" }]} onPress={toggleLoja} disabled={togglingLoja}>
           <Text style={[styles.toggleLojaTexto, { color: lojaAberta ? "#16a34a" : "#dc2626" }]}>
-            {togglingLoja ? "..." : lojaAberta ? "🟢 Aberta" : "🔴 Fechada"}
+            {togglingLoja ? "..." : lojaAberta ? "ðŸŸ¢ Aberta" : "ðŸ”´ Fechada"}
           </Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.navigate("Lojas")} style={styles.clienteBotao}>
+          <Text style={styles.clienteTexto}>Cliente</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={sair} style={styles.sairBotao}>
           <Text style={styles.sairTexto}>Sair</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Atalhos */}
+      <View style={styles.shortcuts}>
+        <TouchableOpacity style={styles.shortcutBtn} onPress={() => navigation.navigate("Produtos")}>
+          <Text style={styles.shortcutTitle}>Produtos</Text>
+          <Text style={styles.shortcutSub}>Cardapio e precos</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.shortcutBtn} onPress={() => navigation.navigate("Categorias")}>
+          <Text style={styles.shortcutTitle}>Categorias</Text>
+          <Text style={styles.shortcutSub}>Organizacao</Text>
+        </TouchableOpacity>
+      </View>
+      <View style={[styles.shortcuts, { paddingTop: 0 }]}> 
+        <TouchableOpacity style={styles.shortcutBtn} onPress={() => navigation.navigate("Entregadores")}>
+          <Text style={styles.shortcutTitle}>Entregadores</Text>
+          <Text style={styles.shortcutSub}>APK separado</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.shortcutBtn} onPress={() => navigation.navigate("Configuracoes")}>
+          <Text style={styles.shortcutTitle}>Configuracoes</Text>
+          <Text style={styles.shortcutSub}>Loja e PIX</Text>
+        </TouchableOpacity>
+      </View>
+      <View style={[styles.shortcuts, { paddingTop: 0 }]}> 
+        <TouchableOpacity style={styles.shortcutBtn} onPress={() => navigation.navigate("Lojas")}>
+          <Text style={styles.shortcutTitle}>Ver loja</Text>
+          <Text style={styles.shortcutSub}>Como cliente</Text>
         </TouchableOpacity>
       </View>
 
@@ -264,7 +338,7 @@ export default function HomeScreen() {
         {(["ativos", "hoje", "todos"] as const).map((aba) => (
           <TouchableOpacity key={aba} style={[styles.aba, abaAtiva === aba && styles.abaAtiva]} onPress={() => setAbaAtiva(aba)}>
             <Text style={[styles.abaTexto, abaAtiva === aba && styles.abaTextoAtivo]}>
-              {aba === "ativos" ? `Ativos${ativos.length > 0 ? ` (${ativos.length})` : ""}` : aba === "hoje" ? "Hoje" : "Histórico"}
+              {aba === "ativos" ? `Ativos${ativos.length > 0 ? ` (${ativos.length})` : ""}` : aba === "hoje" ? "Hoje" : "HistÃ³rico"}
             </Text>
           </TouchableOpacity>
         ))}
@@ -278,7 +352,7 @@ export default function HomeScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); buscarPedidos(); }} colors={["#f97316"]} />}
         ListEmptyComponent={
           <View style={styles.vazio}>
-            <Text style={{ fontSize: 40 }}>🎉</Text>
+            <Text style={{ fontSize: 40 }}>ðŸŽ‰</Text>
             <Text style={styles.vazioTexto}>{abaAtiva === "ativos" ? "Nenhum pedido ativo" : "Nenhum pedido"}</Text>
           </View>
         }
@@ -294,7 +368,7 @@ export default function HomeScreen() {
               <View style={styles.modalHeader}>
                 <View>
                   <Text style={styles.modalNumero}>Pedido #{pedidoDetalhe.numero}</Text>
-                  <Text style={styles.modalTipo}>{pedidoDetalhe.tipo?.toUpperCase()} · {new Date(pedidoDetalhe.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</Text>
+                  <Text style={styles.modalTipo}>{pedidoDetalhe.tipo?.toUpperCase()} Â· {new Date(pedidoDetalhe.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</Text>
                 </View>
                 <View style={[styles.badge, { backgroundColor: STATUS[pedidoDetalhe.status]?.bg ?? "#f4f4f5" }]}>
                   <Text style={[styles.badgeText, { color: STATUS[pedidoDetalhe.status]?.text ?? "#71717a" }]}>
@@ -306,8 +380,8 @@ export default function HomeScreen() {
               <View style={styles.modalSecao}>
                 <Text style={styles.modalLabel}>CLIENTE</Text>
                 <Text style={styles.modalValor}>{pedidoDetalhe.cliente_nome}</Text>
-                {pedidoDetalhe.cliente_telefone && <Text style={styles.modalSub}>📞 {pedidoDetalhe.cliente_telefone}</Text>}
-                {pedidoDetalhe.cliente_endereco && <Text style={styles.modalSub}>📍 {pedidoDetalhe.cliente_endereco}</Text>}
+                {pedidoDetalhe.cliente_telefone && <Text style={styles.modalSub}>ðŸ“ž {pedidoDetalhe.cliente_telefone}</Text>}
+                {pedidoDetalhe.cliente_endereco && <Text style={styles.modalSub}>ðŸ“ {pedidoDetalhe.cliente_endereco}</Text>}
               </View>
 
               {/* Itens */}
@@ -316,7 +390,7 @@ export default function HomeScreen() {
                   <Text style={styles.modalLabel}>ITENS</Text>
                   {itensPedido.map((item, i) => (
                     <View key={i} style={styles.itemRow}>
-                      <Text style={styles.itemQty}>{item.quantidade}×</Text>
+                      <Text style={styles.itemQty}>{item.quantidade}Ã—</Text>
                       <View style={{ flex: 1 }}>
                         <Text style={styles.itemNome}>{item.produtos?.nome}</Text>
                         {item.observacao && <Text style={styles.itemObs}>{item.observacao}</Text>}
@@ -345,9 +419,40 @@ export default function HomeScreen() {
                 <View style={styles.valorRow}><Text style={styles.valorLabel}>Pagamento</Text><Text style={styles.valorVal}>{pedidoDetalhe.forma_pagamento}</Text></View>
               </View>
 
+              {pedidoDetalhe.tipo === "delivery" && (
+                <View style={styles.modalSecao}>
+                  <Text style={styles.modalLabel}>ENTREGADOR</Text>
+                  {pedidoDetalhe.entregador_nome ? (
+                    <Text style={styles.modalValor}>{pedidoDetalhe.entregador_nome}</Text>
+                  ) : (
+                    <Text style={styles.modalSub}>Nenhum entregador atribuido.</Text>
+                  )}
+                  {entregadores.length > 0 && !["finalizado", "cancelado"].includes(pedidoDetalhe.status) && (
+                    <View style={styles.entregadoresGrid}>
+                      {entregadores.map((ent) => (
+                        <TouchableOpacity
+                          key={ent.id}
+                          style={[
+                            styles.entregadorChip,
+                            pedidoDetalhe.entregador_id === ent.id && styles.entregadorChipAtivo,
+                          ]}
+                          onPress={() => atribuirEntregador(ent)}
+                          disabled={avancando}
+                        >
+                          <Text style={[
+                            styles.entregadorChipTexto,
+                            pedidoDetalhe.entregador_id === ent.id && styles.entregadorChipTextoAtivo,
+                          ]}>{ent.nome}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
+                </View>
+              )}
+
               {pedidoDetalhe.observacao && (
                 <View style={styles.modalSecao}>
-                  <Text style={styles.modalLabel}>OBSERVAÇÃO</Text>
+                  <Text style={styles.modalLabel}>OBSERVAÃ‡ÃƒO</Text>
                   <Text style={styles.modalValor}>{pedidoDetalhe.observacao}</Text>
                 </View>
               )}
@@ -358,7 +463,7 @@ export default function HomeScreen() {
                   onPress={() => avancarStatus(pedidoDetalhe)}
                   disabled={avancando}
                 >
-                  {avancando ? <ActivityIndicator color="#fff" /> : <Text style={styles.botaoAvancarTexto}>{getNextLabel(pedidoDetalhe)} →</Text>}
+                  {avancando ? <ActivityIndicator color="#fff" /> : <Text style={styles.botaoAvancarTexto}>{getNextLabel(pedidoDetalhe)} â†’</Text>}
                 </TouchableOpacity>
               )}
 
@@ -383,8 +488,14 @@ const styles = StyleSheet.create({
   headerSub: { fontSize: 11, color: "#71717a", marginTop: 1 },
   toggleLoja: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 20 },
   toggleLojaTexto: { fontSize: 12, fontWeight: "700" },
+  clienteBotao: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: "#fff7ed", borderWidth: 1, borderColor: "#fed7aa" },
+  clienteTexto: { fontSize: 13, color: "#f97316", fontWeight: "700" },
   sairBotao: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: "#f4f4f5" },
   sairTexto: { fontSize: 13, color: "#71717a", fontWeight: "600" },
+  shortcuts: { flexDirection: "row", gap: 10, backgroundColor: "#fff", paddingHorizontal: 12, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: "#e4e4e7" },
+  shortcutBtn: { flex: 1, backgroundColor: "#fff7ed", borderRadius: 12, borderWidth: 1, borderColor: "#fed7aa", padding: 12 },
+  shortcutTitle: { fontSize: 14, fontWeight: "900", color: "#f97316" },
+  shortcutSub: { fontSize: 11, color: "#9a3412", marginTop: 2 },
   dashboard: { flexDirection: "row", backgroundColor: "#fff", paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "#e4e4e7" },
   dashCard: { flex: 1, alignItems: "center" },
   dashValor: { fontSize: 15, fontWeight: "800", color: "#18181b" },
@@ -423,6 +534,11 @@ const styles = StyleSheet.create({
   modalLabel: { fontSize: 10, fontWeight: "800", color: "#a1a1aa", letterSpacing: 0.8 },
   modalValor: { fontSize: 14, fontWeight: "600", color: "#18181b" },
   modalSub: { fontSize: 13, color: "#71717a" },
+  entregadoresGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 8 },
+  entregadorChip: { borderWidth: 1, borderColor: "#fed7aa", backgroundColor: "#fff7ed", borderRadius: 20, paddingHorizontal: 10, paddingVertical: 7 },
+  entregadorChipAtivo: { backgroundColor: "#f97316", borderColor: "#f97316" },
+  entregadorChipTexto: { fontSize: 12, fontWeight: "800", color: "#f97316" },
+  entregadorChipTextoAtivo: { color: "#fff" },
   itemRow: { flexDirection: "row", alignItems: "flex-start", gap: 6, paddingVertical: 4, borderTopWidth: 1, borderTopColor: "#f0f0f0" },
   itemQty: { fontSize: 13, fontWeight: "700", color: "#f97316", width: 26 },
   itemNome: { fontSize: 13, fontWeight: "600", color: "#18181b" },

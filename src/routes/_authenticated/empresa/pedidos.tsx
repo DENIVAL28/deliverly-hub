@@ -322,15 +322,19 @@ function PedidosPage() {
   }, [empresaId, qc]);
 
   // Query 1 — Ativos (tempo real, sem limite)
+  // Usa RPC SECURITY DEFINER para contornar qualquer complexidade de RLS
   const { data: pedidosAtivos = [] } = useQuery({
     queryKey: ["pedidos-ativos", empresaId],
     enabled: !!empresaId,
     refetchInterval: 8000,
-    queryFn: async () =>
-      (await supabase.from("pedidos").select("*, pedido_itens(*)")
-        .eq("empresa_id", empresaId!)
-        .in("status", ATIVOS as any)
-        .order("created_at", { ascending: false })).data ?? [],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).rpc("empresa_pedidos_ativos");
+      if (error) {
+        toast.error(`Erro ao buscar pedidos: ${error.message}`);
+        return [];
+      }
+      return data ?? [];
+    },
   });
 
   // Título da aba muda com pedidos ativos
