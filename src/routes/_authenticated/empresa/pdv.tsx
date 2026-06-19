@@ -66,6 +66,7 @@ function OpcoesModal({ produto, onConfirm, onClose }: {
   onClose: () => void;
 }) {
   const [selecionadas, setSelecionadas] = useState<Record<string, OpcaoSel>>({});
+  useEffect(() => { setSelecionadas({}); }, [produto.id]);
 
   const { data: grupos = [] } = useQuery({
     queryKey: ["grupos-pdv", produto.id],
@@ -438,7 +439,7 @@ function PDVPage() {
                       {item.qty === 1 ? <Trash2 className="size-3 text-red-400" /> : <Minus className="size-3 text-zinc-500" />}
                     </button>
                     <span className="text-xs font-bold w-5 text-center">{item.qty}</span>
-                    <button onClick={() => adicionarAoCart({ id: item.id, nome: item.nome, preco: item.preco, grupos_opcoes: [] }, item.opcoes, item.preco)}
+                    <button onClick={() => setCart((prev) => ({ ...prev, [key]: { ...prev[key], qty: prev[key].qty + 1 } }))}
                       className="size-6 rounded-lg bg-zinc-100 hover:bg-zinc-200 flex items-center justify-center transition-colors">
                       <Plus className="size-3 text-zinc-500" />
                     </button>

@@ -390,6 +390,7 @@ function LojaCard({ loja, fmt }: { loja: any; fmt: (v: number) => string }) {
         <h3 className="font-bold text-zinc-900 truncate group-hover:text-orange-500 transition-colors text-base">
           {loja.nome_fantasia}
         </h3>
+        <p className="text-[11px] text-zinc-400 mt-0.5 truncate">{verificarAberto(loja).label}</p>
         <div className="flex items-center gap-3 mt-3 pt-3 border-t border-zinc-50 text-xs text-zinc-500">
           {loja.tempo_entrega && (
             <span className="flex items-center gap-1">
@@ -402,6 +403,11 @@ function LojaCard({ loja, fmt }: { loja: any; fmt: (v: number) => string }) {
               ? <span className="text-green-600 font-semibold">Grátis</span>
               : fmt(Number(loja.taxa_entrega))
             }
+          </span>
+        </div>
+        <div className="mt-3 flex items-center justify-end">
+          <span className="text-xs font-semibold text-orange-500 group-hover:underline flex items-center gap-1">
+            Ver cardápio <ChevronRight className="size-3" />
           </span>
         </div>
       </div>

@@ -345,10 +345,21 @@ function EntregadoresPage() {
                         <span>💰 {fmt(stat?.ganhos ?? 0)}</span>
                       </div>
                       {e.ultima_localizacao ? (
-                        <div className="flex items-center gap-1 text-xs text-green-600 mt-1">
-                          <Navigation className="size-3" />
-                          GPS ativo · {new Date(e.ultima_localizacao).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
-                        </div>
+                        (() => {
+                          const ativo = Date.now() - new Date(e.ultima_localizacao).getTime() < 5 * 60 * 1000;
+                          const hora = new Date(e.ultima_localizacao).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+                          return ativo ? (
+                            <div className="flex items-center gap-1 text-xs text-green-600 mt-1">
+                              <Navigation className="size-3 animate-pulse" />
+                              GPS ativo · {hora}
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1 text-xs text-zinc-400 mt-1">
+                              <Navigation className="size-3" />
+                              GPS inativo · últ. {hora}
+                            </div>
+                          );
+                        })()
                       ) : (
                         <div className="flex items-center gap-1 text-xs text-zinc-300 mt-1">
                           <Navigation className="size-3" /> Sem GPS

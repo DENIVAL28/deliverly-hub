@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { Eye, EyeOff } from "lucide-react";
 
 function GoogleIcon() {
   return (
@@ -72,18 +73,32 @@ function Field({
   value: string; onChange: (v: string) => void;
   erro?: string; placeholder?: string;
 }) {
+  const [mostrarSenha, setMostrarSenha] = useState(false);
+  const inputType = type === "password" ? (mostrarSenha ? "text" : "password") : type;
   return (
     <div className="space-y-1.5">
       <Label htmlFor={name}>{label}</Label>
-      <Input
-        id={name}
-        name={name}
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className={erro ? "border-red-400 focus-visible:ring-red-400" : ""}
-      />
+      <div className="relative">
+        <Input
+          id={name}
+          name={name}
+          type={inputType}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className={`${type === "password" ? "pr-10" : ""} ${erro ? "border-red-400 focus-visible:ring-red-400" : ""}`}
+        />
+        {type === "password" && (
+          <button
+            type="button"
+            tabIndex={-1}
+            onClick={() => setMostrarSenha((v) => !v)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 transition-colors"
+          >
+            {mostrarSenha ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+          </button>
+        )}
+      </div>
       {erro && <p className="text-xs text-red-500">{erro}</p>}
     </div>
   );

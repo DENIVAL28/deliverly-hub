@@ -128,13 +128,18 @@ function EntregadorPage() {
       return "GPS requer HTTPS. Em produção funcionará normalmente.";
     if (err.code === err.PERMISSION_DENIED)
       return "Permissão de GPS negada. Verifique as configurações do navegador.";
-    return err.message;
+    if (err.code === err.TIMEOUT)
+      return "Tempo esgotado ao obter GPS. Verifique sua conexão e tente novamente.";
+    if (err.code === err.POSITION_UNAVAILABLE)
+      return "Localização indisponível. Verifique se o GPS está ativado no dispositivo.";
+    return "Não foi possível obter o GPS. Tente novamente.";
   }
 
   async function enviarPosicao(): Promise<boolean> {
     return new Promise((resolve) => {
       navigator.geolocation.getCurrentPosition(
         async (pos) => {
+          setGpsErro("");
           await (supabase as any).rpc("entregador_atualizar_gps", {
             p_token: entregador.public_token,
             p_lat:   pos.coords.latitude,
@@ -437,10 +442,20 @@ function EntregadorPage() {
           </h2>
           {tracking ? (
             <div className="space-y-3">
-              <div className="flex items-center gap-2 text-green-600 text-sm font-medium">
-                <span className="size-2.5 rounded-full bg-green-500 animate-pulse" />
-                Localização sendo compartilhada
-              </div>
+              {gpsErro ? (
+                <>
+                  <div className="flex items-center gap-2 text-amber-600 text-sm font-medium">
+                    <span className="size-2.5 rounded-full bg-amber-500" />
+                    Falha ao atualizar GPS
+                  </div>
+                  <p className="text-xs text-amber-600">{gpsErro}</p>
+                </>
+              ) : (
+                <div className="flex items-center gap-2 text-green-600 text-sm font-medium">
+                  <span className="size-2.5 rounded-full bg-green-500 animate-pulse" />
+                  Localização sendo compartilhada
+                </div>
+              )}
               <button onClick={pararTracking}
                 className="w-full py-2.5 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm font-semibold hover:bg-red-100 transition-colors">
                 Parar compartilhamento
@@ -458,9 +473,9 @@ function EntregadorPage() {
                   : <><Navigation className="size-4" /> Compartilhar localização</>
                 }
               </button>
+              {gpsErro && <p className="text-xs text-red-500">{gpsErro}</p>}
             </div>
           )}
-          {gpsErro && <p className="text-xs text-red-500 mt-2">{gpsErro}</p>}
         </div>
 
         {/* Meu PIX */}
