@@ -240,9 +240,12 @@ function OnboardingPage() {
                   <Label>WhatsApp <span className="text-zinc-400 font-normal">(opcional)</span></Label>
                   <div className="relative">
                     <Input
-                      placeholder="(11) 99999-9999"
+                      type="tel"
+                      inputMode="numeric"
+                      placeholder="66999999999"
+                      maxLength={11}
                       value={whatsapp}
-                      onChange={(e) => setWhatsapp(e.target.value)}
+                      onChange={(e) => setWhatsapp(e.target.value.replace(/\D/g, "").slice(0, 11))}
                       className={whatsapp && !validarWhatsApp(whatsapp) ? "border-red-300 pr-9" : ""}
                     />
                     {whatsapp && !validarWhatsApp(whatsapp) && (
@@ -262,6 +265,7 @@ function OnboardingPage() {
                 <Label>CNPJ <span className="text-zinc-400 font-normal">(opcional)</span></Label>
                 <div className="relative">
                   <Input
+                    inputMode="numeric"
                     placeholder="00.000.000/0001-00"
                     value={cnpj}
                     onChange={(e) => setCnpj(mascaraCNPJ(e.target.value))}

@@ -227,9 +227,11 @@ function CadastroEntregadorPage() {
               </label>
               <input
                 type="tel"
+                inputMode="numeric"
                 value={telefone}
-                onChange={e => setTelefone(e.target.value)}
-                placeholder="(11) 99999-9999"
+                onChange={e => setTelefone(e.target.value.replace(/\D/g, "").slice(0, 11))}
+                placeholder="66999999999"
+                maxLength={11}
                 className="w-full h-12 rounded-2xl border border-zinc-200 px-4 text-sm focus:outline-none focus:ring-2 focus:border-transparent"
                 style={{ "--tw-ring-color": brand } as any}
               />
@@ -280,13 +282,14 @@ function CadastroEntregadorPage() {
                   <option value="email">E-mail</option>
                 </select>
                 <input
-                  type="text"
+                  type={tipoPix === "email" ? "email" : "text"}
+                  inputMode={tipoPix === "cpf" || tipoPix === "telefone" ? "numeric" : tipoPix === "email" ? "email" : "text"}
                   value={chavePix}
                   onChange={e => setChavePix(e.target.value)}
                   placeholder={
                     tipoPix === "aleatoria" ? "Cole sua chave aleatória"
                     : tipoPix === "cpf" ? "000.000.000-00"
-                    : tipoPix === "telefone" ? "(66) 99999-9999"
+                    : tipoPix === "telefone" ? "66999999999"
                     : "seu@email.com"
                   }
                   className="w-full h-12 rounded-2xl border border-zinc-200 px-4 text-sm focus:outline-none focus:ring-2 focus:border-transparent"

@@ -401,8 +401,9 @@ function ConfiguracoesPage() {
 
             <div className="space-y-1.5">
               <Label htmlFor="whatsapp">WhatsApp (com DDD, sem espaços)</Label>
-              <Input id="whatsapp" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)}
-                placeholder="Ex: 66981289787" className="h-10 rounded-xl" />
+              <Input id="whatsapp" type="tel" inputMode="numeric" value={whatsapp}
+                onChange={(e) => setWhatsapp(e.target.value.replace(/\D/g, "").slice(0, 11))}
+                placeholder="66981289787" maxLength={11} className="h-10 rounded-xl" />
             </div>
 
             <div className="space-y-1.5">
@@ -515,9 +516,9 @@ function ConfiguracoesPage() {
                       </button>
                     </div>
                     <div className="grid grid-cols-2 gap-2">
-                      <Input value={empresaLat} onChange={e => setEmpresaLat(e.target.value)}
+                      <Input inputMode="decimal" value={empresaLat} onChange={e => setEmpresaLat(e.target.value)}
                         placeholder="Latitude" className="h-9 rounded-xl text-xs font-mono" />
-                      <Input value={empresaLng} onChange={e => setEmpresaLng(e.target.value)}
+                      <Input inputMode="decimal" value={empresaLng} onChange={e => setEmpresaLng(e.target.value)}
                         placeholder="Longitude" className="h-9 rounded-xl text-xs font-mono" />
                     </div>
                     {empresaLat && empresaLng ? (
@@ -675,9 +676,11 @@ function ConfiguracoesPage() {
               <Label htmlFor="chave_pix">Chave PIX</Label>
               <Input
                 id="chave_pix"
+                type={tipoChavePix === "email" ? "email" : "text"}
+                inputMode={tipoChavePix === "cpf" || tipoChavePix === "telefone" ? "numeric" : tipoChavePix === "email" ? "email" : "text"}
                 value={chavePix}
                 onChange={(e) => setChavePix(e.target.value)}
-                placeholder={tipoChavePix === "aleatoria" ? "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" : tipoChavePix === "telefone" ? "+5511999999999" : tipoChavePix === "email" ? "email@exemplo.com" : "Somente números"}
+                placeholder={tipoChavePix === "aleatoria" ? "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" : tipoChavePix === "telefone" ? "5511999999999" : tipoChavePix === "email" ? "email@exemplo.com" : "Somente números"}
                 className="h-10 rounded-xl font-mono"
               />
             </div>

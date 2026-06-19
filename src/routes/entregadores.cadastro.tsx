@@ -320,13 +320,24 @@ function EtapaDadosPessoais({ form, set, mostrarSenha, setMostrarSenha }: any) {
         <input className={inputCls} value={form.nome} onChange={(e) => set("nome", e.target.value)} placeholder="Seu nome completo" />
       </Campo>
       <Campo label="CPF">
-        <input className={inputCls} value={form.cpf} onChange={(e) => set("cpf", e.target.value)} placeholder="000.000.000-00" maxLength={14} />
+        <input className={inputCls} inputMode="numeric" value={form.cpf}
+          onChange={(e) => {
+            const d = e.target.value.replace(/\D/g, "").slice(0, 11);
+            const m = d.length <= 3 ? d
+              : d.length <= 6 ? `${d.slice(0,3)}.${d.slice(3)}`
+              : d.length <= 9 ? `${d.slice(0,3)}.${d.slice(3,6)}.${d.slice(6)}`
+              : `${d.slice(0,3)}.${d.slice(3,6)}.${d.slice(6,9)}-${d.slice(9)}`;
+            set("cpf", m);
+          }}
+          placeholder="000.000.000-00" maxLength={14} />
       </Campo>
       <Campo label="E-mail">
-        <input className={inputCls} type="email" value={form.email} onChange={(e) => set("email", e.target.value)} placeholder="seu@email.com" />
+        <input className={inputCls} type="email" inputMode="email" value={form.email} onChange={(e) => set("email", e.target.value)} placeholder="seu@email.com" />
       </Campo>
       <Campo label="WhatsApp">
-        <input className={inputCls} type="tel" value={form.whatsapp} onChange={(e) => set("whatsapp", e.target.value)} placeholder="(66) 99999-9999" />
+        <input className={inputCls} type="tel" inputMode="numeric" value={form.whatsapp}
+          onChange={(e) => set("whatsapp", e.target.value.replace(/\D/g, "").slice(0, 11))}
+          placeholder="66999999999" maxLength={11} />
       </Campo>
       <Campo label="Cidade">
         <input className={inputCls} value={form.cidade} onChange={(e) => set("cidade", e.target.value)} placeholder="Sua cidade" />
@@ -408,8 +419,9 @@ function EtapaValidacao({ form, set }: any) {
       <Campo label="Número da CNH (11 dígitos)">
         <input
           className={inputCls}
+          inputMode="numeric"
           value={form.cnh}
-          onChange={(e) => set("cnh", e.target.value.replace(/\D/g, ""))}
+          onChange={(e) => set("cnh", e.target.value.replace(/\D/g, "").slice(0, 11))}
           placeholder="00000000000"
           maxLength={11}
         />
@@ -418,9 +430,10 @@ function EtapaValidacao({ form, set }: any) {
         <input
           className={inputCls}
           value={form.placa}
-          onChange={(e) => set("placa", e.target.value.toUpperCase())}
+          onChange={(e) => set("placa", e.target.value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase().slice(0, 7))}
           placeholder="ABC1234 ou ABC1D23"
           maxLength={7}
+          style={{ textTransform: "uppercase" }}
         />
       </Campo>
       <Campo label="Modelo">
