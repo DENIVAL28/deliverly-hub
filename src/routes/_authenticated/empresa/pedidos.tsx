@@ -400,6 +400,24 @@ function PedidosPage() {
   const totalPages  = tab !== "ativos" ? Math.ceil((pedidosPag?.total ?? 0) / PAGE_SIZE) : 1;
   const totalItems  = pedidosPag?.total ?? 0;
 
+  async function rpcPedido(pedidoId: string, params: {
+    status?: string;
+    entregador_id?: string | null;
+    entregador_nome?: string | null;
+    desconto?: number;
+  }): Promise<string | null> {
+    const { data, error } = await (supabase as any).rpc("empresa_atualizar_pedido", {
+      p_pedido_id:       pedidoId,
+      p_status:          params.status          ?? null,
+      p_entregador_id:   params.entregador_id   ?? null,
+      p_entregador_nome: params.entregador_nome ?? null,
+      p_desconto:        params.desconto        ?? null,
+    });
+    if (error) return error.message;
+    if (data?.error) return data.error;
+    return null;
+  }
+
   async function advance(p: any, entregadorId?: string) {
     const comPreparo = precisaPreparo(p);
     const nextMap = p.tipo === "pdv"
@@ -411,37 +429,37 @@ function PedidosPage() {
           : (comPreparo ? NEXT : NEXT_SEM_PREPARO);
     const next = nextMap[p.status];
     if (!next) return;
-    const update: any = { status: next };
+    const params: Parameters<typeof rpcPedido>[1] = { status: next };
     if (next === "entrega" && entregadorId) {
       const ent = entregadores.find((e: any) => e.id === entregadorId);
-      update.entregador_id = entregadorId;
-      update.entregador_nome = ent?.nome ?? null;
+      params.entregador_id   = entregadorId;
+      params.entregador_nome = ent?.nome ?? null;
     }
-    const { error } = await supabase.from("pedidos").update(update).eq("id", p.id);
-    if (error) { toast.error(traduzirErro(error.message)); return; }
+    const err = await rpcPedido(p.id, params);
+    if (err) { toast.error(traduzirErro(err)); return; }
     qc.invalidateQueries({ queryKey: ["pedidos-ativos", empresaId] });
     qc.invalidateQueries({ queryKey: ["pedidos-pag", empresaId] });
   }
 
   async function confirmarPedido(p: any) {
-    const { error } = await supabase.from("pedidos").update({ status: "aguardando_pagamento" } as any).eq("id", p.id);
-    if (error) { toast.error(traduzirErro(error.message)); return; }
+    const err = await rpcPedido(p.id, { status: "aguardando_pagamento" });
+    if (err) { toast.error(traduzirErro(err)); return; }
     qc.invalidateQueries({ queryKey: ["pedidos-ativos", empresaId] });
     qc.invalidateQueries({ queryKey: ["pedidos-pag", empresaId] });
     toast.success(`Pedido #${p.numero} confirmado!`);
   }
 
   async function confirmarPagamento(p: any) {
-    const { error } = await supabase.from("pedidos").update({ status: "aceito" } as any).eq("id", p.id);
-    if (error) { toast.error(traduzirErro(error.message)); return; }
+    const err = await rpcPedido(p.id, { status: "aceito" });
+    if (err) { toast.error(traduzirErro(err)); return; }
     qc.invalidateQueries({ queryKey: ["pedidos-ativos", empresaId] });
     qc.invalidateQueries({ queryKey: ["pedidos-pag", empresaId] });
     toast.success(`Pagamento do pedido #${p.numero} confirmado!`);
   }
 
   async function cancel(id: string) {
-    const { error } = await supabase.from("pedidos").update({ status: "cancelado" }).eq("id", id);
-    if (error) { toast.error(traduzirErro(error.message)); return; }
+    const err = await rpcPedido(id, { status: "cancelado" });
+    if (err) { toast.error(traduzirErro(err)); return; }
     toast.success("Pedido cancelado");
     qc.invalidateQueries({ queryKey: ["pedidos-ativos", empresaId] });
     qc.invalidateQueries({ queryKey: ["pedidos-pag", empresaId] });
@@ -453,8 +471,8 @@ function PedidosPage() {
     const totalBruto = Number(pedido.subtotal) + Number(pedido.taxa_entrega);
     if (isNaN(valor) || valor < 0) { toast.error("Valor de desconto inválido"); return; }
     if (valor >= totalBruto) { toast.error("Desconto não pode ser maior que o total"); return; }
-    const { error } = await supabase.from("pedidos").update({ desconto: valor } as any).eq("id", pedido.id);
-    if (error) { toast.error(traduzirErro(error.message)); return; }
+    const err = await rpcPedido(pedido.id, { desconto: valor });
+    if (err) { toast.error(traduzirErro(err)); return; }
     setDescontoInput((s) => ({ ...s, [pedido.id]: "" }));
     qc.invalidateQueries({ queryKey: ["pedidos-ativos", empresaId] });
     qc.invalidateQueries({ queryKey: ["pedidos-pag", empresaId] });
