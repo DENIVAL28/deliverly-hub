@@ -40,9 +40,36 @@ function NotFoundComponent() {
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
   const router = useRouter();
+
+  // Chunk load error = novo deploy enquanto o usuário estava na página.
+  // O browser tem o bundle antigo em cache e tenta carregar um chunk que não existe mais.
+  // Solução: hard reload uma vez para pegar o novo bundle.
+  const isChunkError = error?.message?.includes("Failed to fetch dynamically imported module")
+    || error?.message?.includes("Importing a module script failed");
+
   useEffect(() => {
+    if (isChunkError) {
+      const key = "chunk_reload_at";
+      const last = Number(sessionStorage.getItem(key) ?? 0);
+      // Evita loop: só recarrega se não tentou nos últimos 10s
+      if (Date.now() - last > 10_000) {
+        sessionStorage.setItem(key, String(Date.now()));
+        window.location.reload();
+      }
+      return;
+    }
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
-  }, [error]);
+  }, [error, isChunkError]);
+
+  if (isChunkError) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background px-4">
+        <div className="max-w-md text-center">
+          <p className="text-sm text-muted-foreground">Atualizando… aguarde um instante.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
