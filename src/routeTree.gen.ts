@@ -26,6 +26,7 @@ import { Route as EntregadoresPerfilRouteImport } from './routes/entregadores.pe
 import { Route as EntregadoresParceirosRouteImport } from './routes/entregadores.parceiros'
 import { Route as EntregadoresPainelRouteImport } from './routes/entregadores.painel'
 import { Route as EntregadoresLoginRouteImport } from './routes/entregadores.login'
+import { Route as EntregadoresNovaSenhaRouteImport } from './routes/entregadores.nova-senha'
 import { Route as EntregadoresCadastroRouteImport } from './routes/entregadores.cadastro'
 import { Route as EntregadorIdRouteImport } from './routes/entregador.$id'
 import { Route as EntrarEntregadorSlugRouteImport } from './routes/entrar-entregador.$slug'
@@ -138,6 +139,11 @@ const EntregadoresPainelRoute = EntregadoresPainelRouteImport.update({
 const EntregadoresLoginRoute = EntregadoresLoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => EntregadoresRoute,
+} as any)
+const EntregadoresNovaSenhaRoute = EntregadoresNovaSenhaRouteImport.update({
+  id: '/nova-senha',
+  path: '/nova-senha',
   getParentRoute: () => EntregadoresRoute,
 } as any)
 const EntregadoresCadastroRoute = EntregadoresCadastroRouteImport.update({
@@ -326,6 +332,7 @@ export interface FileRoutesByFullPath {
   '/entregador/$id': typeof EntregadorIdRoute
   '/entregadores/cadastro': typeof EntregadoresCadastroRoute
   '/entregadores/login': typeof EntregadoresLoginRoute
+  '/entregadores/nova-senha': typeof EntregadoresNovaSenhaRoute
   '/entregadores/painel': typeof EntregadoresPainelRoute
   '/entregadores/parceiros': typeof EntregadoresParceirosRoute
   '/entregadores/perfil': typeof EntregadoresPerfilRoute
@@ -370,6 +377,7 @@ export interface FileRoutesByTo {
   '/entregador/$id': typeof EntregadorIdRoute
   '/entregadores/cadastro': typeof EntregadoresCadastroRoute
   '/entregadores/login': typeof EntregadoresLoginRoute
+  '/entregadores/nova-senha': typeof EntregadoresNovaSenhaRoute
   '/entregadores/painel': typeof EntregadoresPainelRoute
   '/entregadores/parceiros': typeof EntregadoresParceirosRoute
   '/entregadores/perfil': typeof EntregadoresPerfilRoute
@@ -419,6 +427,7 @@ export interface FileRoutesById {
   '/entregador/$id': typeof EntregadorIdRoute
   '/entregadores/cadastro': typeof EntregadoresCadastroRoute
   '/entregadores/login': typeof EntregadoresLoginRoute
+  '/entregadores/nova-senha': typeof EntregadoresNovaSenhaRoute
   '/entregadores/painel': typeof EntregadoresPainelRoute
   '/entregadores/parceiros': typeof EntregadoresParceirosRoute
   '/entregadores/perfil': typeof EntregadoresPerfilRoute
@@ -468,6 +477,7 @@ export interface FileRouteTypes {
     | '/entregador/$id'
     | '/entregadores/cadastro'
     | '/entregadores/login'
+    | '/entregadores/nova-senha'
     | '/entregadores/painel'
     | '/entregadores/parceiros'
     | '/entregadores/perfil'
@@ -512,6 +522,7 @@ export interface FileRouteTypes {
     | '/entregador/$id'
     | '/entregadores/cadastro'
     | '/entregadores/login'
+    | '/entregadores/nova-senha'
     | '/entregadores/painel'
     | '/entregadores/parceiros'
     | '/entregadores/perfil'
@@ -560,6 +571,7 @@ export interface FileRouteTypes {
     | '/entregador/$id'
     | '/entregadores/cadastro'
     | '/entregadores/login'
+    | '/entregadores/nova-senha'
     | '/entregadores/painel'
     | '/entregadores/parceiros'
     | '/entregadores/perfil'
@@ -727,6 +739,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/entregadores/login'
       preLoaderRoute: typeof EntregadoresLoginRouteImport
+      parentRoute: typeof EntregadoresRoute
+    }
+    '/entregadores/nova-senha': {
+      id: '/entregadores/nova-senha'
+      path: '/nova-senha'
+      fullPath: '/entregadores/nova-senha'
+      preLoaderRoute: typeof EntregadoresNovaSenhaRouteImport
       parentRoute: typeof EntregadoresRoute
     }
     '/entregadores/cadastro': {
@@ -1025,6 +1044,7 @@ const AuthenticatedRouteRouteWithChildren =
 interface EntregadoresRouteChildren {
   EntregadoresCadastroRoute: typeof EntregadoresCadastroRoute
   EntregadoresLoginRoute: typeof EntregadoresLoginRoute
+  EntregadoresNovaSenhaRoute: typeof EntregadoresNovaSenhaRoute
   EntregadoresPainelRoute: typeof EntregadoresPainelRoute
   EntregadoresParceirosRoute: typeof EntregadoresParceirosRoute
   EntregadoresPerfilRoute: typeof EntregadoresPerfilRoute
@@ -1034,6 +1054,7 @@ interface EntregadoresRouteChildren {
 const EntregadoresRouteChildren: EntregadoresRouteChildren = {
   EntregadoresCadastroRoute: EntregadoresCadastroRoute,
   EntregadoresLoginRoute: EntregadoresLoginRoute,
+  EntregadoresNovaSenhaRoute: EntregadoresNovaSenhaRoute,
   EntregadoresPainelRoute: EntregadoresPainelRoute,
   EntregadoresParceirosRoute: EntregadoresParceirosRoute,
   EntregadoresPerfilRoute: EntregadoresPerfilRoute,
