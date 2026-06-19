@@ -487,7 +487,6 @@ function EtapaFoto({ form, fileInputRef, handleFoto }: any) {
         ref={fileInputRef}
         type="file"
         accept="image/*"
-        capture="user"
         className="hidden"
         onChange={handleFoto}
       />
