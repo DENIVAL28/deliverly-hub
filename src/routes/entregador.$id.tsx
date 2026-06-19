@@ -414,8 +414,8 @@ function EntregadorPage() {
                         <a
                           href={
                             p.cliente_lat != null
-                              ? `https://www.google.com/maps/dir/?api=1&destination=${p.cliente_lat},${p.cliente_lng}&travelmode=driving`
-                              : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(p.cliente_endereco ?? "")}&travelmode=driving`
+                              ? `https://maps.google.com/maps?daddr=${p.cliente_lat},${p.cliente_lng}`
+                              : `https://maps.google.com/maps?daddr=${encodeURIComponent(p.cliente_endereco ?? "")}`
                           }
                           target="_blank" rel="noreferrer"
                           className="text-xs text-blue-600 font-medium hover:underline flex items-center gap-1">
