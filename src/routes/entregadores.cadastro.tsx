@@ -164,10 +164,12 @@ function EntregadoresCadastro() {
         const { error: uploadErr } = await supabase.storage
           .from("entregadores")
           .upload(path, form.fotoRostoFile, { upsert: true });
-        if (!uploadErr) {
-          const { data: pub } = supabase.storage.from("entregadores").getPublicUrl(path);
-          fotoUrl = pub.publicUrl;
+        if (uploadErr) {
+          toast.error("Falha ao enviar a foto. Verifique sua conexão e tente novamente.");
+          return;
         }
+        const { data: pub } = supabase.storage.from("entregadores").getPublicUrl(path);
+        fotoUrl = pub.publicUrl;
       }
 
       // 3. Inserir registro na tabela entregadores

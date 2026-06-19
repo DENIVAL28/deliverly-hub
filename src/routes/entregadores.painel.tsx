@@ -126,6 +126,20 @@ function PainelEntregador() {
   const statusInfo = STATUS_CADASTRO[entregador.status_cadastro] ?? STATUS_CADASTRO.cadastro_incompleto;
   const veiculoLabel: Record<string, string> = { moto: "🏍️ Moto", carro: "🚗 Carro", bicicleta: "🚲 Bicicleta" };
 
+  // Aprovado mas sem token — estado inválido (migration pendente ou token não gerado)
+  if (aprovado && !token) {
+    return (
+      <div className="min-h-screen bg-zinc-950 text-white flex items-center justify-center p-6">
+        <div className="text-center space-y-3 max-w-xs">
+          <AlertTriangle className="size-10 text-yellow-500 mx-auto" />
+          <p className="text-sm font-bold text-white">Configuração pendente</p>
+          <p className="text-xs text-zinc-400">Seu cadastro foi aprovado mas o token de acesso ainda não foi gerado. Entre em contato com o suporte.</p>
+          <button onClick={sair} className="text-xs text-orange-400 hover:underline">Sair</button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
       {/* Header */}

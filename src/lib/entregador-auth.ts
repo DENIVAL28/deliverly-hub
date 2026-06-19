@@ -28,7 +28,12 @@ export async function requireEntregador(): Promise<{ user: any; entregador: Entr
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw redirect({ to: "/entregadores/login" });
 
-  const { data: entregador } = await supabase.rpc("entregador_me");
+  const { data: entregador, error } = await supabase.rpc("entregador_me" as any);
+  if (error) {
+    // RPC não existe (migration pendente) ou RLS bloqueou — não é entregador
+    await supabase.auth.signOut();
+    throw redirect({ to: "/entregadores/login" });
+  }
   if (!entregador) throw redirect({ to: "/entregadores/login" });
 
   return { user, entregador: entregador as EntregadorData };

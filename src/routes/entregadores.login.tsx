@@ -29,10 +29,14 @@ function EntregadoresLogin() {
         return;
       }
       // Verificar se é entregador de plataforma
-      const { data: entRegisrado } = await supabase.rpc("entregador_me");
-      if (!entRegisrado) {
+      const { data: entRegisrado, error: rpcError } = await supabase.rpc("entregador_me" as any);
+      if (rpcError || !entRegisrado) {
         await supabase.auth.signOut();
-        toast.error("Conta não encontrada como entregador. Use o login do painel da loja se for dono/atendente.");
+        toast.error(
+          rpcError
+            ? "Erro ao verificar cadastro. Tente novamente em instantes."
+            : "Conta não encontrada como entregador. Use o login do painel da loja se for dono/atendente."
+        );
         return;
       }
       navigate({ to: "/entregadores/painel", replace: true });
