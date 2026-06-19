@@ -58,27 +58,30 @@ function PainelEntregador() {
   const aprovado = entregador.status_cadastro === "aprovado";
 
   const [atualizandoStatus, setAtualizandoStatus] = useState(false);
+  const [erroDisp, setErroDisp] = useState<string | null>(null);
   const prevIdsRef = useRef<string[]>([]);
   const primeiroCarregamento = useRef(true);
 
-  // Pedidos ativos
+  // Pedidos em andamento (entregador já aceitou)
   const { data: pedidosAtivos = [], refetch: refetchAtivos } = useQuery({
-    queryKey: ["meus-pedidos-painel", token],
-    enabled: aprovado && !!token,
+    queryKey: ["meus-pedidos-painel", entregador.id],
+    enabled: aprovado,
     refetchInterval: 15000,
     queryFn: async () => {
-      const { data } = await supabase.rpc("entregador_meus_pedidos", { p_token: token });
+      const { data } = await (supabase as any).rpc("entregador_meus_pedidos_ativos");
       return (data ?? []) as any[];
     },
   });
 
-  // Pedidos disponíveis (freelancer aprovado)
+  // Pedidos disponíveis para aceitar
   const { data: pedidosDisp = [], refetch: refetchDisp } = useQuery({
-    queryKey: ["disp-painel", token],
-    enabled: aprovado && !!token,
+    queryKey: ["disp-painel", entregador.id],
+    enabled: aprovado,
     refetchInterval: 15000,
     queryFn: async () => {
-      const { data } = await supabase.rpc("freelancer_pedidos_disponiveis", { p_token: token });
+      const { data, error } = await (supabase as any).rpc("entregador_pedidos_disponiveis");
+      if (error) { setErroDisp(error.message); return []; }
+      setErroDisp(null);
       return (data ?? []) as any[];
     },
   });
@@ -101,21 +104,21 @@ function PainelEntregador() {
 
   // Realtime: refetch imediato quando qualquer pedido muda
   useEffect(() => {
-    if (!aprovado || !token) return;
+    if (!aprovado) return;
     const channel = supabase
-      .channel("pedidos-entregador-disp")
+      .channel(`pedidos-entregador-${entregador.id}`)
       .on("postgres_changes",
         { event: "*", schema: "public", table: "pedidos" },
         () => { refetchDisp(); refetchAtivos(); }
       )
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [aprovado, token, refetchDisp, refetchAtivos]);
+  }, [aprovado, entregador.id, refetchDisp, refetchAtivos]);
 
   // Histórico + métricas
   const { data: historico = [] } = useQuery({
-    queryKey: ["historico-painel", token],
-    enabled: aprovado && !!token,
+    queryKey: ["historico-painel", entregador.id],
+    enabled: aprovado,
     queryFn: async () => {
       const { data } = await supabase
         .from("pedidos" as any)
@@ -146,21 +149,15 @@ function PainelEntregador() {
   }
 
   async function finalizarEntrega(pedidoId: string) {
-    const { data } = await supabase.rpc("entregador_finalizar_entrega", {
-      p_token: token,
-      p_pedido_id: pedidoId,
-    });
-    if ((data as any)?.error) { toast.error((data as any).error); return; }
+    const { data } = await (supabase as any).rpc("entregador_finalizar_pedido", { p_pedido_id: pedidoId });
+    if ((data as any)?.ok === false) { toast.error((data as any).erro); return; }
     toast.success("Entrega finalizada!");
     refetchAtivos();
   }
 
   async function aceitarEntrega(pedidoId: string) {
-    const { data } = await supabase.rpc("freelancer_pegar_entrega", {
-      p_token: token,
-      p_pedido_id: pedidoId,
-    });
-    if ((data as any)?.error) { toast.error((data as any).error); return; }
+    const { data } = await (supabase as any).rpc("entregador_aceitar_pedido", { p_pedido_id: pedidoId });
+    if ((data as any)?.ok === false) { toast.error((data as any).erro); return; }
     toast.success("Entrega aceita!");
     refetchAtivos();
     refetchDisp();
@@ -284,12 +281,19 @@ function PainelEntregador() {
             </section>
 
             {/* Pedidos disponíveis */}
-            {pedidosDisp.length > 0 && (
-              <section className="space-y-3">
-                <h2 className="text-sm font-bold text-zinc-300 uppercase tracking-wider">
-                  Disponíveis ({pedidosDisp.length})
-                </h2>
-                {pedidosDisp.map((p: any) => (
+            <section className="space-y-3">
+              <h2 className="text-sm font-bold text-zinc-300 uppercase tracking-wider">
+                Disponíveis {pedidosDisp.length > 0 && `(${pedidosDisp.length})`}
+              </h2>
+              {erroDisp && (
+                <div className="p-3 bg-red-950 border border-red-800 rounded-xl text-xs text-red-300">
+                  ⚠️ Erro: {erroDisp}
+                </div>
+              )}
+              {!erroDisp && pedidosDisp.length === 0 && (
+                <p className="text-xs text-zinc-600 text-center py-4">Aguardando pedidos disponíveis…</p>
+              )}
+              {pedidosDisp.length > 0 && pedidosDisp.map((p: any) => (
                   <div key={p.id} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 space-y-3">
                     <div className="flex items-start justify-between gap-2">
                       <div>
@@ -306,8 +310,7 @@ function PainelEntregador() {
                     </button>
                   </div>
                 ))}
-              </section>
-            )}
+            </section>
 
             {/* Pedidos em andamento */}
             <section className="space-y-3">
