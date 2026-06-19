@@ -154,6 +154,8 @@ function EntregadorPage() {
     });
   }
 
+  const GPS_KEY = `gps_tracking_${entregador.public_token}`;
+
   async function iniciarTracking() {
     if (!navigator.geolocation) { setGpsErro("GPS não disponível neste dispositivo."); return; }
     setGpsErro("");
@@ -162,15 +164,22 @@ function EntregadorPage() {
     setGpsCarreg(false);
     if (!ok) return;
     setTracking(true);
+    localStorage.setItem(GPS_KEY, "1");
     intervalRef.current = setInterval(enviarPosicao, 30000);
   }
 
   function pararTracking() {
     if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
     setTracking(false);
+    localStorage.removeItem(GPS_KEY);
   }
 
   useEffect(() => () => { if (intervalRef.current) clearInterval(intervalRef.current); }, []);
+
+  // Retoma o tracking automaticamente se estava ativo antes do F5
+  useEffect(() => {
+    if (localStorage.getItem(GPS_KEY)) iniciarTracking();
+  }, []);
 
   const empresa = entregador.empresas;
   const statusAtual = STATUS_OPTIONS.find((s) => s.value === entregador.status) ?? STATUS_OPTIONS[0];
