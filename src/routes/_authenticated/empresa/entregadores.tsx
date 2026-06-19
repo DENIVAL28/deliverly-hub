@@ -83,13 +83,7 @@ function EntregadoresPage() {
     enabled: !!empresaId && modo === "plataforma",
     refetchInterval: 15000,
     queryFn: async () => {
-      const { data } = await (supabase as any)
-        .from("entregadores")
-        .select("id, nome, veiculo, foto_rosto_url, status, verificado")
-        .is("empresa_id", null)
-        .eq("aprovado", true)
-        .eq("status_cadastro", "aprovado")
-        .order("nome");
+      const { data } = await (supabase as any).rpc("empresa_listar_entregadores_plataforma");
       return (data ?? []) as any[];
     },
   });
