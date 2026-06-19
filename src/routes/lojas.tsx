@@ -1,7 +1,7 @@
 ﻿import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { MapPin, Clock, ShoppingBag, Search, ChevronRight, ChevronDown, X } from "lucide-react";
+import { MapPin, Clock, ShoppingBag, Search, ChevronRight, ChevronDown, X, ChevronLeft } from "lucide-react";
 import { verificarAberto } from "@/lib/loja-horario";
 import { InstalarPWA } from "@/components/InstalarPWA";
 
@@ -131,9 +131,14 @@ function LojasPage() {
 
         {/* Header */}
         <header className="relative px-6 py-5 flex items-center justify-between">
-          <Link to="/">
-            <img src="/segments/logo1.png" alt="SOS Sistemas" className="h-9 w-auto object-contain brightness-0 invert" />
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link to="/" className="p-1.5 hover:bg-white/10 rounded-lg transition-colors">
+              <ChevronLeft className="size-5 text-zinc-400" />
+            </Link>
+            <Link to="/">
+              <img src="/segments/logo1.png" alt="SOS Sistemas" className="h-9 w-auto object-contain brightness-0 invert" />
+            </Link>
+          </div>
           <Link to="/auth" className="text-sm font-medium text-zinc-400 hover:text-white transition-colors">
             Área do lojista →
           </Link>

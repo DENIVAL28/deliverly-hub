@@ -1,7 +1,7 @@
-import { createFileRoute, notFound } from "@tanstack/react-router";
+import { createFileRoute, notFound, useNavigate } from "@tanstack/react-router";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Bike, CheckCircle2, Clock, MapPin, Navigation, Package, Phone, PackageSearch, QrCode, Copy, ChefHat, Store } from "lucide-react";
+import { Bike, CheckCircle2, Clock, MapPin, Navigation, Package, Phone, PackageSearch, QrCode, Copy, ChefHat, Store, ChevronLeft } from "lucide-react";
 import { copiarTexto } from "@/lib/validacoes";
 import { toast } from "sonner";
 
@@ -91,6 +91,7 @@ const STATUS_PEDIDO: Record<string, { label: string; cor: string; icon: React.Co
 
 function EntregadorPage() {
   const entregadorInicial = Route.useLoaderData();
+  const navigate = useNavigate();
   const [entregador, setEntregador] = useState<Entregador>(entregadorInicial);
 
   // Salva token no localStorage para o PWA conseguir redirecionar de volta
@@ -306,6 +307,11 @@ function EntregadorPage() {
       <div className="bg-white shadow-sm">
         <div className="max-w-lg mx-auto px-4 py-5">
           <div className="flex items-center gap-4">
+            <button
+              onClick={() => navigate({ to: "/entregadores" })}
+              className="shrink-0 p-1.5 hover:bg-zinc-100 rounded-lg transition-colors">
+              <ChevronLeft className="size-5 text-zinc-500" />
+            </button>
             {empresa?.logo_url ? (
               <img src={empresa.logo_url} alt={empresa.nome_fantasia} className="size-12 rounded-xl object-cover" />
             ) : (

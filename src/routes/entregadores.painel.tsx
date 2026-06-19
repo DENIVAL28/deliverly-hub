@@ -6,7 +6,7 @@ import { requireEntregador, type EntregadorData } from "@/lib/entregador-auth";
 import {
   LogOut, MapPin, Package, CheckCircle2, Clock,
   AlertTriangle, XCircle, Ban, Phone, Navigation,
-  RefreshCw, Bike,
+  RefreshCw, Bike, ChevronLeft,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -144,13 +144,16 @@ function PainelEntregador() {
     <div className="min-h-screen bg-zinc-950 text-white">
       {/* Header */}
       <div className="bg-orange-500 px-4 py-5">
-        <div className="max-w-lg mx-auto flex items-center justify-between">
-          <div>
+        <div className="max-w-lg mx-auto flex items-center gap-3">
+          <Link to="/entregadores" className="shrink-0 p-2 bg-white/20 rounded-xl hover:bg-white/30 transition">
+            <ChevronLeft className="size-5" />
+          </Link>
+          <div className="flex-1 min-w-0">
             <p className="text-xs font-semibold text-orange-100 uppercase tracking-wider">Painel do Entregador</p>
-            <h1 className="text-lg font-extrabold text-white">{entregador.nome}</h1>
+            <h1 className="text-lg font-extrabold text-white truncate">{entregador.nome}</h1>
             <p className="text-xs text-orange-100">{veiculoLabel[entregador.veiculo ?? ""] ?? entregador.veiculo}</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 shrink-0">
             <Link to="/entregadores/perfil" className="p-2 bg-white/20 rounded-xl hover:bg-white/30 transition">
               <Bike className="size-5" />
             </Link>

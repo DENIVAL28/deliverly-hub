@@ -258,14 +258,12 @@ function EntregadoresCadastro() {
 
         {/* Botões de navegação */}
         <div className="flex gap-3">
-          {etapa > 0 && (
-            <button
-              onClick={() => setEtapa((e) => e - 1)}
-              className="flex items-center gap-1 px-5 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-semibold transition"
-            >
-              <ChevronLeft className="size-4" /> Voltar
-            </button>
-          )}
+          <button
+            onClick={() => etapa === 0 ? navigate({ to: "/entregadores" }) : setEtapa((e) => e - 1)}
+            className="flex items-center gap-1 px-5 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-semibold transition"
+          >
+            <ChevronLeft className="size-4" /> Voltar
+          </button>
           {etapa < ETAPAS.length - 1 ? (
             <button
               onClick={avancar}

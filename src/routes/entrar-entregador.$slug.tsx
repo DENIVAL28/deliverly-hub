@@ -1,7 +1,7 @@
-import { createFileRoute, notFound } from "@tanstack/react-router";
+import { createFileRoute, notFound, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Bike, CheckCircle2, Store } from "lucide-react";
+import { Bike, CheckCircle2, Store, ChevronLeft } from "lucide-react";
 
 export const Route = createFileRoute("/entrar-entregador/$slug")({
   ssr: false,
@@ -96,6 +96,9 @@ function CadastroEntregadorPage() {
       {/* Header */}
       <div className="bg-white shadow-sm">
         <div className="max-w-md mx-auto px-4 py-5 flex items-center gap-4">
+          <Link to="/" className="shrink-0 p-1.5 hover:bg-zinc-100 rounded-lg transition-colors">
+            <ChevronLeft className="size-5 text-zinc-500" />
+          </Link>
           {(empresa as any).logo_url ? (
             <img src={(empresa as any).logo_url} alt={(empresa as any).nome_fantasia}
               className="size-12 rounded-xl object-cover" />

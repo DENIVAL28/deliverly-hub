@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Bike, LogIn, UserPlus } from "lucide-react";
+import { Bike, LogIn, UserPlus, ChevronLeft } from "lucide-react";
 
 export const Route = createFileRoute("/entregadores/")({
   component: EntregadoresLanding,
@@ -8,6 +8,11 @@ export const Route = createFileRoute("/entregadores/")({
 function EntregadoresLanding() {
   return (
     <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center px-4 py-12">
+      <div className="absolute top-4 left-4">
+        <Link to="/" className="flex items-center gap-1 p-2 hover:bg-white/10 rounded-xl transition-colors text-zinc-400 hover:text-white text-sm font-medium">
+          <ChevronLeft className="size-4" /> Início
+        </Link>
+      </div>
       <div className="w-full max-w-sm space-y-8">
         <div className="text-center space-y-2">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-orange-500 mb-2">

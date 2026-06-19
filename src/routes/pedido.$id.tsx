@@ -1,7 +1,7 @@
-import { createFileRoute, notFound } from "@tanstack/react-router";
+import { createFileRoute, notFound, useNavigate } from "@tanstack/react-router";
 import { lazy, Suspense, useEffect, useState, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { CheckCircle2, Clock, ChefHat, Bike, XCircle, MapPin, MessageCircle, User, Copy, Navigation } from "lucide-react";
+import { CheckCircle2, Clock, ChefHat, Bike, XCircle, MapPin, MessageCircle, User, Copy, Navigation, ChevronLeft } from "lucide-react";
 import QRCode from "qrcode";
 import { copiarTexto, normalizeWA } from "@/lib/validacoes";
 import { toast } from "sonner";
@@ -114,6 +114,7 @@ function PedidoTracking() {
   const locIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const empresa = pedido.empresas as any;
+  const navigate = useNavigate();
   const pedidoRef  = useRef(pedido);
   const pixDataRef = useRef(pixData);
   useEffect(() => { pedidoRef.current  = pedido;  }, [pedido]);
@@ -325,6 +326,11 @@ function PedidoTracking() {
       {/* Header */}
       <div className="bg-white shadow-sm">
         <div className="max-w-lg mx-auto px-4 py-4 flex items-center gap-3">
+          <button
+            onClick={() => navigate({ to: empresa?.slug ? `/loja/${empresa.slug}` : "/lojas" })}
+            className="shrink-0 p-1.5 hover:bg-zinc-100 rounded-lg transition-colors">
+            <ChevronLeft className="size-5 text-zinc-500" />
+          </button>
           {empresa?.logo_url && (
             <img src={empresa.logo_url} alt={empresa.nome_fantasia}
               className="size-10 rounded-xl object-cover" />
