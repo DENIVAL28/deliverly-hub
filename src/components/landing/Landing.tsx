@@ -842,18 +842,6 @@ function CTA() {
             <p className="text-zinc-300 text-lg leading-relaxed">
               Monte seu cardápio, gerencie pedidos e entregadores em um único painel — sem comissão e sem contrato. Cancele quando quiser.
             </p>
-            <div className="mt-8 flex items-center gap-4">
-              <div className="flex -space-x-2">
-                {["🍕","🍔","🍱","🍇","☕"].map((e, i) => (
-                  <div key={i} className="size-9 rounded-full bg-zinc-800 border-2 border-zinc-950 flex items-center justify-center text-base shadow-md" style={{ zIndex: 5 - i }}>
-                    {e}
-                  </div>
-                ))}
-              </div>
-              <p className="text-sm text-zinc-400">
-                <span className="text-white font-bold">+500 estabelecimentos</span> já usam o Delivery Hub
-              </p>
-            </div>
           </div>
 
           <div className="bg-gradient-to-b from-white/8 to-white/3 border border-white/10 rounded-3xl p-8 backdrop-blur-sm flex flex-col gap-5 shadow-[0_0_60px_rgba(0,0,0,0.4)]">
