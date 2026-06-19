@@ -1,8 +1,8 @@
 {
-  "name": "Delivery Hub — Sistema de Delivery",
-  "short_name": "Delivery Hub",
-  "description": "Cardápio digital, PDV e gestão de entregadores para restaurantes",
-  "start_url": "/lojas",
+  "name": "Delivery Hub — Painel",
+  "short_name": "DH Painel",
+  "description": "Painel de gestão de pedidos, cardápio e entregadores",
+  "start_url": "/empresa/pedidos",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
