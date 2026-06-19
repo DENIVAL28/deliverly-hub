@@ -1,4 +1,4 @@
-import { createFileRoute, notFound } from "@tanstack/react-router";
+import { createFileRoute, notFound, useNavigate } from "@tanstack/react-router";
 import { InstalarPWA } from "@/components/InstalarPWA";
 import { useRef, useMemo, useState, useEffect } from "react";
 import { verificarAberto } from "@/lib/loja-horario";
@@ -45,6 +45,7 @@ interface CartItem { id: string; cartKey: string; nome: string; preco: number; q
 
 function LojaPage() {
   const { empresa, categorias, produtos, mediaAval, totalAval, avaliacoes } = Route.useLoaderData();
+  const navigate = useNavigate();
   // Lê mesa da URL: /loja/slug?mesa=3
   const mesa = useMemo(() => {
     if (typeof window === "undefined") return null;
@@ -482,7 +483,7 @@ function LojaPage() {
             style={{ backgroundImage: `url(${empresa.banner_url})` }}>
             <div className="absolute inset-0 bg-gradient-to-b from-black/10 to-black/50" />
             <button
-              onClick={() => { if (window.history.length > 1) window.history.back(); else window.location.href = "/"; }}
+              onClick={() => navigate({ to: "/" })}
               className="absolute top-3 left-3 z-20 flex items-center gap-1 bg-black/40 hover:bg-black/60 text-white text-xs font-semibold px-3 py-1.5 rounded-full backdrop-blur-sm transition-colors">
               <ChevronLeft className="size-3.5" />Início
             </button>
@@ -490,7 +491,7 @@ function LojaPage() {
         ) : (
           <div className="h-28 bg-gradient-to-br from-zinc-800 to-zinc-900 relative">
             <button
-              onClick={() => { if (window.history.length > 1) window.history.back(); else window.location.href = "/"; }}
+              onClick={() => navigate({ to: "/" })}
               className="absolute top-3 left-3 z-20 flex items-center gap-1 bg-white/20 hover:bg-white/30 text-white text-xs font-semibold px-3 py-1.5 rounded-full backdrop-blur-sm transition-colors">
               <ChevronLeft className="size-3.5" />Início
             </button>
