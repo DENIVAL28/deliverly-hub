@@ -105,9 +105,13 @@ function PedidoTracking() {
   const [avaliado, setAvaliado] = useState(false);
   const [pixData, setPixData] = useState<{ payload: string; qrUrl: string; total: number } | null>(null);
   const [compartilhando, setCompartilhando] = useState(false);
-  const [localizacaoCompartilhada, setLocalizacaoCompartilhada] = useState(false);
+  // Inicia como "já compartilhou" se o pedido já tem lat/lng do cliente no banco
+  const [localizacaoCompartilhada, setLocalizacaoCompartilhada] = useState(
+    pedidoInicial.cliente_lat != null
+  );
   const [entregadorPos, setEntregadorPos] = useState<{ lat: number; lng: number; nome: string | null } | null>(null);
   const [gpsHora, setGpsHora] = useState<string | null>(null);
+  const locIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const empresa = pedido.empresas as any;
   const pedidoRef  = useRef(pedido);
@@ -150,6 +154,30 @@ function PedidoTracking() {
     } catch {}
   }
 
+  function enviarPosicaoCliente() {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        await (supabase as any).rpc("cliente_atualizar_localizacao", {
+          p_pedido_id: pedidoRef.current.id,
+          p_lat: pos.coords.latitude,
+          p_lng: pos.coords.longitude,
+        });
+      },
+      () => {},
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
+    );
+  }
+
+  function iniciarCompartilhamento() {
+    if (locIntervalRef.current) return;
+    locIntervalRef.current = setInterval(enviarPosicaoCliente, 30000);
+  }
+
+  function pararCompartilhamento() {
+    if (locIntervalRef.current) { clearInterval(locIntervalRef.current); locIntervalRef.current = null; }
+  }
+
   async function compartilharLocalizacao() {
     if (!navigator.geolocation) { toast.error("GPS não disponível neste dispositivo."); return; }
     setCompartilhando(true);
@@ -162,7 +190,8 @@ function PedidoTracking() {
         });
         setLocalizacaoCompartilhada(true);
         setCompartilhando(false);
-        toast.success("Localização compartilhada com o entregador!");
+        toast.success("Localização compartilhada! Atualizando a cada 30s.");
+        iniciarCompartilhamento();
       },
       () => {
         setCompartilhando(false);
@@ -218,6 +247,18 @@ function PedidoTracking() {
 
     return () => clearInterval(interval);
   }, [pedido.id, aplicarAtualizacao]);
+
+  // Compartilhamento contínuo do GPS do cliente
+  // — retoma no F5 se já tinha compartilhado, para quando entregue/cancelado
+  useEffect(() => {
+    if (pedido.status === "entrega" && pedidoInicial.cliente_lat != null) {
+      iniciarCompartilhamento();
+    } else {
+      pararCompartilhamento();
+    }
+    return () => pararCompartilhamento();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pedido.status]);
 
   // Polling do GPS do entregador — só quando status = "entrega"
   useEffect(() => {
