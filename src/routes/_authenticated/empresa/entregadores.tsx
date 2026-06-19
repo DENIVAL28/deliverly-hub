@@ -116,10 +116,13 @@ function EntregadoresPage() {
     toast.success("Entregador removido");
   }
 
-  async function aprovar(id: string, nomeEnt: string) {
-    await (supabase as any).from("entregadores").update({ aprovado: true }).eq("id", id);
+  async function aprovar(id: string, nomeEnt: string, publicToken: string) {
+    const { error } = await (supabase as any).from("entregadores").update({ aprovado: true }).eq("id", id);
+    if (error) { toast.error("Erro ao aprovar. Tente novamente."); return; }
     qc.invalidateQueries({ queryKey: ["entregadores-admin", empresaId] });
-    toast.success(`${nomeEnt} aprovado!`);
+    toast.success(`${nomeEnt} aprovado! Enviando link de acesso…`);
+    // Compartilha o link imediatamente para a empresa não esquecer de mandar
+    compartilharLink(publicToken, nomeEnt);
   }
 
   async function recusar(id: string, nomeEnt: string) {
@@ -275,7 +278,7 @@ function EntregadoresPage() {
                     )}
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <button onClick={() => aprovar(e.id, e.nome)}
+                    <button onClick={() => aprovar(e.id, e.nome, e.public_token)}
                       className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-green-500 text-white text-xs font-bold hover:bg-green-600 transition-colors">
                       <UserCheck className="size-3.5" /> Aprovar
                     </button>

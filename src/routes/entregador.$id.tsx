@@ -204,6 +204,10 @@ function EntregadorPage() {
       carregarDisponiveis();
       return;
     }
+    // Muda status para "em_rota" automaticamente ao aceitar a primeira entrega
+    if (entregador.status !== "em_rota") {
+      mudarStatus("em_rota");
+    }
     await carregarPedidos();
     await carregarDisponiveis();
     // Rola para o topo para mostrar a seção "Em andamento" que acabou de aparecer
