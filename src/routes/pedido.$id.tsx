@@ -1,10 +1,12 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
-import { useEffect, useState, useRef, useCallback } from "react";
+import { lazy, Suspense, useEffect, useState, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { CheckCircle2, Clock, ChefHat, Bike, XCircle, MapPin, MessageCircle, User, Copy } from "lucide-react";
+import { CheckCircle2, Clock, ChefHat, Bike, XCircle, MapPin, MessageCircle, User, Copy, Navigation } from "lucide-react";
 import QRCode from "qrcode";
 import { copiarTexto } from "@/lib/validacoes";
 import { toast } from "sonner";
+
+const MapaEntrega = lazy(() => import("@/components/MapaEntrega"));
 
 export const Route = createFileRoute("/pedido/$id")({
   ssr: false,
@@ -104,6 +106,8 @@ function PedidoTracking() {
   const [pixData, setPixData] = useState<{ payload: string; qrUrl: string; total: number } | null>(null);
   const [compartilhando, setCompartilhando] = useState(false);
   const [localizacaoCompartilhada, setLocalizacaoCompartilhada] = useState(false);
+  const [entregadorPos, setEntregadorPos] = useState<{ lat: number; lng: number; nome: string | null } | null>(null);
+  const [gpsHora, setGpsHora] = useState<string | null>(null);
 
   const empresa = pedido.empresas as any;
   const pedidoRef  = useRef(pedido);
@@ -214,6 +218,25 @@ function PedidoTracking() {
 
     return () => clearInterval(interval);
   }, [pedido.id, aplicarAtualizacao]);
+
+  // Polling do GPS do entregador — só quando status = "entrega"
+  useEffect(() => {
+    if (pedido.status !== "entrega") return;
+
+    async function buscarGps() {
+      const { data } = await (supabase as any).rpc("pedido_rastrear_entregador", {
+        p_pedido_id: pedido.id,
+      });
+      if (data?.gps_ativo) {
+        setEntregadorPos({ lat: data.lat, lng: data.lng, nome: data.nome ?? null });
+        setGpsHora(new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }));
+      }
+    }
+
+    buscarGps();
+    const interval = setInterval(buscarGps, 20000);
+    return () => clearInterval(interval);
+  }, [pedido.status, pedido.id]);
 
   async function enviarAvaliacao() {
     if (!notaSel) return;
@@ -446,32 +469,70 @@ function PedidoTracking() {
           </div>
         </div>
 
-        {/* Compartilhar localização com entregador */}
+        {/* Rastreamento do entregador em tempo real */}
         {pedido.status === "entrega" && (
-          <div className="bg-purple-50 border border-purple-200 rounded-2xl p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <MapPin className="size-4 text-purple-500" />
-              <p className="text-sm font-semibold text-purple-800">Ajude o entregador a te encontrar</p>
-            </div>
-            <p className="text-xs text-purple-600 mb-3">
-              Compartilhe sua localização atual para que o entregador veja onde você está no mapa.
-            </p>
-            {localizacaoCompartilhada ? (
-              <div className="flex items-center gap-2 text-green-600 text-sm font-semibold">
-                <CheckCircle2 className="size-4" />
-                Localização compartilhada com o entregador!
+          <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+            {/* Cabeçalho */}
+            <div className="px-4 py-3 border-b border-zinc-100 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <span className="size-2 rounded-full bg-green-500 animate-pulse" />
+                <span className="text-sm font-semibold text-zinc-900">
+                  {entregadorPos?.nome
+                    ? `${entregadorPos.nome} está a caminho`
+                    : "Entregador a caminho"}
+                </span>
               </div>
+              {gpsHora && (
+                <span className="text-[10px] text-zinc-400 flex items-center gap-1 shrink-0">
+                  <Navigation className="size-3" /> {gpsHora}
+                </span>
+              )}
+            </div>
+
+            {/* Mapa */}
+            {entregadorPos ? (
+              <Suspense fallback={
+                <div className="flex items-center justify-center bg-zinc-50" style={{ height: 240 }}>
+                  <span className="text-xs text-zinc-400">Carregando mapa…</span>
+                </div>
+              }>
+                <MapaEntrega
+                  clienteLat={pedido.cliente_lat}
+                  clienteLng={pedido.cliente_lng}
+                  clienteNome={pedido.cliente_nome}
+                  entregadorLat={entregadorPos.lat}
+                  entregadorLng={entregadorPos.lng}
+                  entregadorNome={entregadorPos.nome ?? "Entregador"}
+                  height={240}
+                />
+              </Suspense>
             ) : (
-              <button
-                onClick={compartilharLocalizacao}
-                disabled={compartilhando}
-                className="w-full flex items-center justify-center gap-2 bg-purple-500 hover:bg-purple-600 text-white rounded-xl h-11 font-semibold text-sm transition-colors disabled:opacity-60">
-                {compartilhando
-                  ? <><span className="size-4 rounded-full border-2 border-white border-t-transparent animate-spin" /> Obtendo localização…</>
-                  : <><MapPin className="size-4" /> Compartilhar minha localização</>
-                }
-              </button>
+              <div className="flex flex-col items-center justify-center gap-2 text-zinc-400 bg-zinc-50 py-8">
+                <Bike className="size-8 text-zinc-200" />
+                <p className="text-sm font-medium">Aguardando GPS do entregador…</p>
+                <p className="text-xs text-zinc-300 text-center max-w-[24ch]">O entregador precisa ativar o compartilhamento de localização.</p>
+              </div>
             )}
+
+            {/* Compartilhar localização */}
+            <div className="px-4 py-3 border-t border-zinc-100">
+              <p className="text-xs text-zinc-400 mb-2">Compartilhe sua localização para o entregador te encontrar:</p>
+              {localizacaoCompartilhada ? (
+                <div className="flex items-center gap-2 text-green-600 text-sm font-semibold">
+                  <CheckCircle2 className="size-4" /> Localização compartilhada!
+                </div>
+              ) : (
+                <button
+                  onClick={compartilharLocalizacao}
+                  disabled={compartilhando}
+                  className="w-full flex items-center justify-center gap-2 bg-purple-500 hover:bg-purple-600 text-white rounded-xl h-10 font-semibold text-sm transition-colors disabled:opacity-60">
+                  {compartilhando
+                    ? <><span className="size-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" /> Obtendo localização…</>
+                    : <><MapPin className="size-4" /> Compartilhar minha localização</>
+                  }
+                </button>
+              )}
+            </div>
           </div>
         )}
 

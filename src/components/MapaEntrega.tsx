@@ -26,24 +26,39 @@ function AutoBounds({ positions }: { positions: [number, number][] }) {
 }
 
 interface Props {
-  clienteLat: number;
-  clienteLng: number;
+  clienteLat?: number | null;
+  clienteLng?: number | null;
   clienteNome?: string;
   entregadorLat?: number | null;
   entregadorLng?: number | null;
+  entregadorNome?: string;
+  height?: number;
 }
 
-export default function MapaEntrega({ clienteLat, clienteLng, clienteNome, entregadorLat, entregadorLng }: Props) {
+export default function MapaEntrega({
+  clienteLat, clienteLng, clienteNome,
+  entregadorLat, entregadorLng, entregadorNome,
+  height = 180,
+}: Props) {
   const hasDriver = entregadorLat != null && entregadorLng != null;
-  const positions: [number, number][] = [[clienteLat, clienteLng]];
+  const hasClient = clienteLat != null && clienteLng != null;
+
+  if (!hasDriver && !hasClient) return null;
+
+  const center: [number, number] = hasDriver
+    ? [entregadorLat!, entregadorLng!]
+    : [clienteLat!, clienteLng!];
+
+  const positions: [number, number][] = [];
+  if (hasClient) positions.push([clienteLat!, clienteLng!]);
   if (hasDriver) positions.push([entregadorLat!, entregadorLng!]);
 
   return (
     <MapContainer
-      center={[clienteLat, clienteLng]}
+      center={center}
       zoom={15}
       scrollWheelZoom={false}
-      style={{ height: "180px", width: "100%", borderRadius: "0.75rem" }}
+      style={{ height: `${height}px`, width: "100%", borderRadius: "0.75rem" }}
       zoomControl={false}
     >
       <TileLayer
@@ -51,12 +66,14 @@ export default function MapaEntrega({ clienteLat, clienteLng, clienteNome, entre
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
       <AutoBounds positions={positions} />
-      <Marker position={[clienteLat, clienteLng]} icon={clienteIcon}>
-        <Popup>{clienteNome ?? "Cliente"}</Popup>
-      </Marker>
+      {hasClient && (
+        <Marker position={[clienteLat!, clienteLng!]} icon={clienteIcon}>
+          <Popup>{clienteNome ?? "Cliente"}</Popup>
+        </Marker>
+      )}
       {hasDriver && (
         <Marker position={[entregadorLat!, entregadorLng!]} icon={entregadorIcon}>
-          <Popup>Você está aqui</Popup>
+          <Popup>{entregadorNome ?? "Entregador"}</Popup>
         </Marker>
       )}
     </MapContainer>
