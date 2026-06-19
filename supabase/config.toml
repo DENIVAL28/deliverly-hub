@@ -1,1 +1,16 @@
 project_id = "knrodreaaagkgxmvtsjf"
+
+[auth]
+site_url = "https://deliverly-hub.vercel.app"
+additional_redirect_urls = [
+  "https://deliverly-hub.vercel.app/**",
+  "http://localhost:3000/**"
+]
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+# Confirmação de e-mail desabilitada: entregadores e lojistas entram direto após cadastro.
+# Controle de acesso é feito por status_cadastro (entregadores) e onboarding (lojistas).
+enable_confirmations = false
+max_frequency = "1s"
