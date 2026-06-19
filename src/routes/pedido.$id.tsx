@@ -102,6 +102,8 @@ function PedidoTracking() {
   const [avaliando, setAvaliando] = useState(false);
   const [avaliado, setAvaliado] = useState(false);
   const [pixData, setPixData] = useState<{ payload: string; qrUrl: string; total: number } | null>(null);
+  const [compartilhando, setCompartilhando] = useState(false);
+  const [localizacaoCompartilhada, setLocalizacaoCompartilhada] = useState(false);
 
   const empresa = pedido.empresas as any;
   const pedidoRef  = useRef(pedido);
@@ -142,6 +144,28 @@ function PedidoTracking() {
       const qrUrl = await QRCode.toDataURL(payload, { width: 240, margin: 2, color: { dark: "#18181b", light: "#ffffff" } });
       setPixData({ payload, qrUrl, total });
     } catch {}
+  }
+
+  async function compartilharLocalizacao() {
+    if (!navigator.geolocation) { toast.error("GPS não disponível neste dispositivo."); return; }
+    setCompartilhando(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        await (supabase as any).rpc("cliente_atualizar_localizacao", {
+          p_pedido_id: pedido.id,
+          p_lat: pos.coords.latitude,
+          p_lng: pos.coords.longitude,
+        });
+        setLocalizacaoCompartilhada(true);
+        setCompartilhando(false);
+        toast.success("Localização compartilhada com o entregador!");
+      },
+      () => {
+        setCompartilhando(false);
+        toast.error("Não foi possível obter sua localização. Verifique as permissões.");
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
   }
 
   // Gera PIX se já chegou com status aguardando_pagamento
@@ -421,6 +445,35 @@ function PedidoTracking() {
             {pedido.observacao && <div className="italic">"{pedido.observacao}"</div>}
           </div>
         </div>
+
+        {/* Compartilhar localização com entregador */}
+        {pedido.status === "entrega" && (
+          <div className="bg-purple-50 border border-purple-200 rounded-2xl p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <MapPin className="size-4 text-purple-500" />
+              <p className="text-sm font-semibold text-purple-800">Ajude o entregador a te encontrar</p>
+            </div>
+            <p className="text-xs text-purple-600 mb-3">
+              Compartilhe sua localização atual para que o entregador veja onde você está no mapa.
+            </p>
+            {localizacaoCompartilhada ? (
+              <div className="flex items-center gap-2 text-green-600 text-sm font-semibold">
+                <CheckCircle2 className="size-4" />
+                Localização compartilhada com o entregador!
+              </div>
+            ) : (
+              <button
+                onClick={compartilharLocalizacao}
+                disabled={compartilhando}
+                className="w-full flex items-center justify-center gap-2 bg-purple-500 hover:bg-purple-600 text-white rounded-xl h-11 font-semibold text-sm transition-colors disabled:opacity-60">
+                {compartilhando
+                  ? <><span className="size-4 rounded-full border-2 border-white border-t-transparent animate-spin" /> Obtendo localização…</>
+                  : <><MapPin className="size-4" /> Compartilhar minha localização</>
+                }
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Botão WhatsApp */}
         {empresa?.whatsapp && pedido.status !== "aguardando_pagamento" && (

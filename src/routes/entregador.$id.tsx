@@ -1,7 +1,7 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Bike, CheckCircle2, Clock, MapPin, Navigation, Package, Phone, PackageSearch, QrCode, Copy } from "lucide-react";
+import { Bike, CheckCircle2, Clock, MapPin, Navigation, Package, Phone, PackageSearch, QrCode, Copy, ChefHat, Store } from "lucide-react";
 import { copiarTexto } from "@/lib/validacoes";
 import { toast } from "sonner";
 
@@ -45,6 +45,8 @@ interface PedidoEntregador {
   created_at: string;
   cliente_lat: number | null;
   cliente_lng: number | null;
+  cliente_telefone: string | null;
+  empresa_nome: string | null;
 }
 
 export const Route = createFileRoute("/entregador/$id")({
@@ -73,9 +75,11 @@ const STATUS_OPTIONS = [
   { value: "indisponivel", label: "Indisponível",   cor: "bg-red-500",    light: "bg-red-50 border-red-300 text-red-700" },
 ];
 
-const STATUS_PEDIDO: Record<string, { label: string; cor: string }> = {
-  entrega:    { label: "Em entrega",  cor: "bg-purple-100 text-purple-700" },
-  finalizado: { label: "Entregue",    cor: "bg-green-100 text-green-700" },
+const STATUS_PEDIDO: Record<string, { label: string; cor: string; icon: React.ComponentType<{ className?: string }> }> = {
+  aceito:     { label: "Confirmado",        cor: "bg-amber-100 text-amber-700",   icon: CheckCircle2 },
+  preparo:    { label: "Em preparo",        cor: "bg-orange-100 text-orange-700", icon: ChefHat },
+  entrega:    { label: "Saiu p/ entrega",   cor: "bg-purple-100 text-purple-700", icon: Bike },
+  finalizado: { label: "Entregue",          cor: "bg-green-100 text-green-700",   icon: CheckCircle2 },
 };
 
 function EntregadorPage() {
@@ -85,6 +89,7 @@ function EntregadorPage() {
   const [atualizando, setAtualizando] = useState(false);
   const [disponiveis, setDisponiveis] = useState<PedidoDisponivel[]>([]);
   const [pegando, setPegando] = useState<string | null>(null);
+  const [finalizando, setFinalizando] = useState<string | null>(null);
   const [erroDisponiveis, setErroDisponiveis] = useState<string | null>(null);
   const [ultimaAtualizacao, setUltimaAtualizacao] = useState<Date | null>(null);
   const isFreelancer = entregador.tipo === "freelancer";
@@ -196,6 +201,23 @@ function EntregadorPage() {
     }
     await carregarPedidos();
     await carregarDisponiveis();
+    // Rola para o topo para mostrar a seção "Em andamento" que acabou de aparecer
+    setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 200);
+  }
+
+  async function finalizarEntrega(pedidoId: string) {
+    setFinalizando(pedidoId);
+    const { data } = await (supabase as any).rpc("entregador_finalizar_entrega", {
+      p_token: entregador.public_token,
+      p_pedido_id: pedidoId,
+    });
+    setFinalizando(null);
+    if (!data?.ok) {
+      toast.error(data?.erro ?? "Erro ao finalizar entrega.");
+      return;
+    }
+    toast.success("Entrega finalizada! Boa entrega!");
+    carregarPedidos();
   }
 
   async function mudarStatus(novoStatus: string) {
@@ -207,7 +229,6 @@ function EntregadorPage() {
   }
 
   useEffect(() => {
-    // Sessão anônima autenticada: permite realtime + RLS em pedidos
     async function iniciar() {
       try {
         const { data: { session } } = await supabase.auth.getSession();
@@ -224,13 +245,11 @@ function EntregadorPage() {
     }
     iniciar();
 
-    // Polling 15s como fallback garantido
     const poll = setInterval(() => {
       carregarPedidos();
       if (isFreelancer) carregarDisponiveis();
     }, 15000);
 
-    // Realtime — funciona após vincular sessão autenticada
     const ch = supabase.channel(`entregador-pedidos-${entregador.id}`)
       .on("postgres_changes",
         { event: "*", schema: "public", table: "pedidos" },
@@ -240,7 +259,7 @@ function EntregadorPage() {
     return () => { clearInterval(poll); supabase.removeChannel(ch); };
   }, [entregador.id]);
 
-  const pedidosAtivos    = pedidos.filter((p) => p.status === "entrega");
+  const pedidosAtivos    = pedidos.filter((p) => ["aceito", "preparo", "entrega"].includes(p.status));
   const pedidosHistorico = pedidos.filter((p) => p.status === "finalizado");
   const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
@@ -273,7 +292,6 @@ function EntregadorPage() {
                 </a>
               )}
             </div>
-            {/* Indicador de status */}
             <div className="ml-auto flex items-center gap-1.5">
               <span className={`size-2.5 rounded-full ${statusAtual.cor} ${entregador.status === "disponivel" ? "animate-pulse" : ""}`} />
               <span className="text-xs font-semibold text-zinc-600">{statusAtual.label}</span>
@@ -303,6 +321,114 @@ function EntregadorPage() {
             ))}
           </div>
         </div>
+
+        {/* ── Pedidos em andamento (ativos) ── */}
+        {pedidosAtivos.length > 0 && (
+          <div>
+            <h2 className="font-bold text-zinc-900 mb-3 flex items-center gap-2">
+              <span className="size-2 rounded-full bg-purple-500 animate-pulse" />
+              Em andamento ({pedidosAtivos.length})
+            </h2>
+            <div className="space-y-3">
+              {pedidosAtivos.map((p) => {
+                const st = STATUS_PEDIDO[p.status] ?? STATUS_PEDIDO.entrega;
+                const Icon = st.icon;
+                return (
+                  <div key={p.id} className="bg-white rounded-2xl shadow-sm p-4 border-2 border-purple-100">
+
+                    {/* Cabeçalho do card */}
+                    <div className="flex items-start justify-between gap-2 mb-3">
+                      <div>
+                        <span className="font-bold text-zinc-900 text-base">Pedido #{p.numero}</span>
+                        {p.empresa_nome && (
+                          <div className="flex items-center gap-1 text-xs text-zinc-500 mt-0.5">
+                            <Store className="size-3 shrink-0" />
+                            {p.empresa_nome}
+                          </div>
+                        )}
+                      </div>
+                      <span className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-full shrink-0 ${st.cor}`}>
+                        <Icon className="size-3" />
+                        {st.label}
+                      </span>
+                    </div>
+
+                    {/* Cliente */}
+                    <div className="text-sm font-semibold text-zinc-800">{p.cliente_nome}</div>
+
+                    {/* Telefone do cliente */}
+                    {p.cliente_telefone && (
+                      <a href={`tel:${p.cliente_telefone}`}
+                        className="flex items-center gap-1.5 text-xs text-blue-600 font-medium hover:text-blue-800 mt-1">
+                        <Phone className="size-3" />
+                        {p.cliente_telefone}
+                        <span className="text-zinc-400 font-normal">· Ligar</span>
+                      </a>
+                    )}
+
+                    {/* Endereço */}
+                    {p.cliente_endereco && (
+                      <div className="flex items-start gap-1.5 text-xs text-zinc-500 mt-1.5">
+                        <MapPin className="size-3 mt-0.5 shrink-0" />
+                        {p.cliente_endereco}
+                      </div>
+                    )}
+
+                    {/* Mini mapa */}
+                    {p.cliente_lat != null && p.cliente_lng != null && (
+                      <div className="mt-3 overflow-hidden rounded-xl ring-1 ring-zinc-200">
+                        <Suspense fallback={<div className="h-44 bg-zinc-100 flex items-center justify-center text-xs text-zinc-400">Carregando mapa…</div>}>
+                          <MapaEntrega
+                            clienteLat={p.cliente_lat}
+                            clienteLng={p.cliente_lng}
+                            clienteNome={p.cliente_nome}
+                            entregadorLat={currentPos?.lat}
+                            entregadorLng={currentPos?.lng}
+                          />
+                        </Suspense>
+                      </div>
+                    )}
+
+                    {/* Ações */}
+                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-zinc-100 gap-2">
+                      <span className="text-sm font-black text-green-600">Taxa: {fmt(Number(p.taxa_entrega ?? 0))}</span>
+                      <div className="flex items-center gap-2">
+                        <a
+                          href={
+                            p.cliente_lat != null
+                              ? `https://maps.google.com/?daddr=${p.cliente_lat},${p.cliente_lng}`
+                              : `https://maps.google.com/?q=${encodeURIComponent(p.cliente_endereco ?? "")}`
+                          }
+                          target="_blank" rel="noreferrer"
+                          className="text-xs text-blue-600 font-medium hover:underline flex items-center gap-1">
+                          <Navigation className="size-3" /> Navegar
+                        </a>
+                        {p.status === "entrega" && (
+                          <button
+                            onClick={() => finalizarEntrega(p.id)}
+                            disabled={finalizando === p.id}
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-green-500 text-white text-xs font-bold hover:bg-green-600 disabled:opacity-60 transition-colors">
+                            {finalizando === p.id
+                              ? <><span className="size-3 rounded-full border-2 border-white border-t-transparent animate-spin" /> Finalizando…</>
+                              : <><CheckCircle2 className="size-3.5" /> Entregue!</>
+                            }
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {pedidosAtivos.length === 0 && (
+          <div className="bg-white rounded-2xl shadow-sm p-8 text-center">
+            <Package className="size-10 text-zinc-200 mx-auto mb-2" />
+            <p className="text-sm text-zinc-400">Nenhum pedido em andamento no momento.</p>
+          </div>
+        )}
 
         {/* GPS Tracking */}
         <div className="bg-white rounded-2xl shadow-sm p-5">
@@ -479,67 +605,6 @@ function EntregadorPage() {
           </div>
         )}
 
-        {/* Pedidos em entrega agora */}
-        {pedidosAtivos.length > 0 && (
-          <div>
-            <h2 className="font-bold text-zinc-900 mb-3 flex items-center gap-2">
-              <span className="size-2 rounded-full bg-purple-500 animate-pulse" />
-              Em entrega agora ({pedidosAtivos.length})
-            </h2>
-            <div className="space-y-3">
-              {pedidosAtivos.map((p) => (
-                <div key={p.id} className="bg-white rounded-2xl shadow-sm p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-bold text-zinc-900">Pedido #{p.numero}</span>
-                    <span className="text-xs font-bold px-2 py-1 rounded-full bg-purple-100 text-purple-700">Em entrega</span>
-                  </div>
-                  <div className="text-sm font-semibold text-zinc-800">{p.cliente_nome}</div>
-                  {p.cliente_endereco && (
-                    <div className="flex items-start gap-1.5 text-xs text-zinc-500 mt-1">
-                      <MapPin className="size-3 mt-0.5 shrink-0" />
-                      {p.cliente_endereco}
-                    </div>
-                  )}
-                  {/* Mini mapa — exibe se o cliente compartilhou localização GPS */}
-                  {p.cliente_lat != null && p.cliente_lng != null && (
-                    <div className="mt-3 overflow-hidden rounded-xl ring-1 ring-zinc-200">
-                      <Suspense fallback={<div className="h-44 bg-zinc-100 flex items-center justify-center text-xs text-zinc-400">Carregando mapa…</div>}>
-                        <MapaEntrega
-                          clienteLat={p.cliente_lat}
-                          clienteLng={p.cliente_lng}
-                          clienteNome={p.cliente_nome}
-                          entregadorLat={currentPos?.lat}
-                          entregadorLng={currentPos?.lng}
-                        />
-                      </Suspense>
-                    </div>
-                  )}
-                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-zinc-100">
-                    <span className="text-sm font-bold text-green-600">Taxa: {fmt(Number(p.taxa_entrega ?? 0))}</span>
-                    <a
-                      href={
-                        p.cliente_lat != null
-                          ? `https://maps.google.com/?daddr=${p.cliente_lat},${p.cliente_lng}`
-                          : `https://maps.google.com/?q=${encodeURIComponent(p.cliente_endereco ?? "")}`
-                      }
-                      target="_blank" rel="noreferrer"
-                      className="text-xs text-blue-600 font-medium hover:underline flex items-center gap-1">
-                      <Navigation className="size-3" /> Navegar
-                    </a>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {pedidosAtivos.length === 0 && (
-          <div className="bg-white rounded-2xl shadow-sm p-8 text-center">
-            <Package className="size-10 text-zinc-200 mx-auto mb-2" />
-            <p className="text-sm text-zinc-400">Nenhum pedido em entrega no momento.</p>
-          </div>
-        )}
-
         {/* Histórico */}
         {pedidosHistorico.length > 0 && (
           <div>
@@ -548,7 +613,6 @@ function EntregadorPage() {
               <span className="text-xs text-zinc-400">{pedidosHistorico.length} no total</span>
             </div>
 
-            {/* Resumo do mês */}
             {doMes.length > 0 && (
               <div className="bg-green-50 border border-green-200 rounded-2xl p-4 mb-4 flex items-center justify-between">
                 <div>
@@ -574,6 +638,11 @@ function EntregadorPage() {
                         <div className="text-sm font-bold text-zinc-900">
                           #{p.numero} — {p.cliente_nome}
                         </div>
+                        {p.empresa_nome && (
+                          <div className="flex items-center gap-1 text-xs text-zinc-400 mt-0.5">
+                            <Store className="size-3" /> {p.empresa_nome}
+                          </div>
+                        )}
                         {p.cliente_endereco && (
                           <div className="flex items-start gap-1 text-xs text-zinc-500 mt-1">
                             <MapPin className="size-3 mt-0.5 shrink-0 text-zinc-400" />
