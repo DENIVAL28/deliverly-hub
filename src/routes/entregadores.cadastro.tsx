@@ -164,7 +164,24 @@ function EntregadoresCadastro() {
     setSalvando(true);
 
     try {
-      // 1. Criar conta Supabase Auth
+      // 1. Upload foto ANTES do signUp — politica permite anon, sem depender de auth.uid()
+      let fotoUrl: string | null = null;
+      if (form.fotoRostoFile) {
+        const fileJpeg = await toJpeg(form.fotoRostoFile);
+        const path = `pendente/${crypto.randomUUID()}.jpg`;
+        const { error: uploadErr } = await supabase.storage
+          .from("entregadores")
+          .upload(path, fileJpeg, { contentType: "image/jpeg" });
+        if (uploadErr) {
+          console.error("Upload foto erro:", uploadErr);
+          toast.error(`Falha ao enviar a foto: ${uploadErr.message}`);
+          return;
+        }
+        const { data: pub } = supabase.storage.from("entregadores").getPublicUrl(path);
+        fotoUrl = pub.publicUrl;
+      }
+
+      // 2. Criar conta Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: form.email.trim().toLowerCase(),
         password: form.senha,
@@ -183,23 +200,6 @@ function EntregadoresCadastro() {
       }
       const userId = authData.user?.id;
       if (!userId) { toast.error("Erro ao criar conta. Tente novamente."); return; }
-
-      // 2. Upload foto de rosto (converte para JPEG antes)
-      let fotoUrl: string | null = null;
-      if (form.fotoRostoFile) {
-        const fileJpeg = await toJpeg(form.fotoRostoFile);
-        const path = `${userId}/rosto_${Date.now()}.jpg`;
-        const { error: uploadErr } = await supabase.storage
-          .from("entregadores")
-          .upload(path, fileJpeg, { upsert: true, contentType: "image/jpeg" });
-        if (uploadErr) {
-          console.error("Upload foto erro:", uploadErr);
-          toast.error(`Falha ao enviar a foto: ${uploadErr.message}`);
-          return;
-        }
-        const { data: pub } = supabase.storage.from("entregadores").getPublicUrl(path);
-        fotoUrl = pub.publicUrl;
-      }
 
       // 3. Inserir registro na tabela entregadores
       const cpfLimpo = form.cpf.replace(/\D/g, "");
