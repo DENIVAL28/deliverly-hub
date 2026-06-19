@@ -401,7 +401,7 @@ function ProdutosPage() {
 function GruposOpcoes({ produtoId }: { produtoId: string }) {
   const qc = useQueryClient();
   const [novoGrupoNome,  setNovoGrupoNome]  = useState("");
-  const [novoGrupoObrg,  setNovoGrupoObrg]  = useState(true);
+  const [novoGrupoObrg,  setNovoGrupoObrg]  = useState(false);
   const [novoGrupoMax,   setNovoGrupoMax]   = useState(1);
   const [novoGrupoMulti, setNovoGrupoMulti] = useState(false);
   const [expandido, setExpandido] = useState<string | null>(null);
@@ -425,7 +425,11 @@ function GruposOpcoes({ produtoId }: { produtoId: string }) {
       ordem: grupos.length,
     });
     if (error) { toast.error(error.message); return; }
-    setNovoGrupoNome(""); qc.invalidateQueries({ queryKey: ["grupos-opcoes", produtoId] });
+    setNovoGrupoNome("");
+    setNovoGrupoObrg(false);
+    setNovoGrupoMulti(false);
+    setNovoGrupoMax(1);
+    qc.invalidateQueries({ queryKey: ["grupos-opcoes", produtoId] });
     toast.success("Grupo criado");
   }
 
@@ -475,11 +479,11 @@ function GruposOpcoes({ produtoId }: { produtoId: string }) {
                 </span>
               )}
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5">
               <span className="text-[10px] text-zinc-400">{g.opcoes?.length ?? 0} opções</span>
               <button onClick={(e) => { e.stopPropagation(); abrirEditGrupo(g); }}
-                className="ml-2 text-zinc-300 hover:text-blue-500 transition-colors" title="Editar grupo">
-                <Pencil className="size-3.5" />
+                className="flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors">
+                <Pencil className="size-3" /> Editar
               </button>
               <button onClick={(e) => { e.stopPropagation(); removeGrupo(g.id); }}
                 className="text-zinc-300 hover:text-red-500 transition-colors" title="Excluir grupo">
