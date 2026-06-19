@@ -190,12 +190,16 @@ function Nav() {
             />
           </Link>
           <div className="hidden md:flex items-center gap-1 text-sm font-medium">
-            {[["#como-funciona","Como funciona"],["#recursos","Recursos"],["#planos","Planos"],["#seja-entregador","🛵 Entregadores"]].map(([href,label]) => (
+            {[["#como-funciona","Como funciona"],["#recursos","Recursos"],["#planos","Planos"]].map(([href,label]) => (
               <a key={href} href={href}
                 className={`px-3 py-2 rounded-lg transition-all duration-200 ${dark ? "text-white/70 hover:text-white hover:bg-white/10" : "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100"}`}>
                 {label}
               </a>
             ))}
+            <Link to="/entregadores"
+              className={`px-3 py-2 rounded-lg transition-all duration-200 ${dark ? "text-white/70 hover:text-white hover:bg-white/10" : "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100"}`}>
+              🛵 Entregadores
+            </Link>
           </div>
         </div>
 
@@ -223,10 +227,14 @@ function Nav() {
 
       {open && (
         <div className="md:hidden bg-white/98 backdrop-blur-xl border-t border-zinc-100 px-6 py-4 space-y-2 shadow-xl">
-          {[["#como-funciona","Como funciona"],["#recursos","Recursos"],["#planos","Planos"],["#seja-entregador","🛵 Entregadores"]].map(([href,label]) => (
+          {[["#como-funciona","Como funciona"],["#recursos","Recursos"],["#planos","Planos"]].map(([href,label]) => (
             <a key={href} href={href} onClick={() => setOpen(false)}
               className="block text-sm font-medium text-zinc-600 hover:text-orange-500 py-2 px-3 rounded-xl hover:bg-orange-50 transition-colors">{label}</a>
           ))}
+          <Link to="/entregadores" onClick={() => setOpen(false)}
+            className="block text-sm font-medium text-zinc-600 hover:text-orange-500 py-2 px-3 rounded-xl hover:bg-orange-50 transition-colors">
+            🛵 Entregadores
+          </Link>
           <div className="pt-2 border-t border-zinc-100">
             <Link to="/lojas" onClick={() => setOpen(false)}
               className="block text-center bg-orange-500 text-white text-sm font-bold px-4 py-3 rounded-2xl mb-2 shadow-lg shadow-orange-500/20">
@@ -1025,7 +1033,7 @@ function WhatsAppFlutuante() {
       target="_blank"
       rel="noreferrer"
       aria-label="Falar no WhatsApp"
-      className={`fixed bottom-6 right-6 z-50 flex items-center gap-2.5 bg-green-500 hover:bg-green-400 text-white font-bold px-4 py-3.5 rounded-2xl shadow-2xl shadow-green-500/30 transition-all duration-300 hover:scale-[1.05] hover:shadow-green-500/50 ${
+      className={`fixed bottom-20 sm:bottom-6 right-4 sm:right-6 z-50 flex items-center gap-2.5 bg-green-500 hover:bg-green-400 text-white font-bold px-4 py-3.5 rounded-2xl shadow-2xl shadow-green-500/30 transition-all duration-300 hover:scale-[1.05] hover:shadow-green-500/50 ${
         visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
       }`}
     >
