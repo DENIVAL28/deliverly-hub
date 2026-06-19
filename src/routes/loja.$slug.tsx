@@ -1,4 +1,5 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
+import { InstalarPWA } from "@/components/InstalarPWA";
 import { useRef, useMemo, useState, useEffect } from "react";
 import { verificarAberto } from "@/lib/loja-horario";
 import { useQuery } from "@tanstack/react-query";
@@ -1232,6 +1233,7 @@ function LojaPage() {
           </div>
         </div>
       )}
+      <InstalarPWA />
     </div>
   );
 }

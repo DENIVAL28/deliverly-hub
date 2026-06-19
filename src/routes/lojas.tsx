@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { MapPin, Clock, ShoppingBag, Search, ChevronRight, ChevronDown, X } from "lucide-react";
 import { verificarAberto } from "@/lib/loja-horario";
+import { InstalarPWA } from "@/components/InstalarPWA";
 
 export const Route = createFileRoute("/lojas")({
   ssr: false,
@@ -352,6 +353,7 @@ function LojasPage() {
           </Link>
         </div>
       </div>
+      <InstalarPWA />
     </div>
   );
 }
