@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background -->
+  <rect width="512" height="512" rx="110" fill="#f97316"/>
+  <!-- Roda traseira -->
+  <circle cx="148" cy="334" r="76" fill="none" stroke="white" stroke-width="34"/>
+  <circle cx="148" cy="334" r="14" fill="white"/>
+  <!-- Roda dianteira -->
+  <circle cx="376" cy="334" r="76" fill="none" stroke="white" stroke-width="34"/>
+  <circle cx="376" cy="334" r="14" fill="white"/>
+  <!-- Chassi -->
+  <path d="M 148 334 L 210 248 L 308 248 L 376 334"
+    fill="none" stroke="white" stroke-width="30"
+    stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Assento / tanque -->
+  <path d="M 210 248 L 196 192 L 274 192 L 292 248 Z"
+    fill="white"/>
+  <!-- Guidão -->
+  <path d="M 308 248 L 358 212 L 382 192"
+    fill="none" stroke="white" stroke-width="22"
+    stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Capacete do piloto -->
+  <circle cx="242" cy="158" r="44" fill="white"/>
+  <path d="M 206 172 Q 215 198 242 198 Q 270 198 278 172"
+    fill="#f97316"/>
+</svg>

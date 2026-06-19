@@ -51,6 +51,13 @@ interface PedidoEntregador {
 
 export const Route = createFileRoute("/entregador/$id")({
   ssr: false,
+  head: () => ({
+    meta: [{ name: "apple-mobile-web-app-title", content: "Entregador" }],
+    links: [
+      { rel: "manifest", href: "/manifest-entregador.json" },
+      { rel: "apple-touch-icon", href: "/icon-entregador.svg" },
+    ],
+  }),
   loader: async ({ params }) => {
     if (!UUID_RE.test(params.id)) throw notFound();
     const { data } = await supabase

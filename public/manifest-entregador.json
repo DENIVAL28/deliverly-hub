@@ -1,0 +1,20 @@
+{
+  "name": "Entregador — Delivery Hub",
+  "short_name": "Entregador",
+  "description": "Painel do entregador — veja pedidos disponíveis e acompanhe suas entregas",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#f97316",
+  "background_color": "#f97316",
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "/icon-entregador.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background -->
+  <rect width="512" height="512" rx="110" fill="#f97316"/>
+  <!-- Bag handle -->
+  <path d="M 176 210 C 176 140 210 102 256 102 C 302 102 336 140 336 210"
+    fill="none" stroke="white" stroke-width="36" stroke-linecap="round"/>
+  <!-- Bag body -->
+  <rect x="122" y="196" width="268" height="228" rx="22" fill="white"/>
+  <!-- Checkmark -->
+  <path d="M 193 308 L 237 356 L 322 262"
+    fill="none" stroke="#f97316" stroke-width="30"
+    stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
