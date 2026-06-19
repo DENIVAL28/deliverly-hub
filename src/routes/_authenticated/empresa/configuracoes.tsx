@@ -231,12 +231,16 @@ function ConfiguracoesPage() {
   async function trocarSenha(e: React.FormEvent) {
     e.preventDefault();
     if (novaSenha.length < 8) { toast.error("A senha deve ter ao menos 8 caracteres"); return; }
+    if (!/[A-Z]/.test(novaSenha)) { toast.error("A senha deve ter ao menos uma letra maiúscula"); return; }
+    if (!/[0-9]/.test(novaSenha)) { toast.error("A senha deve ter ao menos um número"); return; }
     if (novaSenha !== confirmarSenha) { toast.error("As senhas não coincidem"); return; }
     setSalvandoSenha(true);
     const { error } = await supabase.auth.updateUser({ password: novaSenha });
     setSalvandoSenha(false);
     if (error) { toast.error("Erro: " + error.message); return; }
-    toast.success("Senha alterada com sucesso!");
+    // Encerra todas as outras sessões (outros dispositivos/abas)
+    await supabase.auth.signOut({ scope: "others" });
+    toast.success("Senha alterada! Outras sessões foram encerradas.");
     setNovaSenha("");
     setConfirmarSenha("");
   }

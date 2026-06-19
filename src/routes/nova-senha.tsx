@@ -67,6 +67,8 @@ function NovaSenhaPage() {
       return;
     }
 
+    // Encerra todas as outras sessões após troca de senha
+    await supabase.auth.signOut({ scope: "others" });
     setConcluido(true);
     setTimeout(() => navigate({ to: "/app" }), 3000);
   }

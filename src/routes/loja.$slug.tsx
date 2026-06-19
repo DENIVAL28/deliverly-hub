@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Plus, Minus, MessageCircle, Store, X, ShoppingBag, ImageIcon, Clock, ShoppingCart, Search, Copy, CheckCircle2, PackageSearch, ChevronLeft, LocateFixed } from "lucide-react";
 import { toast } from "sonner";
 import QRCode from "qrcode";
-import { copiarTexto } from "@/lib/validacoes";
+import { copiarTexto, normalizeWA } from "@/lib/validacoes";
 import { trackEvento } from "@/lib/analytics";
 
 export const Route = createFileRoute("/loja/$slug")({
@@ -355,9 +355,7 @@ function LojaPage() {
         `Pagamento: ${forma_pagamento}${observacao ? `\nObs: ${observacao}` : ""}`
       );
 
-      const waNum = empresa.whatsapp ? empresa.whatsapp.replace(/\D/g, "") : null;
-      const waNumFull = waNum ? (waNum.startsWith("55") ? waNum : `55${waNum}`) : null;
-      const waUrl = waNumFull ? `https://wa.me/${waNumFull}?text=${msg}` : null;
+      const waUrl = empresa.whatsapp ? `https://wa.me/${normalizeWA(empresa.whatsapp)}?text=${msg}` : null;
 
       setCart({}); setCheckoutOpen(false); setCupomAplicado(null); setCodigoCupom("");
 
@@ -577,20 +575,16 @@ function LojaPage() {
             <PackageSearch className="size-4" style={{ color: brandColor }} />
             Acompanhar meu pedido
           </button>
-          {empresa.whatsapp && (() => {
-            const num = empresa.whatsapp.replace(/\D/g, "");
-            const numFull = num.startsWith("55") ? num : `55${num}`;
-            return (
-              <a
-                href={`https://wa.me/${numFull}`}
-                target="_blank" rel="noreferrer"
-                className="flex items-center gap-1.5 text-sm font-semibold text-green-600 hover:text-green-700 transition-colors"
-              >
-                <MessageCircle className="size-4" />
-                Falar com a loja
-              </a>
-            );
-          })()}
+          {empresa.whatsapp && (
+            <a
+              href={`https://wa.me/${normalizeWA(empresa.whatsapp)}`}
+              target="_blank" rel="noreferrer"
+              className="flex items-center gap-1.5 text-sm font-semibold text-green-600 hover:text-green-700 transition-colors"
+            >
+              <MessageCircle className="size-4" />
+              Falar com a loja
+            </a>
+          )}
         </div>
       </div>
 

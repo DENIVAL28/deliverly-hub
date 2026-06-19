@@ -1,23 +1,31 @@
-import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { useAuth } from "@/lib/use-auth";
 import { AppShell } from "@/components/AppShell";
 import { LayoutDashboard, ShoppingBag, UtensilsCrossed, FolderTree, Users, Settings, BarChart2, Tag, Bike, Star, ReceiptText, CreditCard, TrendingUp, Grid2x2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/empresa")({
+  beforeLoad: async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return; // pai (_authenticated) já redireciona para /auth
+
+    const [{ data: masterRole }, { data: profile }] = await Promise.all([
+      supabase.from("user_roles").select("role").eq("user_id", user.id).eq("role", "master").maybeSingle(),
+      supabase.from("profiles").select("empresa_id").eq("id", user.id).maybeSingle(),
+    ]);
+
+    const isMaster  = !!masterRole;
+    const empresaId = profile?.empresa_id ?? null;
+
+    if (isMaster && !empresaId)  throw redirect({ to: "/master" });
+    if (!isMaster && !empresaId) throw redirect({ to: "/onboarding" });
+  },
   component: EmpresaLayout,
 });
 
 function EmpresaLayout() {
-  const { loading, isMaster, empresaId, plano } = useAuth();
-  const navigate = useNavigate();
+  const { loading, plano } = useAuth();
   const basico = plano === "basico";
-
-  useEffect(() => {
-    if (loading) return;
-    if (isMaster && !empresaId)   navigate({ to: "/master",     replace: true });
-    if (!isMaster && !empresaId)  navigate({ to: "/onboarding", replace: true });
-  }, [loading, isMaster, empresaId, navigate]);
 
   if (loading) return <div className="p-10 text-sm text-zinc-500">Carregando…</div>;
 

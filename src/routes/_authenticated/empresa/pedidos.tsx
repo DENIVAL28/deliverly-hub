@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { LimiteBanner } from "@/components/UpgradeGuard";
 import { traduzirErro } from "@/lib/erros";
 import { PLANO_LIMITS } from "@/lib/plano";
+import { normalizeWA } from "@/lib/validacoes";
 
 const STATUS: { value: string; label: string; tone: string }[] = [
   { value: "aguardando_confirmacao", label: "Aguard. confirmação", tone: "bg-zinc-100 text-zinc-600" },
@@ -80,7 +81,7 @@ async function notificarWhatsApp(p: any, empresa: any) {
   const nomeEmpresa = empresa?.nome_fantasia ?? "Estabelecimento";
   const msg = MSGS[p.status]?.(p, nomeEmpresa);
   if (!msg || !p.cliente_telefone) return;
-  const tel = p.cliente_telefone.replace(/\D/g, "");
+  const waNum = normalizeWA(p.cliente_telefone);
 
   // Tenta Z-API se configurado
   const { zapi_instance, zapi_token, zapi_client_token } = empresa ?? {};
@@ -90,7 +91,7 @@ async function notificarWhatsApp(p: any, empresa: any) {
       if (zapi_client_token) headers["Client-Token"] = zapi_client_token;
       const res = await fetch(
         `https://api.z-api.io/instances/${zapi_instance}/token/${zapi_token}/send-text`,
-        { method: "POST", headers, body: JSON.stringify({ phone: `55${tel}`, message: msg }) }
+        { method: "POST", headers, body: JSON.stringify({ phone: waNum, message: msg }) }
       );
       if (res.ok) { toast.success("Mensagem enviada via WhatsApp!"); return; }
     } catch (_) {}
@@ -98,7 +99,7 @@ async function notificarWhatsApp(p: any, empresa: any) {
   }
 
   // Fallback: abre WhatsApp Web
-  window.open(`https://wa.me/55${tel}?text=${encodeURIComponent(msg)}`, "_blank");
+  window.open(`https://wa.me/${waNum}?text=${encodeURIComponent(msg)}`, "_blank");
 }
 
 /* ─── Escape HTML para evitar XSS no print ─── */
@@ -217,7 +218,7 @@ function PedidosPage() {
   const somAtivoRef = useRef(true);
   somAtivoRef.current = somAtivo;
 
-  const VAPID_PUBLIC = "BDQJCfKKcQaq_jK6dVZ0-BLig3JxFkOB_bG7q0WWYF6tzS49PsePMgfZskeqiELxGrlM1EB4740-Q3u9hl-r7Ro";
+  const VAPID_PUBLIC = import.meta.env.VITE_VAPID_PUBLIC as string ?? "BDQJCfKKcQaq_jK6dVZ0-BLig3JxFkOB_bG7q0WWYF6tzS49PsePMgfZskeqiELxGrlM1EB4740-Q3u9hl-r7Ro";
 
   async function registrarPushSubscription(swReg: ServiceWorkerRegistration) {
     if (!empresaId) return;

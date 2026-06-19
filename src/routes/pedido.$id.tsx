@@ -3,7 +3,7 @@ import { lazy, Suspense, useEffect, useState, useRef, useCallback } from "react"
 import { supabase } from "@/integrations/supabase/client";
 import { CheckCircle2, Clock, ChefHat, Bike, XCircle, MapPin, MessageCircle, User, Copy, Navigation } from "lucide-react";
 import QRCode from "qrcode";
-import { copiarTexto } from "@/lib/validacoes";
+import { copiarTexto, normalizeWA } from "@/lib/validacoes";
 import { toast } from "sonner";
 
 const MapaEntrega = lazy(() => import("@/components/MapaEntrega"));
@@ -393,13 +393,13 @@ function PedidoTracking() {
                 <span className="block text-2xl animate-spin">⟳</span>
                 <p>Gerando QR Code…</p>
                 {empresa?.whatsapp && (
-                  <p className="text-xs">Se demorar, <a href={`https://wa.me/${empresa.whatsapp.replace(/\D/g,"")}`} target="_blank" rel="noreferrer" className="text-green-600 underline">fale com o estabelecimento</a> para receber o PIX.</p>
+                  <p className="text-xs">Se demorar, <a href={`https://wa.me/${normalizeWA(empresa.whatsapp)}`} target="_blank" rel="noreferrer" className="text-green-600 underline">fale com o estabelecimento</a> para receber o PIX.</p>
                 )}
               </div>
             )}
 
             {empresa?.whatsapp && (
-              <a href={`https://wa.me/${empresa.whatsapp.replace(/\D/g,"")}?text=${encodeURIComponent(`Olá! Realizei o pagamento do pedido #${pedido.numero}`)}`}
+              <a href={`https://wa.me/${normalizeWA(empresa.whatsapp)}?text=${encodeURIComponent(`Olá! Realizei o pagamento do pedido #${pedido.numero}`)}`}
                 target="_blank" rel="noreferrer"
                 className="flex items-center justify-center gap-2 w-full bg-green-500 hover:bg-green-600 text-white rounded-xl h-10 text-sm font-semibold transition-colors mt-2">
                 <MessageCircle className="size-4" /> Avisar que paguei
@@ -590,7 +590,7 @@ function PedidoTracking() {
 
         {/* Botão WhatsApp */}
         {empresa?.whatsapp && pedido.status !== "aguardando_pagamento" && (
-          <a href={`https://wa.me/${empresa.whatsapp.replace(/\D/g,"")}?text=${encodeURIComponent(`Olá! Tenho uma dúvida sobre o pedido #${pedido.numero}`)}`}
+          <a href={`https://wa.me/${normalizeWA(empresa.whatsapp)}?text=${encodeURIComponent(`Olá! Tenho uma dúvida sobre o pedido #${pedido.numero}`)}`}
             target="_blank" rel="noreferrer"
             className="flex items-center justify-center gap-2 w-full bg-green-500 hover:bg-green-600 text-white rounded-2xl h-12 font-semibold transition-colors">
             <MessageCircle className="size-5" /> Falar com o estabelecimento

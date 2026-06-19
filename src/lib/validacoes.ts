@@ -56,3 +56,10 @@ export function cnpjStatus(cnpj: string): "vazio" | "incompleto" | "invalido" | 
   if (!validarCNPJ(cnpj)) return "invalido";
   return "valido";
 }
+
+// Normaliza qualquer número de telefone para o formato usado no WhatsApp:
+// apenas dígitos, com DDI 55 garantido (sem duplicar se já existir).
+export function normalizeWA(tel: string): string {
+  const digits = tel.replace(/\D/g, "");
+  return digits.startsWith("55") ? digits : `55${digits}`;
+}
