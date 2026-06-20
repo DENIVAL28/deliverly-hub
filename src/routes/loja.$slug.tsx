@@ -401,13 +401,10 @@ function LojaPage() {
     const tel = telBusca.replace(/\D/g, "");
     if (tel.length < 8) return;
     setBuscandoPedidos(true);
-    const { data } = await supabase
-      .from("pedidos")
-      .select("id, numero, status, total, created_at")
-      .eq("empresa_id", empresa.id)
-      .eq("cliente_telefone" as any, tel)
-      .order("created_at", { ascending: false })
-      .limit(5);
+    const { data } = await (supabase as any).rpc("buscar_pedidos_por_telefone", {
+      p_empresa_id: empresa.id,
+      p_telefone: tel,
+    });
     setPedidosBusca(data ?? []);
     setBuscandoPedidos(false);
   }
