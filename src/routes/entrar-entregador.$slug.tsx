@@ -53,14 +53,15 @@ function CadastroEntregadorPage() {
 
     setSalvando(true);
     const { error } = await (supabase as any).from("entregadores").insert({
-      empresa_id:     (empresa as any).id,
-      nome:           nome.trim(),
-      telefone:       telefone.trim(),
+      empresa_id:      (empresa as any).id,
+      nome:            nome.trim(),
+      telefone:        telefone.trim(),
       veiculo,
-      tipo:           "freelancer",
-      aprovado:       false,
-      chave_pix:      chavePix.trim() || null,
-      tipo_chave_pix: chavePix.trim() ? tipoPix : null,
+      tipo:            "freelancer",
+      aprovado:        false,
+      status_cadastro: "aguardando_analise",
+      chave_pix:       chavePix.trim() || null,
+      tipo_chave_pix:  chavePix.trim() ? tipoPix : null,
     });
     setSalvando(false);
 

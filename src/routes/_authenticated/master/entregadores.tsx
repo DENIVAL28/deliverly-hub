@@ -49,8 +49,7 @@ function MasterEntregadoresPage() {
     queryFn: async () => {
       let q = (supabase as any)
         .from("entregadores")
-        .select("id, nome, email, cpf, cnh, placa, veiculo, modelo_veiculo, cor_veiculo, cidade, telefone, foto_rosto_url, status_cadastro, verificado, motivo_recusa, created_at")
-        .is("empresa_id", null)
+        .select("id, nome, email, cpf, cnh, placa, veiculo, modelo_veiculo, cor_veiculo, cidade, telefone, foto_rosto_url, status_cadastro, verificado, motivo_recusa, created_at, empresas(nome_fantasia)")
         .order("created_at", { ascending: false });
 
       if (filtro !== "todos") {
@@ -163,8 +162,11 @@ function MasterEntregadoresPage() {
                         {meta.label}
                       </span>
                     </div>
-                    <p className="text-xs text-zinc-500 mt-0.5">{e.email}</p>
-                    <p className="text-xs text-zinc-400">{VEICULO_LABEL[e.veiculo] ?? e.veiculo} · {e.cidade}</p>
+                    {e.email && <p className="text-xs text-zinc-500 mt-0.5">{e.email}</p>}
+                    {e.empresas?.nome_fantasia && (
+                      <p className="text-xs font-semibold text-orange-500 mt-0.5">🏪 {e.empresas.nome_fantasia}</p>
+                    )}
+                    <p className="text-xs text-zinc-400">{VEICULO_LABEL[e.veiculo] ?? e.veiculo}{e.cidade ? ` · ${e.cidade}` : ""}</p>
                   </div>
                   <button
                     onClick={() => setDetalhe(detalhe?.id === e.id ? null : e)}
