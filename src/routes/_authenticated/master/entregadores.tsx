@@ -44,7 +44,7 @@ function MasterEntregadoresPage() {
   const [processando, setProcessando] = useState<string | null>(null);
   const [detalhe, setDetalhe] = useState<any | null>(null);
 
-  const { data: entregadores = [], isLoading } = useQuery({
+  const { data: entregadores = [], isLoading, error: queryError } = useQuery({
     queryKey: ["master-entregadores", filtro],
     queryFn: async () => {
       let q = (supabase as any)
@@ -57,7 +57,7 @@ function MasterEntregadoresPage() {
       }
 
       const { data, error } = await q;
-      if (error) console.error("[master-entregadores]", error);
+      if (error) throw error;
       return (data ?? []) as any[];
     },
   });
@@ -129,7 +129,13 @@ function MasterEntregadoresPage() {
           <div className="text-sm text-zinc-500 py-8 text-center">Carregando…</div>
         )}
 
-        {!isLoading && entregadores.length === 0 && (
+        {queryError && (
+          <div className="text-sm text-red-600 py-8 text-center bg-red-50 rounded-xl px-4">
+            Erro ao carregar: {String((queryError as any)?.message ?? queryError)}
+          </div>
+        )}
+
+        {!isLoading && !queryError && entregadores.length === 0 && (
           <div className="text-sm text-zinc-400 py-12 text-center">
             Nenhum entregador {filtro !== "todos" ? "com esse status" : "cadastrado"}.
           </div>
