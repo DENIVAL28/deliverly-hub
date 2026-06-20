@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   ActivityIndicator, Alert, RefreshControl,
 } from "react-native";
 import { supabase } from "@/lib/supabase";
+import { notificarNovoPedido } from "@/lib/notifications";
+import { C, R, shadow } from "@/theme";
 
 interface PedidoDisponivel {
   id: string;
@@ -11,39 +13,41 @@ interface PedidoDisponivel {
   cliente_nome: string;
   cliente_endereco: string | null;
   taxa_entrega: number;
-  status: string;
-}
-
-interface Entregador {
-  tipo: string | null;
-  aprovado: boolean | null;
+  empresa_nome: string | null;
 }
 
 const fmt = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-export default function DisponiveisScreen({ token }: { token: string }) {
-  const [entregador, setEntregador] = useState<Entregador | null>(null);
-  const [pedidos, setPedidos]       = useState<PedidoDisponivel[]>([]);
-  const [loading, setLoading]       = useState(true);
-  const [refresh, setRefresh]       = useState(false);
-  const [pegando, setPegando]       = useState<string | null>(null);
+export default function DisponiveisScreen() {
+  const [aprovado, setAprovado] = useState<boolean | null>(null);
+  const [pedidos, setPedidos]   = useState<PedidoDisponivel[]>([]);
+  const prevCountRef = useRef<number | null>(null);
+  const [loading, setLoading]   = useState(true);
+  const [refresh, setRefresh]   = useState(false);
+  const [pegando, setPegando]   = useState<string | null>(null);
 
   const carregar = useCallback(async () => {
-    const { data: ent } = await supabase
-      .from("entregadores")
-      .select("tipo, aprovado")
-      .eq("public_token" as never, token)
-      .maybeSingle();
-    if (ent) setEntregador(ent as any);
+    const { data: ent } = await (supabase as any).rpc("entregador_me");
+    if (ent) setAprovado((ent as any).aprovado ?? false);
 
-    const { data } = await (supabase as any).rpc("freelancer_pedidos_disponiveis", { p_token: token });
-    if (data) setPedidos(data as PedidoDisponivel[]);
-  }, [token]);
+    if ((ent as any)?.aprovado) {
+      const { data } = await (supabase as any).rpc("entregador_pedidos_disponiveis");
+      if (data) {
+        const lista = data as PedidoDisponivel[];
+        const count = lista.length;
+        if (prevCountRef.current !== null && count > prevCountRef.current) {
+          notificarNovoPedido(lista[0]?.numero);
+        }
+        prevCountRef.current = count;
+        setPedidos(lista);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     carregar().finally(() => setLoading(false));
-    const interval = setInterval(carregar, 15000);
+    const interval = setInterval(carregar, 12000);
     return () => clearInterval(interval);
   }, [carregar]);
 
@@ -54,19 +58,16 @@ export default function DisponiveisScreen({ token }: { token: string }) {
       [
         { text: "Cancelar", style: "cancel" },
         {
-          text: "Aceitar",
+          text: "Aceitar entrega",
           onPress: async () => {
             setPegando(pedidoId);
-            const { data } = await (supabase as any).rpc("freelancer_pegar_entrega", {
-              p_token: token,
-              p_pedido_id: pedidoId,
-            });
+            const { data } = await (supabase as any).rpc("entregador_aceitar_pedido", { p_pedido_id: pedidoId });
             setPegando(null);
             if (!data?.ok) {
               Alert.alert("Erro", data?.erro ?? "Não foi possível aceitar. Tente novamente.");
               return;
             }
-            Alert.alert("✅ Aceito!", "O pedido foi adicionado às suas entregas em andamento.");
+            Alert.alert("✅ Pedido aceito!", "Ele foi adicionado às suas entregas em andamento.");
             await carregar();
           },
         },
@@ -83,28 +84,21 @@ export default function DisponiveisScreen({ token }: { token: string }) {
   if (loading) {
     return (
       <View style={styles.centro}>
-        <ActivityIndicator size="large" color="#f97316" />
+        <ActivityIndicator size="large" color={C.brand} />
+        <Text style={styles.loadingText}>Buscando pedidos...</Text>
       </View>
     );
   }
 
-  if (entregador?.tipo !== "freelancer") {
+  if (aprovado === false) {
     return (
       <View style={styles.centro}>
-        <Text style={styles.emoji}>🔒</Text>
-        <Text style={styles.infoTitulo}>Não disponível</Text>
-        <Text style={styles.infoTexto}>Esta área é exclusiva para entregadores freelancer.</Text>
-      </View>
-    );
-  }
-
-  if (entregador?.aprovado === false) {
-    return (
-      <View style={styles.centro}>
-        <Text style={styles.emoji}>⏳</Text>
-        <Text style={styles.infoTitulo}>Cadastro em análise</Text>
-        <Text style={styles.infoTexto}>
-          Aguarde a aprovação do restaurante. Você receberá uma notificação pelo WhatsApp.
+        <View style={styles.bloqueadoIcon}>
+          <Text style={{ fontSize: 40 }}>⏳</Text>
+        </View>
+        <Text style={styles.bloqueadoTitulo}>Cadastro em análise</Text>
+        <Text style={styles.bloqueadoTexto}>
+          Aguarde a aprovação da plataforma. Os pedidos disponíveis aparecerão aqui quando você for aprovado.
         </Text>
       </View>
     );
@@ -116,42 +110,67 @@ export default function DisponiveisScreen({ token }: { token: string }) {
       contentContainerStyle={styles.content}
       data={pedidos}
       keyExtractor={(p) => p.id}
-      refreshControl={<RefreshControl refreshing={refresh} onRefresh={onRefresh} tintColor="#f97316" />}
+      refreshControl={<RefreshControl refreshing={refresh} onRefresh={onRefresh} tintColor={C.brand} />}
       ListHeaderComponent={
-        <View style={styles.headerInfo}>
-          <Text style={styles.headerTitulo}>
-            {pedidos.length === 0
-              ? "Nenhum pedido disponível"
-              : `${pedidos.length} pedido${pedidos.length > 1 ? "s" : ""} disponível${pedidos.length > 1 ? "eis" : ""}`}
-          </Text>
-          <Text style={styles.headerSub}>Puxe para baixo para atualizar</Text>
+        <View style={styles.headerSection}>
+          <View>
+            <Text style={styles.headerTitulo}>
+              {pedidos.length === 0 ? "Aguardando pedidos" : `${pedidos.length} pedido${pedidos.length > 1 ? "s" : ""} disponível${pedidos.length > 1 ? "eis" : ""}`}
+            </Text>
+            <Text style={styles.headerSub}>Puxe para baixo para atualizar</Text>
+          </View>
+          {pedidos.length > 0 && (
+            <View style={styles.countBadge}>
+              <Text style={styles.countBadgeText}>{pedidos.length}</Text>
+            </View>
+          )}
         </View>
       }
       ListEmptyComponent={
         <View style={styles.vazio}>
-          <Text style={styles.vazioCod}>📭</Text>
-          <Text style={styles.vazioTxt}>Nenhum pedido no momento</Text>
-          <Text style={styles.vazioDica}>Fique de olho, novos pedidos aparecem aqui em tempo real</Text>
+          <Text style={styles.vazioEmoji}>📭</Text>
+          <Text style={styles.vazioTitulo}>Nenhuma entrega disponível</Text>
+          <Text style={styles.vazioSub}>
+            Novos pedidos aparecem aqui automaticamente.{"\n"}Atualizando a cada 12 segundos.
+          </Text>
         </View>
       }
       renderItem={({ item: p }) => (
         <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardNum}>Pedido #{p.numero}</Text>
-            <Text style={styles.cardTaxa}>{fmt(p.taxa_entrega)}</Text>
+          {/* Header do card */}
+          <View style={styles.cardTopRow}>
+            <View style={styles.empresaTag}>
+              <Text style={styles.empresaTagText} numberOfLines={1}>
+                {p.empresa_nome ?? "Estabelecimento"}
+              </Text>
+            </View>
+            <Text style={styles.pedidoNum}>#{p.numero}</Text>
           </View>
-          <Text style={styles.cardCliente}>👤 {p.cliente_nome}</Text>
-          {p.cliente_endereco && (
-            <Text style={styles.cardEndereco}>📍 {p.cliente_endereco}</Text>
-          )}
+
+          {/* Taxa em destaque */}
+          <View style={styles.taxaDestaque}>
+            <Text style={styles.taxaLabel}>Você recebe</Text>
+            <Text style={styles.taxaValor}>{fmt(p.taxa_entrega)}</Text>
+          </View>
+
+          {/* Dados do cliente */}
+          <View style={styles.infoBox}>
+            <Text style={styles.infoItem}>👤  {p.cliente_nome}</Text>
+            {p.cliente_endereco && (
+              <Text style={styles.infoItem}>📍  {p.cliente_endereco}</Text>
+            )}
+          </View>
+
+          {/* Botão aceitar */}
           <TouchableOpacity
             style={[styles.btnAceitar, pegando === p.id && styles.btnDisabled]}
             onPress={() => aceitar(p.id, p.numero)}
             disabled={pegando !== null}
+            activeOpacity={0.85}
           >
             {pegando === p.id
-              ? <ActivityIndicator color="#fff" />
-              : <Text style={styles.btnAceitarText}>Aceitar entrega</Text>
+              ? <ActivityIndicator color={C.white} />
+              : <Text style={styles.btnAceitarText}>✅  Aceitar esta entrega</Text>
             }
           </TouchableOpacity>
         </View>
@@ -161,35 +180,93 @@ export default function DisponiveisScreen({ token }: { token: string }) {
 }
 
 const styles = StyleSheet.create({
-  lista: { flex: 1, backgroundColor: "#f4f4f5" },
+  lista: { flex: 1, backgroundColor: C.bg },
   content: { padding: 16 },
   centro: { flex: 1, alignItems: "center", justifyContent: "center", padding: 32 },
-  emoji: { fontSize: 48, marginBottom: 12 },
-  infoTitulo: { fontSize: 18, fontWeight: "700", color: "#111", textAlign: "center" },
-  infoTexto: { fontSize: 14, color: "#666", textAlign: "center", marginTop: 8, lineHeight: 20 },
+  loadingText: { marginTop: 12, fontSize: 14, color: C.textMuted },
 
-  headerInfo: { marginBottom: 16 },
-  headerTitulo: { fontSize: 16, fontWeight: "700", color: "#111" },
-  headerSub: { fontSize: 12, color: "#999", marginTop: 2 },
+  bloqueadoIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 24,
+    backgroundColor: C.amberLight,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
+  },
+  bloqueadoTitulo: { fontSize: 18, fontWeight: "800", color: C.text, textAlign: "center" },
+  bloqueadoTexto: { fontSize: 14, color: C.textMuted, textAlign: "center", marginTop: 10, lineHeight: 20 },
 
-  vazio: { alignItems: "center", paddingVertical: 40 },
-  vazioCod: { fontSize: 48 },
-  vazioTxt: { fontSize: 15, fontWeight: "600", color: "#666", marginTop: 12 },
-  vazioDica: { fontSize: 12, color: "#999", marginTop: 6, textAlign: "center" },
+  headerSection: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 16,
+  },
+  headerTitulo: { fontSize: 16, fontWeight: "800", color: C.text },
+  headerSub: { fontSize: 12, color: C.textLight, marginTop: 2 },
+  countBadge: {
+    backgroundColor: C.brand,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  countBadgeText: { color: C.white, fontWeight: "900", fontSize: 14 },
+
+  vazio: { alignItems: "center", paddingVertical: 48 },
+  vazioEmoji: { fontSize: 52 },
+  vazioTitulo: { fontSize: 16, fontWeight: "700", color: C.textMid, marginTop: 16 },
+  vazioSub: { fontSize: 13, color: C.textLight, marginTop: 8, textAlign: "center", lineHeight: 19 },
 
   card: {
-    backgroundColor: "#fff", borderRadius: 16, padding: 16,
-    marginBottom: 12, shadowColor: "#000", shadowOpacity: 0.04, shadowRadius: 8, elevation: 2,
+    backgroundColor: C.white,
+    borderRadius: R.xl,
+    padding: 18,
+    marginBottom: 12,
+    ...shadow.md,
   },
-  cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
-  cardNum: { fontSize: 15, fontWeight: "800", color: "#111" },
-  cardTaxa: { fontSize: 18, fontWeight: "800", color: "#16a34a" },
-  cardCliente: { fontSize: 13, color: "#444", marginBottom: 3 },
-  cardEndereco: { fontSize: 13, color: "#666", lineHeight: 18, marginBottom: 12 },
+  cardTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 14,
+  },
+  empresaTag: {
+    backgroundColor: C.brandLight,
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    maxWidth: "75%",
+  },
+  empresaTagText: { fontSize: 13, fontWeight: "700", color: C.brandDark },
+  pedidoNum: { fontSize: 14, fontWeight: "800", color: C.textMuted },
+
+  taxaDestaque: {
+    backgroundColor: C.greenLight,
+    borderRadius: R.md,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  taxaLabel: { fontSize: 13, fontWeight: "600", color: C.green },
+  taxaValor: { fontSize: 22, fontWeight: "900", color: C.green },
+
+  infoBox: { gap: 6, marginBottom: 16 },
+  infoItem: { fontSize: 13, color: C.textMid, lineHeight: 18 },
+
   btnAceitar: {
-    backgroundColor: "#f97316", borderRadius: 12,
-    height: 46, alignItems: "center", justifyContent: "center",
+    backgroundColor: C.brand,
+    borderRadius: R.lg,
+    height: 52,
+    alignItems: "center",
+    justifyContent: "center",
+    ...shadow.sm,
   },
-  btnAceitarText: { color: "#fff", fontWeight: "700", fontSize: 15 },
-  btnDisabled: { opacity: 0.6 },
+  btnAceitarText: { color: C.white, fontWeight: "800", fontSize: 15 },
+  btnDisabled: { opacity: 0.55 },
 });

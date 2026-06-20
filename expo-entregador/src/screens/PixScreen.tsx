@@ -1,111 +1,183 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   View, Text, StyleSheet, TextInput, TouchableOpacity,
-  ActivityIndicator, Alert, ScrollView, Clipboard,
+  ActivityIndicator, Alert, ScrollView,
 } from "react-native";
+import * as Clipboard from "expo-clipboard";
 import { supabase } from "@/lib/supabase";
+import { C, R, shadow } from "@/theme";
 
-interface Entregador {
+const TIPOS_PIX = [
+  { value: "aleatoria", label: "Aleatória",  placeholder: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" },
+  { value: "cpf",       label: "CPF",         placeholder: "000.000.000-00" },
+  { value: "telefone",  label: "Telefone",    placeholder: "(66) 99999-9999" },
+  { value: "email",     label: "E-mail",      placeholder: "seu@email.com" },
+];
+
+interface EntregadorInfo {
   nome: string;
   chave_pix: string | null;
   tipo_chave_pix: string | null;
+  status_cadastro: string | null;
 }
 
-const TIPOS_PIX = [
-  { value: "aleatoria", label: "Chave aleatória", placeholder: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" },
-  { value: "cpf",       label: "CPF",             placeholder: "000.000.000-00" },
-  { value: "telefone",  label: "Telefone",         placeholder: "(66) 99999-9999" },
-  { value: "email",     label: "E-mail",           placeholder: "seu@email.com" },
-];
-
-export default function PixScreen({ token }: { token: string }) {
-  const [entregador, setEntregador] = useState<Entregador | null>(null);
+export default function PixScreen() {
+  const [entregador, setEntregador] = useState<EntregadorInfo | null>(null);
   const [loading, setLoading]       = useState(true);
   const [salvando, setSalvando]     = useState(false);
   const [copiado, setCopiado]       = useState(false);
+  const [saindo, setSaindo]         = useState(false);
 
-  const [chave, setChave]     = useState("");
-  const [tipo, setTipo]       = useState("aleatoria");
+  const [chave, setChave] = useState("");
+  const [tipo, setTipo]   = useState("aleatoria");
 
   const carregar = useCallback(async () => {
-    const { data } = await supabase
-      .from("entregadores")
-      .select("nome, chave_pix, tipo_chave_pix")
-      .eq("public_token" as never, token)
-      .maybeSingle();
+    const { data } = await (supabase as any).rpc("entregador_me");
     if (data) {
-      setEntregador(data as any);
+      setEntregador(data as EntregadorInfo);
       setChave((data as any).chave_pix ?? "");
       setTipo((data as any).tipo_chave_pix ?? "aleatoria");
     }
-  }, [token]);
+  }, []);
 
   useEffect(() => {
     carregar().finally(() => setLoading(false));
   }, [carregar]);
 
-  async function salvar() {
-    if (!chave.trim()) {
-      Alert.alert("Campo vazio", "Digite sua chave PIX antes de salvar.");
-      return;
+  function validarChave(): string | null {
+    const v = chave.trim();
+    if (!v) return "Digite sua chave PIX antes de salvar.";
+    if (tipo === "cpf") {
+      const digits = v.replace(/\D/g, "");
+      if (digits.length !== 11) return "CPF deve ter 11 dígitos.";
+      let soma = 0;
+      for (let i = 0; i < 9; i++) soma += parseInt(digits[i]) * (10 - i);
+      let r = (soma * 10) % 11;
+      if (r === 10 || r === 11) r = 0;
+      if (r !== parseInt(digits[9])) return "CPF inválido. Verifique os números digitados.";
+      soma = 0;
+      for (let i = 0; i < 10; i++) soma += parseInt(digits[i]) * (11 - i);
+      r = (soma * 10) % 11;
+      if (r === 10 || r === 11) r = 0;
+      if (r !== parseInt(digits[10])) return "CPF inválido. Verifique os números digitados.";
     }
-    setSalvando(true);
-    const { error } = await (supabase as any).rpc("entregador_atualizar_pix", {
-      p_token: token,
-      p_chave_pix: chave.trim(),
-      p_tipo_chave_pix: tipo,
-    });
-    setSalvando(false);
-    if (error) {
-      Alert.alert("Erro", "Não foi possível salvar sua chave PIX.");
-      return;
+    if (tipo === "telefone") {
+      const digits = v.replace(/\D/g, "");
+      if (digits.length < 10 || digits.length > 11) return "Telefone inválido. Use DDD + número.";
     }
-    setEntregador((prev) => prev ? { ...prev, chave_pix: chave.trim(), tipo_chave_pix: tipo } : prev);
-    Alert.alert("Salvo!", "Sua chave PIX foi atualizada.");
+    if (tipo === "email") {
+      if (!v.includes("@") || !v.includes(".")) return "E-mail inválido.";
+    }
+    return null;
   }
 
-  function copiar() {
+  async function salvar() {
+    const erro = validarChave();
+    if (erro) { Alert.alert("Chave inválida", erro); return; }
+    const chaveFormatada = tipo === "cpf" || tipo === "telefone"
+      ? chave.trim().replace(/\D/g, "")
+      : chave.trim();
+    setSalvando(true);
+    const { data } = await (supabase as any).rpc("entregador_atualizar_pix_auth", {
+      p_chave: chaveFormatada,
+      p_tipo: tipo,
+    });
+    setSalvando(false);
+    if (!data?.ok) {
+      Alert.alert("Erro", data?.erro ?? "Não foi possível salvar sua chave PIX.");
+      return;
+    }
+    setEntregador((prev) => prev ? { ...prev, chave_pix: chaveFormatada, tipo_chave_pix: tipo } : prev);
+    Alert.alert("✅ Salvo!", "Sua chave PIX foi atualizada com sucesso.");
+  }
+
+  async function copiar() {
     if (entregador?.chave_pix) {
-      Clipboard.setString(entregador.chave_pix);
+      await Clipboard.setStringAsync(entregador.chave_pix);
       setCopiado(true);
       setTimeout(() => setCopiado(false), 2000);
     }
   }
 
+  async function sair() {
+    Alert.alert(
+      "Sair da conta",
+      "Tem certeza que deseja sair?",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Sair",
+          style: "destructive",
+          onPress: async () => {
+            setSaindo(true);
+            await supabase.auth.signOut();
+          },
+        },
+      ]
+    );
+  }
+
   if (loading) {
     return (
       <View style={styles.centro}>
-        <ActivityIndicator size="large" color="#f97316" />
+        <ActivityIndicator size="large" color={C.brand} />
       </View>
     );
   }
 
   const tipoAtual = TIPOS_PIX.find((t) => t.value === tipo);
+  const aprovado = entregador?.status_cadastro === "aprovado";
 
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
-      <View style={styles.infoCard}>
-        <Text style={styles.infoTitulo}>💰 Receba suas entregas</Text>
-        <Text style={styles.infoTexto}>
-          Cadastre sua chave PIX para facilitar o pagamento pelo restaurante.
-          O valor é combinado diretamente entre você e o estabelecimento.
-        </Text>
-      </View>
 
-      {entregador?.chave_pix && (
-        <View style={styles.chaveAtualCard}>
-          <Text style={styles.chaveAtualLabel}>Chave PIX atual</Text>
-          <View style={styles.chaveAtualRow}>
-            <Text style={styles.chaveAtualValor} numberOfLines={1} ellipsizeMode="middle">
-              {entregador.chave_pix}
+      {/* Card do perfil */}
+      {entregador && (
+        <View style={styles.perfilCard}>
+          <View style={styles.perfilAvatar}>
+            <Text style={styles.perfilAvatarText}>
+              {(entregador.nome ?? "?").charAt(0).toUpperCase()}
             </Text>
-            <TouchableOpacity style={styles.btnCopiar} onPress={copiar}>
-              <Text style={styles.btnCopiarText}>{copiado ? "Copiado!" : "Copiar"}</Text>
-            </TouchableOpacity>
+          </View>
+          <Text style={styles.perfilNome}>{entregador.nome}</Text>
+          <View style={[styles.perfilStatusTag, aprovado ? styles.statusAprovado : styles.statusPendente]}>
+            <Text style={[styles.perfilStatusText, aprovado ? styles.statusAprovadoText : styles.statusPendenteText]}>
+              {aprovado ? "✅ Aprovado" : "⏳ " + (entregador.status_cadastro ?? "aguardando_analise").replace("_", " ")}
+            </Text>
           </View>
         </View>
       )}
 
+      {/* Card chave PIX atual */}
+      {entregador?.chave_pix ? (
+        <View style={styles.chaveCard}>
+          <View style={styles.chaveCardHeader}>
+            <Text style={styles.chaveCardLabel}>💳 Chave PIX cadastrada</Text>
+            <TouchableOpacity
+              style={[styles.btnCopiar, copiado && styles.btnCopiado]}
+              onPress={copiar}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.btnCopiarText, copiado && styles.btnCopiadoText]}>
+                {copiado ? "✓ Copiado!" : "Copiar"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.chaveValor} numberOfLines={1} ellipsizeMode="middle">
+            {entregador.chave_pix}
+          </Text>
+          <Text style={styles.chaveTipo}>
+            Tipo: {TIPOS_PIX.find((t) => t.value === entregador.tipo_chave_pix)?.label ?? entregador.tipo_chave_pix}
+          </Text>
+        </View>
+      ) : (
+        <View style={styles.semChaveCard}>
+          <Text style={styles.semChaveText}>⚠️  Nenhuma chave PIX cadastrada ainda</Text>
+          <Text style={styles.semChaveSub}>Cadastre sua chave abaixo para receber por suas entregas.</Text>
+        </View>
+      )}
+
+      {/* Card para atualizar chave */}
       <View style={styles.card}>
         <Text style={styles.cardTitulo}>Atualizar chave PIX</Text>
 
@@ -116,6 +188,7 @@ export default function PixScreen({ token }: { token: string }) {
               key={t.value}
               style={[styles.tipoBtn, tipo === t.value && styles.tipoBtnAtivo]}
               onPress={() => setTipo(t.value)}
+              activeOpacity={0.8}
             >
               <Text style={[styles.tipoBtnText, tipo === t.value && styles.tipoBtnTextAtivo]}>
                 {t.label}
@@ -124,82 +197,196 @@ export default function PixScreen({ token }: { token: string }) {
           ))}
         </View>
 
-        <Text style={[styles.label, { marginTop: 16 }]}>Chave</Text>
+        <Text style={[styles.label, { marginTop: 18 }]}>Chave</Text>
         <TextInput
           style={styles.input}
           placeholder={tipoAtual?.placeholder}
-          placeholderTextColor="#aaa"
+          placeholderTextColor={C.textLight}
           value={chave}
           onChangeText={setChave}
           autoCapitalize="none"
           autoCorrect={false}
-          keyboardType={tipo === "telefone" ? "phone-pad" : tipo === "email" ? "email-address" : "default"}
+          keyboardType={
+            tipo === "telefone" ? "phone-pad"
+            : tipo === "cpf" ? "numeric"
+            : tipo === "email" ? "email-address"
+            : "default"
+          }
         />
 
         <TouchableOpacity
           style={[styles.btnSalvar, salvando && styles.btnDisabled]}
           onPress={salvar}
           disabled={salvando}
+          activeOpacity={0.85}
         >
           {salvando
-            ? <ActivityIndicator color="#fff" />
+            ? <ActivityIndicator color={C.white} />
             : <Text style={styles.btnSalvarText}>Salvar chave PIX</Text>
           }
         </TouchableOpacity>
       </View>
+
+      {/* Separador */}
+      <View style={styles.separador}>
+        <View style={styles.separadorLinha} />
+        <Text style={styles.separadorLabel}>conta</Text>
+        <View style={styles.separadorLinha} />
+      </View>
+
+      {/* Botão sair */}
+      <TouchableOpacity
+        style={[styles.btnSair, saindo && styles.btnDisabled]}
+        onPress={sair}
+        disabled={saindo}
+        activeOpacity={0.8}
+      >
+        {saindo
+          ? <ActivityIndicator color={C.red} />
+          : <Text style={styles.btnSairText}>Sair da conta</Text>
+        }
+      </TouchableOpacity>
+
+      <View style={{ height: 40 }} />
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  scroll: { flex: 1, backgroundColor: "#f4f4f5" },
+  scroll: { flex: 1, backgroundColor: C.bg },
   content: { padding: 16 },
   centro: { flex: 1, alignItems: "center", justifyContent: "center" },
 
-  infoCard: {
-    backgroundColor: "#fff7ed", borderWidth: 1.5, borderColor: "#fed7aa",
-    borderRadius: 16, padding: 16, marginBottom: 14,
+  perfilCard: {
+    backgroundColor: C.white,
+    borderRadius: R.xl,
+    padding: 24,
+    alignItems: "center",
+    marginBottom: 14,
+    ...shadow.md,
   },
-  infoTitulo: { fontSize: 15, fontWeight: "700", color: "#9a3412", marginBottom: 6 },
-  infoTexto: { fontSize: 13, color: "#7c2d12", lineHeight: 18 },
+  perfilAvatar: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    backgroundColor: C.brand,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 12,
+  },
+  perfilAvatarText: { color: C.white, fontWeight: "900", fontSize: 30 },
+  perfilNome: { fontSize: 18, fontWeight: "800", color: C.text, marginBottom: 8 },
+  perfilStatusTag: {
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 5,
+  },
+  statusAprovado: { backgroundColor: C.greenLight },
+  statusPendente: { backgroundColor: C.amberLight },
+  perfilStatusText: { fontSize: 13, fontWeight: "700" },
+  statusAprovadoText: { color: C.green },
+  statusPendenteText: { color: C.amber },
 
-  chaveAtualCard: {
-    backgroundColor: "#f0fdf4", borderWidth: 1.5, borderColor: "#bbf7d0",
-    borderRadius: 16, padding: 16, marginBottom: 14,
+  chaveCard: {
+    backgroundColor: C.greenLight,
+    borderWidth: 1.5,
+    borderColor: C.greenBorder,
+    borderRadius: R.xl,
+    padding: 16,
+    marginBottom: 14,
   },
-  chaveAtualLabel: { fontSize: 12, fontWeight: "600", color: "#166534", marginBottom: 8 },
-  chaveAtualRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  chaveAtualValor: { flex: 1, fontSize: 13, fontWeight: "600", color: "#111" },
+  chaveCardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 10,
+  },
+  chaveCardLabel: { fontSize: 13, fontWeight: "700", color: C.green },
   btnCopiar: {
-    backgroundColor: "#16a34a", borderRadius: 8,
-    paddingHorizontal: 12, paddingVertical: 6,
+    backgroundColor: C.green,
+    borderRadius: R.sm,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
   },
-  btnCopiarText: { color: "#fff", fontWeight: "700", fontSize: 12 },
+  btnCopiado: { backgroundColor: "#14532d" },
+  btnCopiarText: { color: C.white, fontWeight: "700", fontSize: 12 },
+  btnCopiadoText: { color: C.white },
+  chaveValor: { fontSize: 14, fontWeight: "700", color: C.text, marginBottom: 4 },
+  chaveTipo: { fontSize: 12, color: C.green },
+
+  semChaveCard: {
+    backgroundColor: C.amberLight,
+    borderWidth: 1.5,
+    borderColor: "#fde68a",
+    borderRadius: R.xl,
+    padding: 16,
+    marginBottom: 14,
+  },
+  semChaveText: { fontSize: 14, fontWeight: "700", color: C.amber, marginBottom: 4 },
+  semChaveSub: { fontSize: 12, color: "#92400e", lineHeight: 17 },
 
   card: {
-    backgroundColor: "#fff", borderRadius: 16, padding: 16,
-    shadowColor: "#000", shadowOpacity: 0.04, shadowRadius: 8, elevation: 2,
+    backgroundColor: C.white,
+    borderRadius: R.xl,
+    padding: 18,
+    marginBottom: 14,
+    ...shadow.sm,
   },
-  cardTitulo: { fontSize: 15, fontWeight: "700", color: "#111", marginBottom: 14 },
-  label: { fontSize: 13, fontWeight: "600", color: "#374151", marginBottom: 8 },
+  cardTitulo: { fontSize: 15, fontWeight: "800", color: C.text, marginBottom: 16 },
+  label: { fontSize: 13, fontWeight: "700", color: C.textMid, marginBottom: 10 },
 
   tiposGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   tipoBtn: {
-    paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10,
-    borderWidth: 1.5, borderColor: "#e5e7eb", backgroundColor: "#fff",
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+    borderRadius: R.md,
+    borderWidth: 1.5,
+    borderColor: C.border,
+    backgroundColor: C.bg,
   },
-  tipoBtnAtivo: { borderColor: "#f97316", backgroundColor: "#fff7ed" },
-  tipoBtnText: { fontSize: 13, fontWeight: "600", color: "#666" },
-  tipoBtnTextAtivo: { color: "#f97316" },
+  tipoBtnAtivo: { borderColor: C.brand, backgroundColor: C.brandLight },
+  tipoBtnText: { fontSize: 13, fontWeight: "600", color: C.textMuted },
+  tipoBtnTextAtivo: { color: C.brand, fontWeight: "700" },
 
   input: {
-    borderWidth: 1.5, borderColor: "#e5e7eb", borderRadius: 12,
-    padding: 14, fontSize: 14, color: "#111", marginBottom: 16,
+    borderWidth: 1.5,
+    borderColor: C.border,
+    borderRadius: R.md,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+    fontSize: 14,
+    color: C.text,
+    backgroundColor: C.bg,
+    marginBottom: 18,
   },
   btnSalvar: {
-    backgroundColor: "#f97316", borderRadius: 12,
-    height: 52, alignItems: "center", justifyContent: "center",
+    backgroundColor: C.brand,
+    borderRadius: R.lg,
+    height: 54,
+    alignItems: "center",
+    justifyContent: "center",
+    ...shadow.sm,
   },
-  btnSalvarText: { color: "#fff", fontWeight: "700", fontSize: 16 },
-  btnDisabled: { opacity: 0.6 },
+  btnSalvarText: { color: C.white, fontWeight: "800", fontSize: 15 },
+  btnDisabled: { opacity: 0.55 },
+
+  separador: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginVertical: 8,
+  },
+  separadorLinha: { flex: 1, height: 1, backgroundColor: C.border },
+  separadorLabel: { fontSize: 11, color: C.textLight, textTransform: "uppercase", letterSpacing: 1 },
+
+  btnSair: {
+    borderWidth: 1.5,
+    borderColor: C.redBorder,
+    borderRadius: R.lg,
+    height: 54,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: C.redLight,
+  },
+  btnSairText: { color: C.red, fontWeight: "800", fontSize: 15 },
 });

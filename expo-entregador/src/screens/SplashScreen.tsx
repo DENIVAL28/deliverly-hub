@@ -2,7 +2,6 @@ import { useEffect } from "react";
 import { View, Text, StyleSheet, ActivityIndicator } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { supabase } from "@/lib/supabase";
-import { getToken, clearToken } from "@/lib/storage";
 import type { RootStackParamList } from "../../App";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Splash">;
@@ -10,23 +9,11 @@ type Props = NativeStackScreenProps<RootStackParamList, "Splash">;
 export default function SplashScreen({ navigation }: Props) {
   useEffect(() => {
     async function verificar() {
-      const token = await getToken();
-      if (!token) {
-        navigation.replace("Token");
-        return;
-      }
-
-      const { data } = await supabase
-        .from("entregadores")
-        .select("id, nome")
-        .eq("public_token" as never, token)
-        .maybeSingle();
-
-      if (!data) {
-        await clearToken();
-        navigation.replace("Token");
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        navigation.replace("Main");
       } else {
-        navigation.replace("Main", { token });
+        navigation.replace("Login");
       }
     }
     verificar();
@@ -34,9 +21,13 @@ export default function SplashScreen({ navigation }: Props) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.logo}>🛵</Text>
-      <Text style={styles.title}>Entregador DH</Text>
-      <ActivityIndicator color="#fff" style={{ marginTop: 24 }} />
+      <View style={styles.logoWrap}>
+        <Text style={styles.logoEmoji}>🛵</Text>
+      </View>
+      <Text style={styles.appName}>Delivery Hub</Text>
+      <Text style={styles.appRole}>Entregador</Text>
+      <Text style={styles.tagline}>Suas entregas em um só lugar</Text>
+      <ActivityIndicator color="rgba(255,255,255,0.6)" size="small" style={styles.loader} />
     </View>
   );
 }
@@ -47,7 +38,38 @@ const styles = StyleSheet.create({
     backgroundColor: "#f97316",
     alignItems: "center",
     justifyContent: "center",
+    paddingHorizontal: 32,
   },
-  logo: { fontSize: 64 },
-  title: { fontSize: 28, fontWeight: "800", color: "#fff", marginTop: 12 },
+  logoWrap: {
+    width: 96,
+    height: 96,
+    borderRadius: 28,
+    backgroundColor: "rgba(255,255,255,0.22)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 20,
+  },
+  logoEmoji: { fontSize: 52 },
+  appName: {
+    fontSize: 30,
+    fontWeight: "900",
+    color: "#fff",
+    letterSpacing: -0.5,
+  },
+  appRole: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "rgba(255,255,255,0.85)",
+    letterSpacing: 2,
+    textTransform: "uppercase",
+    marginTop: 2,
+  },
+  tagline: {
+    fontSize: 14,
+    color: "rgba(255,255,255,0.65)",
+    marginTop: 10,
+  },
+  loader: {
+    marginTop: 48,
+  },
 });
