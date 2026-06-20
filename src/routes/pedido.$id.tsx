@@ -11,11 +11,9 @@ const MapaEntrega = lazy(() => import("@/components/MapaEntrega"));
 export const Route = createFileRoute("/pedido/$id")({
   ssr: false,
   loader: async ({ params }) => {
-    const { data } = await supabase
-      .from("pedidos")
-      .select("*, pedido_itens(*), empresas(nome_fantasia,whatsapp,logo_url,chave_pix,tipo_chave_pix,nome_recebedor,cidade_recebedor,slug)")
-      .eq("id", params.id)
-      .maybeSingle();
+    const { data } = await (supabase as any).rpc("buscar_pedido_tracking", {
+      p_pedido_id: params.id,
+    });
     if (!data) throw notFound();
     return data;
   },
@@ -237,7 +235,7 @@ function PedidoTracking() {
 
       const { data } = await (supabase as any)
         .from("pedidos")
-        .select("status")
+        .select("status, entregador_id")
         .eq("id", curr.id)
         .maybeSingle();
 
@@ -261,7 +259,32 @@ function PedidoTracking() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pedido.status]);
 
-  // Polling do GPS do entregador — só quando status = "entrega"
+  // Realtime GPS do entregador via postgres_changes na tabela entregadores
+  useEffect(() => {
+    if (pedido.status !== "entrega" || !pedido.entregador_id) return;
+
+    const channel = supabase
+      .channel(`gps-ent-${pedido.entregador_id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "entregadores",
+          filter: `id=eq.${pedido.entregador_id}`,
+        },
+        (payload) => {
+          if (payload.new.lat && payload.new.lng) {
+            setEntregadorPos({ lat: payload.new.lat, lng: payload.new.lng, nome: payload.new.nome ?? null });
+            setGpsHora(new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }));
+          }
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [pedido.status, pedido.entregador_id]);
+
+  // Polling GPS do entregador — fallback caso Realtime falhe (anon pode não receber eventos)
   useEffect(() => {
     if (pedido.status !== "entrega") return;
 
@@ -276,7 +299,7 @@ function PedidoTracking() {
     }
 
     buscarGps();
-    const interval = setInterval(buscarGps, 20000);
+    const interval = setInterval(buscarGps, 10000);
     return () => clearInterval(interval);
   }, [pedido.status, pedido.id]);
 
