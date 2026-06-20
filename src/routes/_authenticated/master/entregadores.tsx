@@ -49,14 +49,15 @@ function MasterEntregadoresPage() {
     queryFn: async () => {
       let q = (supabase as any)
         .from("entregadores")
-        .select("id, nome, email, cpf, cnh, placa, veiculo, modelo_veiculo, cor_veiculo, cidade, telefone, foto_rosto_url, status_cadastro, verificado, motivo_recusa, created_at, empresas(nome_fantasia)")
+        .select("id, nome, email, cpf, cnh, placa, veiculo, modelo_veiculo, cor_veiculo, cidade, telefone, foto_rosto_url, status_cadastro, verificado, motivo_recusa, created_at, empresa_id")
         .order("created_at", { ascending: false });
 
       if (filtro !== "todos") {
         q = q.eq("status_cadastro", filtro);
       }
 
-      const { data } = await q;
+      const { data, error } = await q;
+      if (error) console.error("[master-entregadores]", error);
       return (data ?? []) as any[];
     },
   });
@@ -163,8 +164,8 @@ function MasterEntregadoresPage() {
                       </span>
                     </div>
                     {e.email && <p className="text-xs text-zinc-500 mt-0.5">{e.email}</p>}
-                    {e.empresas?.nome_fantasia && (
-                      <p className="text-xs font-semibold text-orange-500 mt-0.5">🏪 {e.empresas.nome_fantasia}</p>
+                    {e.empresa_id && (
+                      <p className="text-xs font-semibold text-orange-500 mt-0.5">🏪 Via link de empresa</p>
                     )}
                     <p className="text-xs text-zinc-400">{VEICULO_LABEL[e.veiculo] ?? e.veiculo}{e.cidade ? ` · ${e.cidade}` : ""}</p>
                   </div>
