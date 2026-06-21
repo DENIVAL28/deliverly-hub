@@ -63,16 +63,13 @@ const faqs = [
   { q: "Posso cancelar a qualquer momento?",           a: "Sim, sem multa e sem contrato. Ao cancelar, seu acesso continua até o fim do período já pago. Depois disso, a loja é desativada — e você pode reativar quando quiser." },
 ];
 
-function Logo({ dark }: { dark?: boolean }) {
+function Logo({ dark: _dark }: { dark?: boolean }) {
   return (
-    <div className="flex items-center gap-2.5">
-      <div className="size-9 rounded-xl bg-orange-500 flex items-center justify-center shadow-lg shadow-orange-500/30 shrink-0">
-        <img src="/icon-custom.png" alt="" className="size-6 object-contain brightness-0 invert" />
-      </div>
-      <span className={`text-lg font-black tracking-tight transition-colors duration-500 ${dark ? "text-white" : "text-zinc-900"}`}>
-        Delivery<span className={dark ? "text-orange-400" : "text-orange-500"}>Hub</span>
-      </span>
-    </div>
+    <img
+      src="/logo-delivery-hub.png"
+      alt="Delivery Hub"
+      className="h-11 w-auto object-contain"
+    />
   );
 }
 
