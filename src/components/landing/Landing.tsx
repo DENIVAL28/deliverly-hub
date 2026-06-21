@@ -137,10 +137,6 @@ function Nav() {
             className="hidden sm:block text-sm font-medium px-4 py-2 rounded-xl text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 transition-all duration-200">
             Área do lojista
           </Link>
-          <Link to="/auth"
-            className="hidden sm:flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-all duration-200 shadow-lg shadow-orange-500/25 hover:shadow-orange-500/40 hover:scale-[1.02]">
-            Testar grátis <ArrowRight className="size-4" />
-          </Link>
           <button onClick={() => setOpen((v) => !v)}
             className="md:hidden p-2 rounded-lg text-zinc-500 hover:bg-zinc-100 transition-colors">
             {open ? <X className="size-5" /> : <Menu className="size-5" />}
