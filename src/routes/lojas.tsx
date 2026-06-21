@@ -9,8 +9,8 @@ export const Route = createFileRoute("/lojas")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Pedir Delivery — SOS Sistemas" },
-      { name: "description", content: "Peça delivery dos melhores restaurantes da sua cidade." },
+      { title: "Ver lojas — Delivery Hub" },
+      { name: "description", content: "Escolha a loja, monte seu pedido e envie direto pelo WhatsApp. Sem baixar aplicativo e sem cadastro obrigatório." },
     ],
   }),
   component: LojasPage,

@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import {
   ArrowRight, Store, Check, MessageCircle, Smartphone, Zap, BarChart3,
   Menu, X, ChevronDown, Mail, ClipboardList, Utensils, Bike,
-  Shield, Sparkles, Star, TrendingUp, Package, Users,
+  Shield, Star, TrendingUp, Package,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -10,24 +10,24 @@ const WHATSAPP = "5566981289787";
 const WA_LINK = `https://wa.me/${WHATSAPP}`;
 
 const segments = [
-  { img: "/segments/pizza.png",       emoji: "🍕", label: "Pizzarias",     desc: "Monte sabores, tamanhos e bordas com facilidade.",        bg: "from-red-50 to-orange-50",    dot: "bg-red-400" },
-  { img: "/segments/burger.png",      emoji: "🍔", label: "Hamburguerias", desc: "Adicionais, pontos de carne e combos personalizados.",    bg: "from-yellow-50 to-amber-50",  dot: "bg-yellow-500" },
-  { img: "/segments/marmita.png",     emoji: "🍱", label: "Marmitarias",   desc: "Cardápio semanal e gestão de pedidos recorrentes.",       bg: "from-green-50 to-emerald-50", dot: "bg-green-500" },
-  { img: "/segments/acai.png",        emoji: "🍇", label: "Açaíterias",    desc: "Montagem personalizada direto no cardápio digital.",      bg: "from-purple-50 to-violet-50", dot: "bg-purple-500" },
-  { img: "/segments/conveniencia.png",emoji: "🛒", label: "Conveniências", desc: "Catálogo amplo com categorias e busca rápida.",           bg: "from-blue-50 to-sky-50",      dot: "bg-blue-500" },
-  { img: "/segments/padaria.png",     emoji: "🥐", label: "Padarias",      desc: "Agendamento de pedidos e horários flexíveis.",            bg: "from-amber-50 to-yellow-50",  dot: "bg-amber-500" },
-  { img: "/segments/restaurante.png", emoji: "🍝", label: "Restaurantes",  desc: "Gestão completa do pedido até a entrega.",                bg: "from-orange-50 to-red-50",    dot: "bg-orange-500" },
-  { img: "/segments/espetinho.png",   emoji: "🍢", label: "Espetinhos",    desc: "Cardápio simples e checkout ágil pelo WhatsApp.",         bg: "from-rose-50 to-pink-50",     dot: "bg-rose-500" },
-  { img: "/segments/cafe.png",        emoji: "☕", label: "Cafeterias",    desc: "Personalização de bebidas e fidelização de clientes.",    bg: "from-stone-50 to-zinc-50",    dot: "bg-stone-500" },
+  { img: "/segments/pizza.png",        emoji: "🍕", label: "Pizzarias",     desc: "Monte sabores, tamanhos e bordas com facilidade.",        bg: "from-red-50 to-orange-50",    dot: "bg-red-400" },
+  { img: "/segments/burger.png",       emoji: "🍔", label: "Hamburguerias", desc: "Adicionais, pontos de carne e combos personalizados.",    bg: "from-yellow-50 to-amber-50",  dot: "bg-yellow-500" },
+  { img: "/segments/marmita.png",      emoji: "🍱", label: "Marmitarias",   desc: "Cardápio semanal e gestão de pedidos recorrentes.",       bg: "from-green-50 to-emerald-50", dot: "bg-green-500" },
+  { img: "/segments/acai.png",         emoji: "🍇", label: "Açaíterias",    desc: "Montagem personalizada direto no cardápio digital.",      bg: "from-purple-50 to-violet-50", dot: "bg-purple-500" },
+  { img: "/segments/conveniencia.png", emoji: "🛒", label: "Conveniências", desc: "Catálogo amplo com categorias e busca rápida.",           bg: "from-blue-50 to-sky-50",      dot: "bg-blue-500" },
+  { img: "/segments/padaria.png",      emoji: "🥐", label: "Padarias",      desc: "Agendamento de pedidos e horários flexíveis.",            bg: "from-amber-50 to-yellow-50",  dot: "bg-amber-500" },
+  { img: "/segments/restaurante.png",  emoji: "🍝", label: "Restaurantes",  desc: "Gestão completa do pedido até a entrega.",                bg: "from-orange-50 to-red-50",    dot: "bg-orange-500" },
+  { img: "/segments/espetinho.png",    emoji: "🍢", label: "Espetinhos",    desc: "Cardápio simples e checkout ágil pelo WhatsApp.",         bg: "from-rose-50 to-pink-50",     dot: "bg-rose-500" },
+  { img: "/segments/cafe.png",         emoji: "☕", label: "Cafeterias",    desc: "Personalização de bebidas e fidelização de clientes.",    bg: "from-stone-50 to-zinc-50",    dot: "bg-stone-500" },
 ];
 
 const features = [
-  { icon: Smartphone,    title: "Cardápio Digital sem App",           body: "Seu cliente acessa pelo celular, sem baixar nada. Cardápio rápido com fotos, categorias e checkout em segundos.", badge: "Mais acessado" },
-  { icon: ClipboardList, title: "Caixa PDV para Vendas no Balcão",    body: "Venda no balcão com o mesmo sistema. Selecione produtos, aplique desconto, calcule troco e registre — tudo em um clique.", badge: "Exclusivo" },
-  { icon: Zap,           title: "Pedidos em Tempo Real com Som",      body: "Chegou pedido? O sistema toca um alerta sonoro e exibe na tela. Avance o status com um clique e notifique o cliente pelo WhatsApp.", badge: null },
-  { icon: MessageCircle, title: "Checkout Direto no WhatsApp",        body: "O pedido chega formatado e pronto para a cozinha. Menos erros, mais agilidade — sem digitar nada manualmente.", badge: null },
-  { icon: Bike,          title: "Gestão de Entregadores",             body: "Cadastre entregadores e atribua pedidos na hora. Controle quem está em rota sem precisar de planilha ou grupo de zap.", badge: null },
-  { icon: BarChart3,     title: "Relatórios e Cupons de Desconto",    body: "Veja faturamento, ticket médio e produtos mais vendidos. Crie cupons de desconto para fidelizar e atrair clientes novos.", badge: null },
+  { icon: Smartphone,    title: "Cardápio Digital sem App",        body: "Seu cliente acessa pelo celular, sem baixar nada. Cardápio rápido com fotos, categorias e checkout em segundos.", badge: "Mais acessado" },
+  { icon: ClipboardList, title: "Caixa PDV para Vendas no Balcão", body: "Venda no balcão com o mesmo sistema. Selecione produtos, aplique desconto, calcule troco e registre — tudo em um clique.", badge: "Exclusivo" },
+  { icon: Zap,           title: "Pedidos em Tempo Real com Som",   body: "Chegou pedido? O sistema toca um alerta sonoro e exibe na tela. Avance o status com um clique e notifique o cliente pelo WhatsApp.", badge: null },
+  { icon: MessageCircle, title: "Checkout Direto no WhatsApp",     body: "O pedido chega formatado e pronto para a cozinha. Menos erros, mais agilidade — sem digitar nada manualmente.", badge: null },
+  { icon: Bike,          title: "Gestão de Entregadores",          body: "Cadastre entregadores e atribua pedidos na hora. Controle quem está em rota sem precisar de planilha ou grupo de zap.", badge: null },
+  { icon: BarChart3,     title: "Relatórios e Cupons de Desconto", body: "Veja faturamento, ticket médio e produtos mais vendidos. Crie cupons de desconto para fidelizar e atrair clientes novos.", badge: null },
 ];
 
 const plans = [
@@ -55,21 +55,18 @@ const plans = [
 ];
 
 const faqs = [
-  { q: "Meu cliente precisa baixar algum app?",           a: "Não. O cardápio é acessado direto pelo celular, no navegador, sem precisar instalar nada. Funciona em qualquer smartphone com internet." },
-  { q: "O que é o Caixa PDV e para que serve?",          a: "É um sistema de caixa para vendas presenciais no balcão. Você seleciona os produtos, aplica desconto, escolhe a forma de pagamento e registra a venda — tudo dentro do mesmo painel, sem precisar de outro sistema." },
-  { q: "Como funciona o recebimento dos pagamentos?",     a: "Os clientes podem pagar na entrega (dinheiro, cartão ou PIX). Se escolherem PIX, o sistema gera o QR code automaticamente na hora do pedido. Não cobramos comissão sobre nenhuma venda." },
-  { q: "Como cadastro meu cardápio?",                     a: "Diretamente pelo painel, em poucos cliques. Você adiciona nome, foto, preço e categoria de cada produto. Se precisar de ajuda para montar, nossa equipe te orienta sem custo adicional." },
-  { q: "O que acontece depois dos 7 dias grátis?",        a: "Você escolhe o plano e continua. Se não quiser continuar, só não assina — sem cobrança automática e sem surpresa." },
-  { q: "Posso cancelar a qualquer momento?",              a: "Sim, sem multa e sem contrato. Ao cancelar, seu acesso continua até o fim do período já pago. Depois disso, a loja é desativada — e você pode reativar quando quiser." },
+  { q: "Meu cliente precisa baixar algum app?",        a: "Não. O cardápio é acessado direto pelo celular, no navegador, sem precisar instalar nada. Funciona em qualquer smartphone com internet." },
+  { q: "O que é o Caixa PDV e para que serve?",       a: "É um sistema de caixa para vendas presenciais no balcão. Você seleciona os produtos, aplica desconto, escolhe a forma de pagamento e registra a venda — tudo dentro do mesmo painel, sem precisar de outro sistema." },
+  { q: "Como funciona o recebimento dos pagamentos?",  a: "Os clientes podem pagar na entrega (dinheiro, cartão ou PIX). Se escolherem PIX, o sistema gera o QR code automaticamente na hora do pedido. Não cobramos comissão sobre nenhuma venda." },
+  { q: "Como cadastro meu cardápio?",                  a: "Diretamente pelo painel, em poucos cliques. Você adiciona nome, foto, preço e categoria de cada produto. Se precisar de ajuda para montar, nossa equipe te orienta sem custo adicional." },
+  { q: "O que acontece depois dos 7 dias grátis?",     a: "Você escolhe o plano e continua. Se não quiser continuar, só não assina — sem cobrança automática e sem surpresa." },
+  { q: "Posso cancelar a qualquer momento?",           a: "Sim, sem multa e sem contrato. Ao cancelar, seu acesso continua até o fim do período já pago. Depois disso, a loja é desativada — e você pode reativar quando quiser." },
 ];
-
 
 export function Landing() {
   return (
     <div className="min-h-screen bg-white text-zinc-900 antialiased">
       <Nav />
-      <ConsumerHeroV2 />
-      <div id="para-restaurantes" />
       <Hero />
       <SocialProof />
       <Stats />
@@ -81,72 +78,6 @@ export function Landing() {
       <Footer />
       <WhatsAppFlutuante />
     </div>
-  );
-}
-
-/* ─── Consumer Hero ─── */
-function ConsumerHeroV2() {
-  const categorias = ["Pizzas", "Hambúrgueres", "Marmitas", "Açaí", "Padarias", "Restaurantes"];
-  return (
-    <section className="relative overflow-hidden bg-zinc-950 pt-28 pb-16 md:pt-36 md:pb-24">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_20%_0%,_rgba(249,115,22,0.30),_transparent)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_50%_40%_at_90%_90%,_rgba(249,115,22,0.10),_transparent)]" />
-      <div className="absolute inset-0 bg-[linear-gradient(120deg,_rgba(9,9,11,0.96),_rgba(9,9,11,0.70)_48%,_rgba(249,115,22,0.08))]" />
-
-      <div className="relative mx-auto grid max-w-7xl gap-10 px-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
-        <div className="max-w-2xl">
-          <div className="inline-flex items-center gap-2 rounded-full border border-orange-500/30 bg-orange-500/10 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-orange-300 mb-8 shadow-[0_0_20px_rgba(249,115,22,0.12)]">
-            <Sparkles className="size-3 text-orange-400" />
-            Delivery direto, sem app e sem cadastro
-            <span className="size-1.5 rounded-full bg-green-400 animate-pulse" />
-          </div>
-
-          <h1 className="text-4xl font-black leading-[1.04] text-white md:text-6xl tracking-tight">
-            Peça comida direto dos restaurantes da sua cidade
-          </h1>
-
-          <p className="mt-5 max-w-[52ch] text-base leading-relaxed text-zinc-300 md:text-lg">
-            Escolha a loja, monte seu pedido e envie direto para o estabelecimento. Mais rápido para você, melhor para o restaurante, sem intermediários.
-          </p>
-
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-            <Link to="/lojas"
-              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-orange-500 px-7 py-4 text-base font-black text-white shadow-2xl shadow-orange-500/30 transition-all duration-300 hover:scale-[1.03] hover:bg-orange-400 hover:shadow-orange-500/40">
-              <Bike className="size-5" /> Ver restaurantes disponíveis <ArrowRight className="size-5" />
-            </Link>
-          </div>
-
-          <div className="mt-6 flex flex-wrap gap-2 text-sm text-zinc-400">
-            {["Sem cadastro", "Sem aplicativo", "Pedido direto com a loja"].map((item) => (
-              <span key={item} className="inline-flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-full px-3 py-1 backdrop-blur-sm text-xs font-medium">
-                <Check className="size-3 text-orange-400" /> {item}
-              </span>
-            ))}
-          </div>
-        </div>
-
-        <div className="relative">
-          <div className="absolute -inset-10 rounded-full bg-orange-500/15 blur-3xl" />
-          <div className="relative overflow-hidden rounded-[2rem] border border-white/10 shadow-2xl shadow-black/50 ring-1 ring-orange-500/15 bg-zinc-950">
-            <video autoPlay muted loop playsInline className="w-full h-full object-cover block" style={{ maxHeight: 480 }}>
-              <source src="/segments/Create_a_high_end_animated_vec.mp4" type="video/mp4" />
-              <source src="/segments/Create_a_modern_D_vector_anim.mp4" type="video/mp4" />
-            </video>
-            <div className="absolute inset-0 pointer-events-none" style={{
-              background: "linear-gradient(to bottom, rgba(9,9,11,0.20) 0%, transparent 20%, transparent 80%, rgba(9,9,11,0.60) 100%)",
-            }} />
-          </div>
-
-          <div className="mt-5 flex flex-wrap justify-center gap-2 lg:justify-start">
-            {categorias.map((c) => (
-              <span key={c} className="rounded-full border border-white/10 bg-white/5 backdrop-blur-sm px-3 py-1.5 text-xs font-semibold text-white hover:bg-white/10 hover:border-orange-500/30 transition-all cursor-default">
-                {c}
-              </span>
-            ))}
-          </div>
-        </div>
-      </div>
-    </section>
   );
 }
 
@@ -170,38 +101,44 @@ function Nav() {
         : "bg-transparent border-b border-transparent"
     }`}>
       <div className="mx-auto max-w-7xl px-6 h-20 flex items-center justify-between">
+        {/* Logo + Links */}
         <div className="flex items-center gap-8">
           <Link to="/" className="flex items-center shrink-0">
             <img
               src="/segments/logo1.png"
-              alt="SOS Sistemas"
-              className={`h-12 w-auto max-w-[160px] object-contain transition-all duration-500 ${dark ? "brightness-0 invert" : ""}`}
+              alt="Delivery Hub"
+              className={`h-11 w-auto max-w-[150px] object-contain transition-all duration-500 ${dark ? "brightness-0 invert" : ""}`}
             />
           </Link>
           <div className="hidden md:flex items-center gap-1 text-sm font-medium">
-            {[["#como-funciona","Como funciona"],["#recursos","Recursos"],["#planos","Planos"]].map(([href,label]) => (
+            {[
+              ["#como-funciona", "Como funciona"],
+              ["#recursos",      "Recursos"],
+              ["#planos",        "Planos"],
+            ].map(([href, label]) => (
               <a key={href} href={href}
                 className={`px-3 py-2 rounded-lg transition-all duration-200 ${dark ? "text-white/70 hover:text-white hover:bg-white/10" : "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100"}`}>
                 {label}
               </a>
             ))}
+            <Link to="/lojas"
+              className={`px-3 py-2 rounded-lg transition-all duration-200 ${dark ? "text-white/70 hover:text-white hover:bg-white/10" : "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100"}`}>
+              Ver lojas
+            </Link>
             <Link to="/entregadores"
               className={`px-3 py-2 rounded-lg transition-all duration-200 ${dark ? "text-white/70 hover:text-white hover:bg-white/10" : "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100"}`}>
-              🛵 Entregadores
+              Entregadores
             </Link>
           </div>
         </div>
 
+        {/* CTAs */}
         <div className="flex items-center gap-2">
-          <Link to="/lojas"
-            className="flex items-center gap-1.5 text-sm font-semibold px-3 py-2 rounded-xl border border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white transition-all duration-200 whitespace-nowrap">
-            🛵 Pedir delivery
-          </Link>
           <Link to="/auth"
             className={`hidden sm:block text-sm font-medium px-4 py-2 rounded-xl transition-all duration-200 ${
               dark ? "text-white/70 hover:text-white hover:bg-white/10" : "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100"
             }`}>
-            Entrar
+            Área do lojista
           </Link>
           <Link to="/auth"
             className="hidden sm:flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-all duration-200 shadow-lg shadow-orange-500/25 hover:shadow-orange-500/40 hover:scale-[1.02]">
@@ -214,26 +151,36 @@ function Nav() {
         </div>
       </div>
 
+      {/* Mobile menu */}
       {open && (
-        <div className="md:hidden bg-white/98 backdrop-blur-xl border-t border-zinc-100 px-6 py-4 space-y-2 shadow-xl">
-          {[["#como-funciona","Como funciona"],["#recursos","Recursos"],["#planos","Planos"]].map(([href,label]) => (
+        <div className="md:hidden bg-white/98 backdrop-blur-xl border-t border-zinc-100 px-6 py-4 space-y-1 shadow-xl">
+          {[
+            ["#como-funciona", "Como funciona"],
+            ["#recursos",      "Recursos"],
+            ["#planos",        "Planos"],
+          ].map(([href, label]) => (
             <a key={href} href={href} onClick={() => setOpen(false)}
-              className="block text-sm font-medium text-zinc-600 hover:text-orange-500 py-2 px-3 rounded-xl hover:bg-orange-50 transition-colors">{label}</a>
+              className="block text-sm font-medium text-zinc-600 hover:text-orange-500 py-2.5 px-3 rounded-xl hover:bg-orange-50 transition-colors">
+              {label}
+            </a>
           ))}
-          <Link to="/entregadores" onClick={() => setOpen(false)}
-            className="block text-sm font-medium text-zinc-600 hover:text-orange-500 py-2 px-3 rounded-xl hover:bg-orange-50 transition-colors">
-            🛵 Entregadores
+          <Link to="/lojas" onClick={() => setOpen(false)}
+            className="block text-sm font-medium text-zinc-600 hover:text-orange-500 py-2.5 px-3 rounded-xl hover:bg-orange-50 transition-colors">
+            Ver lojas
           </Link>
-          <div className="pt-2 border-t border-zinc-100">
-            <Link to="/lojas" onClick={() => setOpen(false)}
-              className="block text-center bg-orange-500 text-white text-sm font-bold px-4 py-3 rounded-2xl mb-2 shadow-lg shadow-orange-500/20">
-              🛵 Pedir delivery
+          <Link to="/entregadores" onClick={() => setOpen(false)}
+            className="block text-sm font-medium text-zinc-600 hover:text-orange-500 py-2.5 px-3 rounded-xl hover:bg-orange-50 transition-colors">
+            Entregadores
+          </Link>
+          <div className="pt-3 border-t border-zinc-100 space-y-2">
+            <Link to="/auth" onClick={() => setOpen(false)}
+              className="block text-center bg-orange-500 text-white text-sm font-bold px-4 py-3 rounded-2xl shadow-lg shadow-orange-500/20">
+              Testar grátis
             </Link>
-            <div className="flex gap-2">
-              <Link to="/auth" className="flex-1 text-center text-sm font-medium px-4 py-2.5 border border-zinc-200 rounded-xl text-zinc-600 hover:border-zinc-300 transition-colors">Entrar</Link>
-              <Link to="/auth" onClick={() => setOpen(false)}
-                className="flex-1 text-center bg-orange-500 text-white text-sm font-semibold px-4 py-2.5 rounded-xl shadow-md shadow-orange-500/20">Testar grátis</Link>
-            </div>
+            <Link to="/auth" onClick={() => setOpen(false)}
+              className="block text-center text-sm font-medium px-4 py-2.5 border border-zinc-200 rounded-xl text-zinc-600 hover:border-zinc-300 transition-colors">
+              Área do lojista
+            </Link>
           </div>
         </div>
       )}
@@ -253,7 +200,6 @@ function Hero() {
       <div className="absolute inset-0 bg-zinc-950/55" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_60%_-10%,_rgba(249,115,22,0.28),_transparent)]" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_50%_40%_at_10%_80%,_rgba(249,115,22,0.14),_transparent)]" />
-      {/* Grid pattern sutil */}
       <div className="absolute inset-0 opacity-[0.03]" style={{
         backgroundImage: "linear-gradient(rgba(255,255,255,0.8) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.8) 1px, transparent 1px)",
         backgroundSize: "64px 64px",
@@ -261,25 +207,24 @@ function Hero() {
 
       <div className="relative mx-auto max-w-7xl px-6 py-20 w-full">
         <div className="grid lg:grid-cols-2 gap-16 items-center">
-
           <div>
             <div className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/25 text-orange-400 text-xs font-bold px-4 py-1.5 rounded-full mb-8 uppercase tracking-widest shadow-[0_0_20px_rgba(249,115,22,0.10)]">
               <span className="size-1.5 rounded-full bg-orange-400 animate-pulse" />
-              Cardápio + PDV + Entregadores — tudo por R$99/mês
+              Cardápio + PDV + Entregadores — a partir de R$99/mês
             </div>
 
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-black leading-[1.06] text-white mb-6 tracking-tight">
-              Pare de perder<br />
-              margem com <span className="relative inline-block">
-                <span className="relative z-10 text-orange-400">marketplace.</span>
+              Seu delivery próprio,<br />
+              <span className="relative inline-block">
+                <span className="relative z-10 text-orange-400">sem comissão</span>
                 <span className="absolute -bottom-1 left-0 right-0 h-[3px] bg-gradient-to-r from-orange-500 to-orange-400/0 rounded-full" />
-              </span><br />
-              Venda pelo seu canal.
+              </span>
+              {" "}por pedido.
             </h1>
 
             <p className="text-zinc-300 text-lg leading-relaxed mb-8 max-w-[46ch]">
-              Cardápio digital + caixa PDV + gestão de entregadores em um sistema só —{" "}
-              <strong className="text-white">sem comissão por pedido, sem contrato.</strong>
+              Monte seu cardápio, receba pedidos pelo WhatsApp, use o caixa PDV e gerencie entregadores —{" "}
+              <strong className="text-white">tudo em um único painel.</strong>
             </p>
 
             <div className="flex flex-col sm:flex-row items-center gap-4 mb-10">
@@ -289,13 +234,13 @@ function Hero() {
               </Link>
               <a href={WA_LINK} target="_blank" rel="noreferrer"
                 className="flex items-center gap-1.5 text-sm text-zinc-400 hover:text-white transition-colors group">
-                <MessageCircle className="size-3.5 group-hover:text-green-400 transition-colors" /> Dúvidas? Fala no WhatsApp
+                <MessageCircle className="size-3.5 group-hover:text-green-400 transition-colors" /> Falar no WhatsApp
               </a>
             </div>
 
-            <div className="flex flex-wrap gap-2 text-sm text-zinc-300">
+            <div className="flex flex-wrap gap-2">
               {["7 dias grátis", "Sem taxas por pedido", "Caixa PDV incluso", "Cancele quando quiser"].map((t) => (
-                <span key={t} className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-full px-3 py-1.5 text-xs font-medium backdrop-blur-sm">
+                <span key={t} className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-full px-3 py-1.5 text-xs font-medium text-zinc-300 backdrop-blur-sm">
                   <Check className="size-3 text-orange-400 shrink-0" /> {t}
                 </span>
               ))}
@@ -308,9 +253,7 @@ function Hero() {
               <div className="absolute -inset-10 bg-orange-500/15 blur-3xl rounded-full" />
               <div className="absolute -inset-4 bg-orange-500/8 blur-xl rounded-[3rem]" />
 
-              {/* Frame */}
               <div className="relative w-72 bg-zinc-900 rounded-[2.75rem] ring-2 ring-white/15 shadow-[0_40px_80px_rgba(0,0,0,0.6)] overflow-hidden" style={{ height: 580 }}>
-                {/* Notch */}
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-6 bg-zinc-950 rounded-b-2xl z-10 flex items-center justify-center gap-1">
                   <div className="size-1.5 rounded-full bg-zinc-700" />
                   <div className="w-8 h-1.5 rounded-full bg-zinc-700" />
@@ -344,16 +287,16 @@ function Hero() {
                   </div>
 
                   <div className="bg-white border-b border-zinc-100 px-4 py-2 flex gap-2 mt-1">
-                    {["Pizzas","Bebidas","Bordas"].map((c, i) => (
+                    {["Pizzas", "Bebidas", "Bordas"].map((c, i) => (
                       <div key={c} className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all ${i === 0 ? "bg-orange-500 text-white shadow-md shadow-orange-500/30" : "bg-zinc-100 text-zinc-400"}`}>{c}</div>
                     ))}
                   </div>
 
                   <div className="px-3 pt-3 space-y-2">
                     {[
-                      { name: "Mussarela", price: "R$ 45,90", w: "w-20", emoji: "🍕" },
-                      { name: "Calabresa",  price: "R$ 47,90", w: "w-24", emoji: "🍕" },
-                      { name: "Frango",     price: "R$ 49,90", w: "w-16", emoji: "🍗" },
+                      { name: "Mussarela", w: "w-20", emoji: "🍕" },
+                      { name: "Calabresa", w: "w-24", emoji: "🍕" },
+                      { name: "Frango",    w: "w-16", emoji: "🍗" },
                     ].map((p) => (
                       <div key={p.name} className="bg-white rounded-2xl px-4 py-3 flex items-center justify-between shadow-sm ring-1 ring-zinc-100">
                         <div className="flex-1">
@@ -399,7 +342,7 @@ function Hero() {
                 </div>
               </div>
 
-              {/* Floating card — top */}
+              {/* Floating card — pedidos */}
               <div className="absolute -right-10 top-10 bg-zinc-900 rounded-xl shadow-xl px-3 py-2 ring-1 ring-white/10">
                 <div className="text-[10px] text-zinc-400 mb-1">Pedidos hoje</div>
                 <div className="flex items-center gap-1">
@@ -468,7 +411,7 @@ function Stats() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-0 divide-x divide-white/8">
           {items.map(({ icon: Icon, value, label, color }) => (
             <div key={label} className="flex flex-col items-center text-center px-6 py-4 group">
-              <div className={`size-10 rounded-2xl bg-white/5 flex items-center justify-center mb-3 group-hover:bg-white/10 transition-colors`}>
+              <div className="size-10 rounded-2xl bg-white/5 flex items-center justify-center mb-3 group-hover:bg-white/10 transition-colors">
                 <Icon className={`size-5 ${color}`} />
               </div>
               <div className={`text-3xl md:text-4xl font-black mb-1.5 ${color}`}>{value}</div>
@@ -484,9 +427,9 @@ function Stats() {
 /* ─── Como Funciona ─── */
 function ComoFunciona() {
   const steps = [
-    { num: "1", icon: ClipboardList, title: "Crie sua conta", desc: "Em menos de 5 minutos, sua loja já está no ar. Sem cartão de crédito, sem complicação." },
-    { num: "2", icon: Utensils,      title: "Monte seu cardápio", desc: "Adicione produtos, fotos e preços com facilidade. Personalize cores, logo e identidade visual." },
-    { num: "3", icon: Bike,          title: "Comece a receber pedidos", desc: "Compartilhe o link com seus clientes. Pedidos chegam direto no WhatsApp e no seu painel." },
+    { num: "1", icon: ClipboardList, title: "Crie sua conta",            desc: "Em menos de 5 minutos, sua loja já está no ar. Sem cartão de crédito, sem complicação." },
+    { num: "2", icon: Utensils,      title: "Monte seu cardápio",         desc: "Adicione produtos, fotos e preços com facilidade. Personalize cores, logo e identidade visual." },
+    { num: "3", icon: Bike,          title: "Comece a receber pedidos",   desc: "Compartilhe o link com seus clientes. Pedidos chegam direto no WhatsApp e no seu painel." },
   ];
   return (
     <section id="como-funciona" className="py-28 bg-white border-y border-zinc-100">
@@ -502,7 +445,6 @@ function ComoFunciona() {
         </div>
 
         <div className="grid md:grid-cols-3 gap-6 relative">
-          {/* Linha conectora */}
           <div className="hidden md:block absolute top-[2.75rem] left-[calc(16.67%+3rem)] right-[calc(16.67%+3rem)] h-px bg-gradient-to-r from-orange-200 via-orange-300 to-orange-200 z-0" />
 
           {steps.map(({ num, icon: Icon, title, desc }) => (
@@ -785,8 +727,8 @@ function Footer() {
       <div className="mx-auto max-w-7xl px-6">
         <div className="flex flex-col md:flex-row justify-between items-start gap-10 mb-10">
           <div className="max-w-[22rem]">
-            <img src="/segments/logo1.png" alt="SOS Sistemas" className="h-12 w-auto object-contain brightness-0 invert mb-3" />
-            <p className="text-xs text-zinc-500 leading-relaxed">Plataforma de delivery próprio para restaurantes que não aceitam pagar comissão.</p>
+            <img src="/segments/logo1.png" alt="Delivery Hub" className="h-11 w-auto object-contain brightness-0 invert mb-3" />
+            <p className="text-xs text-zinc-500 leading-relaxed">Plataforma de delivery próprio para restaurantes e comércios que não aceitam pagar comissão por pedido.</p>
             <div className="flex items-center gap-2 mt-5">
               <a href={WA_LINK} target="_blank" rel="noreferrer"
                 className="size-9 rounded-xl bg-white/5 hover:bg-green-500/20 border border-white/8 hover:border-green-500/30 flex items-center justify-center text-zinc-400 hover:text-green-400 transition-all duration-200 hover:scale-110">
@@ -801,11 +743,19 @@ function Footer() {
 
           <div className="flex flex-wrap gap-12">
             <div>
-              <div className="text-xs font-bold text-zinc-300 uppercase tracking-widest mb-4">Produto</div>
+              <div className="text-xs font-bold text-zinc-300 uppercase tracking-widest mb-4">Para lojistas</div>
               <div className="space-y-2.5 text-xs text-zinc-500">
                 {[["#como-funciona","Como funciona"],["#recursos","Recursos"],["#planos","Planos e preços"],["#segmentos","Segmentos"]].map(([href, label]) => (
                   <a key={href} href={href} className="block hover:text-white transition-colors duration-150 hover:translate-x-0.5 transform">{label}</a>
                 ))}
+              </div>
+            </div>
+            <div>
+              <div className="text-xs font-bold text-zinc-300 uppercase tracking-widest mb-4">Acesso</div>
+              <div className="space-y-2.5 text-xs text-zinc-500">
+                <Link to="/auth" className="block hover:text-white transition-colors duration-150">Área do lojista</Link>
+                <Link to="/lojas" className="block hover:text-white transition-colors duration-150">Ver lojas</Link>
+                <Link to="/entregadores" className="block hover:text-white transition-colors duration-150">Entregadores</Link>
               </div>
             </div>
             <div>
@@ -826,8 +776,8 @@ function Footer() {
         </div>
 
         <div className="pt-6 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <p className="text-xs text-zinc-700">© 2026 Delivery Hub — SOS Sistemas. Todos os direitos reservados.</p>
-          <p className="text-xs text-zinc-700">Feito com dedicação no Mato Grosso 🇧🇷</p>
+          <p className="text-xs text-zinc-700">© 2026 Delivery Hub. Todos os direitos reservados.</p>
+          <p className="text-xs text-zinc-700">Uma solução da SOS Sistemas.</p>
         </div>
       </div>
     </footer>
