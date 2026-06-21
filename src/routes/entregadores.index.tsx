@@ -8,18 +8,18 @@ export const Route = createFileRoute("/entregadores/")({
 const steps = [
   {
     num: "01",
-    title: "Restaurante te convida",
-    desc: "Um restaurante que usa o Delivery Hub te manda um link de convite pelo WhatsApp. Clique nele — não precisa baixar nenhum app.",
+    title: "Crie seu cadastro",
+    desc: "Preencha seus dados: nome, WhatsApp e tipo de veículo. Rápido, gratuito e sem precisar instalar nenhum app.",
   },
   {
     num: "02",
-    title: "Cadastro em 1 minuto",
-    desc: "Preencha seu nome, WhatsApp e tipo de veículo. O restaurante revisa e aprova seu cadastro.",
+    title: "Plataforma avalia seu perfil",
+    desc: "Nossa equipe analisa seu cadastro e aprova seu perfil. Você é notificado pelo WhatsApp assim que liberado.",
   },
   {
     num: "03",
     title: "Aceite as corridas que quiser",
-    desc: "Quando um pedido sai para entrega, você recebe um aviso. Aceite ou ignore — sem obrigação, sem escala fixa.",
+    desc: "Com o perfil aprovado, você recebe avisos de pedidos disponíveis. Aceite ou ignore — sem obrigação, sem escala fixa.",
   },
 ];
 
@@ -64,11 +64,11 @@ function EntregadoresLanding() {
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link to="/entregadores/cadastro"
               className="inline-flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 text-white font-bold px-8 py-4 rounded-2xl text-base transition-all duration-200 hover:scale-[1.02] shadow-2xl shadow-orange-500/25">
-              <UserPlus className="size-5" /> Tenho um link de convite
+              <UserPlus className="size-5" /> Quero me cadastrar
             </Link>
             <Link to="/entregadores/login"
               className="inline-flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-semibold px-8 py-4 rounded-2xl text-base transition-all duration-200">
-              <LogIn className="size-5" /> Já sou cadastrado
+              <LogIn className="size-5" /> Já tenho conta
             </Link>
           </div>
           <p className="text-xs text-zinc-600 mt-5">Gratuito · Sem contrato · Sem app para instalar</p>
@@ -129,11 +129,11 @@ function EntregadoresLanding() {
             </div>
             <h2 className="text-2xl font-black text-white mb-3">Pronto para começar?</h2>
             <p className="text-zinc-400 text-sm mb-8 leading-relaxed">
-              Se um restaurante parceiro já te enviou um link de convite, clique abaixo e faça seu cadastro em menos de 2 minutos.
+              Cadastre-se gratuitamente. Nossa equipe avalia seu perfil e, após aprovação, você já começa a receber pedidos.
             </p>
             <Link to="/entregadores/cadastro"
               className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white font-bold px-8 py-4 rounded-2xl text-base transition-all duration-200 hover:scale-[1.02] shadow-2xl shadow-orange-500/25">
-              <UserPlus className="size-5" /> Fazer meu cadastro <ArrowRight className="size-5" />
+              <UserPlus className="size-5" /> Quero me cadastrar <ArrowRight className="size-5" />
             </Link>
             <div className="flex items-center justify-center gap-6 mt-8">
               {["100% gratuito", "Sem contrato", "Cancele quando quiser"].map((item) => (
