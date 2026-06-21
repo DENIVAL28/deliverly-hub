@@ -29,15 +29,18 @@ function EmpresaLayout() {
   const { loading, plano, empresaId, user } = useAuth();
   const basico = plano === "basico";
 
+  // staleTime = 0: sempre refetch ao montar — garante modo correto após F5 e após salvar config
   const { data: operationMode = "full_delivery" } = useQuery({
     queryKey: ["operation-mode", empresaId],
     enabled: !!empresaId,
-    staleTime: 60_000,
+    staleTime: 0,
     queryFn: async () => {
       const { data } = await supabase.from("empresas").select("operation_mode").eq("id", empresaId!).single();
       return (data as any)?.operation_mode ?? "full_delivery";
     },
   });
+
+  const isSimplified = operationMode === "simplified_delivery";
 
   useEffect(() => {
     if (!empresaId || !user) return;
@@ -96,8 +99,14 @@ function EmpresaLayout() {
       title="Estabelecimento"
       items={[
         { to: "/empresa",               label: "Dashboard",                                    icon: LayoutDashboard },
-        { to: "/empresa/pedidos",       label: "Pedidos",                                      icon: ShoppingBag,    section: "Operação", badge: pedidosPendentes, badgeColor: "red" },
-        ...(operationMode === "simplified_delivery" ? [{ to: "/empresa/pedidos-simples" as const, label: "Painel Simples", icon: Layers }] : []),
+        {
+          to:         isSimplified ? "/empresa/pedidos-simples" : "/empresa/pedidos",
+          label:      isSimplified ? "Painel Simples"           : "Pedidos",
+          icon:       isSimplified ? Layers                     : ShoppingBag,
+          section:    "Operação",
+          badge:      pedidosPendentes,
+          badgeColor: "red" as const,
+        },
         { to: "/empresa/mesas",         label: "Mesas",                                        icon: Grid2x2 },
         { to: "/empresa/pdv",           label: "Caixa / PDV",                                  icon: ReceiptText },
         { to: "/empresa/categorias",    label: "Categorias",                                   icon: FolderTree,     section: "Cardápio" },

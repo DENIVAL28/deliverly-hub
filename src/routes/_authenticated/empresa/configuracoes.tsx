@@ -215,6 +215,7 @@ function ConfiguracoesPage() {
     if (logoRef.current)   logoRef.current.value   = "";
     if (bannerRef.current) bannerRef.current.value = "";
     qc.invalidateQueries({ queryKey: ["empresa-config", empresaId] });
+    qc.invalidateQueries({ queryKey: ["operation-mode", empresaId] });
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
     setSaving(false);
