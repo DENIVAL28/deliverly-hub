@@ -206,21 +206,21 @@ function Hero() {
           <div>
             <div className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/25 text-orange-400 text-xs font-bold px-4 py-1.5 rounded-full mb-8 uppercase tracking-widest shadow-[0_0_20px_rgba(249,115,22,0.10)]">
               <span className="size-1.5 rounded-full bg-orange-400 animate-pulse" />
-              Cardápio + PDV + Entregadores — a partir de R$99/mês
+              Alternativa ao iFood · sem comissão por pedido
             </div>
 
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-black leading-[1.06] text-white mb-6 tracking-tight">
-              Seu delivery próprio,<br />
+              Chega de pagar<br />
               <span className="relative inline-block">
-                <span className="relative z-10 text-orange-400">sem comissão</span>
+                <span className="relative z-10 text-orange-400">comissão</span>
                 <span className="absolute -bottom-1 left-0 right-0 h-[3px] bg-gradient-to-r from-orange-500 to-orange-400/0 rounded-full" />
               </span>
-              {" "}por pedido.
+              {" "}em cada pedido.
             </h1>
 
-            <p className="text-zinc-300 text-lg leading-relaxed mb-8 max-w-[46ch]">
-              Monte seu cardápio, receba pedidos pelo WhatsApp, use o caixa PDV e gerencie entregadores —{" "}
-              <strong className="text-white">tudo em um único painel.</strong>
+            <p className="text-zinc-300 text-lg leading-relaxed mb-8 max-w-[44ch]">
+              Cardápio digital, caixa PDV e entregadores no mesmo painel —{" "}
+              <strong className="text-white">tudo por R$99/mês, sem cobrar nada por pedido.</strong>
             </p>
 
             <div className="flex flex-col sm:flex-row items-center gap-4 mb-10">
@@ -235,7 +235,7 @@ function Hero() {
             </div>
 
             <div className="flex flex-wrap gap-2">
-              {["7 dias grátis", "Sem taxas por pedido", "Caixa PDV incluso", "Cancele quando quiser"].map((t) => (
+              {["7 dias grátis para testar", "0% de comissão por pedido", "Cancele quando quiser"].map((t) => (
                 <span key={t} className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-full px-3 py-1.5 text-xs font-medium text-zinc-300 backdrop-blur-sm">
                   <Check className="size-3 text-orange-400 shrink-0" /> {t}
                 </span>
@@ -371,13 +371,13 @@ function Hero() {
 /* ─── Social Proof ─── */
 function SocialProof() {
   const items = [
-    "✅ Cardápio digital incluso",
-    "✅ Caixa PDV incluso",
-    "✅ Gestão de entregadores inclusa",
-    "✅ 0% de comissão por pedido",
-    "✅ PIX QR Code automático",
-    "✅ Suporte incluso",
-    "✅ 7 dias grátis",
+    "🚫 Sem comissão por pedido",
+    "📱 Cardápio digital sem app",
+    "🛒 Caixa PDV para balcão",
+    "🛵 Gestão de entregadores inclusa",
+    "💰 PIX QR Code automático",
+    "✅ 7 dias grátis para testar",
+    "📲 Pedido chega direto no WhatsApp",
   ];
   return (
     <section className="bg-gradient-to-r from-orange-500 via-orange-500 to-orange-600 py-3.5 overflow-hidden">
@@ -396,10 +396,10 @@ function SocialProof() {
 /* ─── Stats ─── */
 function Stats() {
   const items = [
-    { icon: TrendingUp, value: "R$ 99",  label: "por mês, tudo incluso",        color: "text-orange-400" },
-    { icon: Star,       value: "0%",     label: "de comissão por pedido",        color: "text-green-400" },
-    { icon: Zap,        value: "< 24h",  label: "para o cardápio no ar",         color: "text-blue-400" },
-    { icon: Package,    value: "3 em 1", label: "Cardápio + PDV + Entregadores", color: "text-purple-400" },
+    { icon: TrendingUp, value: "R$99",   label: "por mês, tudo incluso",           color: "text-orange-400" },
+    { icon: Star,       value: "0%",     label: "de comissão — você fica com tudo", color: "text-green-400" },
+    { icon: Zap,        value: "< 24h",  label: "pra ter seu delivery no ar",       color: "text-blue-400" },
+    { icon: Package,    value: "3 em 1", label: "cardápio + PDV + entregadores",    color: "text-purple-400" },
   ];
   return (
     <section className="py-14 bg-zinc-950 border-b border-white/5">
