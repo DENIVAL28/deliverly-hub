@@ -3,6 +3,7 @@ import { useAuth } from "@/lib/use-auth";
 import { AppShell } from "@/components/AppShell";
 import { LayoutDashboard, ShoppingBag, UtensilsCrossed, FolderTree, Users, Settings, BarChart2, Tag, Bike, Star, ReceiptText, CreditCard, TrendingUp, Grid2x2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/_authenticated/empresa")({
   beforeLoad: async () => {
@@ -24,8 +25,22 @@ export const Route = createFileRoute("/_authenticated/empresa")({
 });
 
 function EmpresaLayout() {
-  const { loading, plano } = useAuth();
+  const { loading, plano, empresaId } = useAuth();
   const basico = plano === "basico";
+
+  const { data: pedidosPendentes = 0 } = useQuery({
+    queryKey: ["badge-pedidos", empresaId],
+    enabled: !!empresaId,
+    refetchInterval: 20_000,
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("pedidos")
+        .select("id", { count: "exact", head: true })
+        .eq("empresa_id", empresaId!)
+        .in("status", ["aguardando_confirmacao", "aguardando_pagamento", "novo", "aceito", "preparo", "entrega"]);
+      return count ?? 0;
+    },
+  });
 
   if (loading) return <div className="p-10 text-sm text-zinc-500">Carregando…</div>;
 
@@ -34,7 +49,7 @@ function EmpresaLayout() {
       title="Estabelecimento"
       items={[
         { to: "/empresa",               label: "Dashboard",                                    icon: LayoutDashboard },
-        { to: "/empresa/pedidos",       label: "Pedidos",                                      icon: ShoppingBag,    section: "Operação" },
+        { to: "/empresa/pedidos",       label: "Pedidos",                                      icon: ShoppingBag,    section: "Operação", badge: pedidosPendentes, badgeColor: "red" },
         { to: "/empresa/mesas",         label: "Mesas",                                        icon: Grid2x2 },
         { to: "/empresa/pdv",           label: "Caixa / PDV",                                  icon: ReceiptText },
         { to: "/empresa/categorias",    label: "Categorias",                                   icon: FolderTree,     section: "Cardápio" },

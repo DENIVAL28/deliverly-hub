@@ -12,6 +12,8 @@ export interface NavItem {
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   section?: string;
+  badge?: number;
+  badgeColor?: "red" | "green" | "blue";
 }
 
 export function AppShell({ title, items, children }: { title: string; items: NavItem[]; children: ReactNode }) {
@@ -31,9 +33,15 @@ export function AppShell({ title, items, children }: { title: string; items: Nav
     navigate({ to: "/auth", replace: true });
   }
 
+  const badgeColors = {
+    red:   "bg-red-500 text-white",
+    green: "bg-green-500 text-white",
+    blue:  "bg-blue-500 text-white",
+  };
+
   const NavLinks = () => (
     <>
-      {items.map(({ to, label, icon: Icon, section }, idx) => {
+      {items.map(({ to, label, icon: Icon, section, badge, badgeColor = "red" }, idx) => {
         const showHeader = section !== undefined && (idx === 0 || section !== items[idx - 1].section);
         const active = pathname === to || (to !== "/master" && to !== "/empresa" && pathname.startsWith(to));
         return (
@@ -51,7 +59,12 @@ export function AppShell({ title, items, children }: { title: string; items: Nav
               }`}
             >
               <Icon className="size-4 shrink-0" />
-              {label}
+              <span className="flex-1">{label}</span>
+              {!!badge && badge > 0 && (
+                <span className={`min-w-[18px] h-[18px] rounded-full text-[10px] font-black flex items-center justify-center px-1 ${badgeColors[badgeColor]}`}>
+                  {badge > 99 ? "99+" : badge}
+                </span>
+              )}
             </Link>
           </div>
         );
