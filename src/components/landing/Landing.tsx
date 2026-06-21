@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import {
   ArrowRight, Store, Check, MessageCircle, Smartphone, Zap, BarChart3,
   Menu, X, ChevronDown, Mail, ClipboardList, Utensils, Bike,
-  Trophy, Shield, Sparkles, Star, TrendingUp, Package, Users,
+  Shield, Sparkles, Star, TrendingUp, Package, Users,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -63,14 +63,6 @@ const faqs = [
   { q: "Posso cancelar a qualquer momento?",              a: "Sim, sem multa e sem contrato. Ao cancelar, seu acesso continua até o fim do período já pago. Depois disso, a loja é desativada — e você pode reativar quando quiser." },
 ];
 
-const comparisonRows = [
-  { label: "Comissão por pedido",   them: "Até 30% por venda",          us: "0% — sem comissão" },
-  { label: "App obrigatório",       them: "Cliente precisa baixar",      us: "Funciona no navegador" },
-  { label: "Visibilidade da loja",  them: "Concorre com centenas",       us: "Canal exclusivo da sua marca" },
-  { label: "Dados dos clientes",    them: "Ficam com o marketplace",     us: "100% seus, para fidelizar" },
-  { label: "Caixa PDV",             them: "Não incluso",                 us: "Incluso no mesmo plano" },
-  { label: "Custo mensal",          them: "R$0 + comissão variável",     us: "A partir de R$99 fixos" },
-];
 
 export function Landing() {
   return (
@@ -81,7 +73,6 @@ export function Landing() {
       <Hero />
       <SocialProof />
       <Stats />
-      <Comparison />
       <ComoFunciona />
       <Segments />
       <Features />
@@ -874,84 +865,6 @@ function FAQ() {
               </div>
             ))}
           </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ─── Comparison ─── */
-function Comparison() {
-  return (
-    <section className="py-28 bg-zinc-950 overflow-hidden">
-      <div className="mx-auto max-w-5xl px-6">
-        <div className="text-center mb-16">
-          <span className="text-xs font-bold uppercase tracking-widest text-orange-400 mb-3 block">Por que sair do marketplace</span>
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 leading-tight tracking-tight">
-            O marketplace cobra por cada pedido.<br />
-            <span className="text-orange-400">Você não precisa aceitar isso.</span>
-          </h2>
-          <p className="text-zinc-400 max-w-[52ch] mx-auto text-sm leading-relaxed">
-            Em 300 pedidos de R$60, o marketplace retém até{" "}
-            <strong className="text-red-400">R$5.400 em comissões</strong>. Com o Delivery Hub, você paga{" "}
-            <strong className="text-green-400">R$99 fixos</strong>.
-          </p>
-        </div>
-
-        <div className="rounded-3xl overflow-hidden ring-1 ring-white/10 shadow-[0_0_60px_rgba(249,115,22,0.07)]">
-          {/* Header */}
-          <div className="grid grid-cols-3 bg-zinc-900 border-b border-white/10">
-            <div className="p-5 text-xs font-bold text-zinc-500 uppercase tracking-widest flex items-center">Recurso</div>
-            <div className="p-5 flex flex-col items-center justify-center gap-1 border-l border-white/5">
-              <span className="text-[10px] font-bold text-red-400 uppercase tracking-widest">iFood / Rappi</span>
-              <span className="text-lg">😬</span>
-            </div>
-            <div className="p-5 flex flex-col items-center justify-center gap-1 bg-orange-500/10 border-l border-orange-500/25">
-              <Trophy className="size-4 text-orange-400 mb-0.5" />
-              <span className="text-[10px] font-bold text-orange-400 uppercase tracking-widest">Delivery Hub</span>
-            </div>
-          </div>
-
-          {comparisonRows.map((row, i) => (
-            <div key={row.label} className={`grid grid-cols-3 border-b border-white/5 last:border-0 hover:bg-white/2 transition-colors ${i % 2 === 0 ? "bg-zinc-950" : "bg-zinc-900/40"}`}>
-              <div className="p-4 text-sm text-zinc-300 font-medium flex items-center">{row.label}</div>
-              <div className="p-4 flex items-center justify-center border-l border-white/5">
-                <span className="inline-flex items-center gap-1.5 text-xs text-red-400 bg-red-500/10 border border-red-500/15 rounded-full px-2.5 py-1 text-center leading-relaxed font-medium">
-                  <X className="size-3 shrink-0" /> {row.them}
-                </span>
-              </div>
-              <div className="p-4 flex items-center justify-center bg-orange-500/5 border-l border-orange-500/15">
-                <span className="inline-flex items-center gap-1.5 text-xs text-green-400 bg-green-500/10 border border-green-500/15 rounded-full px-2.5 py-1 text-center leading-relaxed font-semibold">
-                  <Check className="size-3 shrink-0" /> {row.us}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Callout savings */}
-        <div className="mt-6 bg-gradient-to-r from-green-500/10 to-green-600/5 border border-green-500/20 rounded-2xl p-5 flex items-center justify-between flex-wrap gap-4">
-          <div className="flex items-center gap-3">
-            <div className="size-10 rounded-xl bg-green-500/15 flex items-center justify-center">
-              <TrendingUp className="size-5 text-green-400" />
-            </div>
-            <div>
-              <p className="text-sm font-bold text-white">Economia real por mês</p>
-              <p className="text-xs text-zinc-400">Comparado com 30% de comissão em 300 pedidos de R$60</p>
-            </div>
-          </div>
-          <div className="text-right">
-            <p className="text-2xl font-black text-green-400">R$5.301</p>
-            <p className="text-xs text-zinc-500">economizados por mês</p>
-          </div>
-        </div>
-
-        <div className="text-center mt-10">
-          <Link to="/auth"
-            className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500 text-white font-bold px-8 py-4 rounded-2xl text-base transition-all duration-300 hover:scale-[1.02] shadow-2xl shadow-orange-500/30">
-            Criar minha loja sem comissão <ArrowRight className="size-5" />
-          </Link>
-          <p className="text-zinc-600 text-xs mt-3">7 dias grátis · Sem cartão de crédito · Cancele quando quiser</p>
         </div>
       </div>
     </section>
