@@ -835,6 +835,16 @@ function PedidosPage() {
                             : (comPreparo ? NEXT : NEXT_SEM_PREPARO);
                       const nextStatus = nextMap[p.status];
                       if (!nextStatus) return null;
+
+                      // Lojista não pode finalizar pedido que está em rota com entregador ativo
+                      if (nextStatus === "finalizado" && p.status === "entrega" && p.entregador_id) {
+                        return (
+                          <span className="text-xs text-zinc-500 flex items-center gap-1.5 bg-zinc-50 border border-zinc-200 px-3 py-2 rounded-xl">
+                            🛵 Aguardando entregador finalizar
+                          </span>
+                        );
+                      }
+
                       return (
                         <div className="flex items-center gap-2">
                           {/* Seletor de entregador — só para delivery */}
