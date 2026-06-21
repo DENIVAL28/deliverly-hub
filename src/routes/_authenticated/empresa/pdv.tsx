@@ -484,99 +484,101 @@ function PDVPage() {
             })}
           </div>
 
-          {/* Rodapé */}
-          <div className="border-t border-zinc-100 shrink-0 flex flex-col min-h-0 overflow-hidden">
-          <div className="px-4 py-3 space-y-3 overflow-y-auto flex-1 min-h-0">
-            {/* Desconto */}
-            <div className="flex gap-2">
-              <div className="flex-1 space-y-1">
-                <Label className="text-[10px] text-zinc-400">Desconto R$</Label>
-                <Input value={descontoValor} onChange={(e) => { setDescontoValor(e.target.value); setDescontoPct(""); }} placeholder="0,00" className="h-8 text-sm" />
+          {/* Rodapé — campos scrolláveis + botão fixo */}
+          <div className="border-t border-zinc-100 flex flex-col" style={{ maxHeight: "62%" }}>
+            {/* campos scrolláveis */}
+            <div className="px-4 py-3 space-y-3 overflow-y-auto min-h-0">
+
+              {/* Desconto */}
+              <div className="flex gap-2">
+                <div className="flex-1 space-y-1">
+                  <Label className="text-[10px] text-zinc-400">Desconto R$</Label>
+                  <Input value={descontoValor} onChange={(e) => { setDescontoValor(e.target.value); setDescontoPct(""); }} placeholder="0,00" className="h-8 text-sm" />
+                </div>
+                <div className="flex-1 space-y-1">
+                  <Label className="text-[10px] text-zinc-400">Desconto %</Label>
+                  <Input value={descontoPct} onChange={(e) => { setDescontoPct(e.target.value); setDescontoValor(""); }} placeholder="0" className="h-8 text-sm" />
+                </div>
               </div>
-              <div className="flex-1 space-y-1">
-                <Label className="text-[10px] text-zinc-400">Desconto %</Label>
-                <Input value={descontoPct} onChange={(e) => { setDescontoPct(e.target.value); setDescontoValor(""); }} placeholder="0" className="h-8 text-sm" />
-              </div>
-            </div>
 
-            {/* Taxa de entrega */}
-            <div className="space-y-1">
-              <Label className="text-[10px] text-zinc-400">Taxa de entrega R$ (entrega domiciliar)</Label>
-              <Input value={taxaEntrega} onChange={(e) => setTaxaEntrega(e.target.value)} placeholder="0,00" className="h-8 text-sm" />
-            </div>
-
-            {/* Totais */}
-            <div className="space-y-1 text-sm">
-              <div className="flex justify-between text-zinc-500"><span>Subtotal</span><span>{fmt(subtotal)}</span></div>
-              {desconto > 0 && <div className="flex justify-between text-green-600 font-medium"><span>Desconto</span><span>-{fmt(desconto)}</span></div>}
-              {taxaEntregaVal > 0 && <div className="flex justify-between text-zinc-500 font-medium"><span>Taxa de entrega</span><span>+{fmt(taxaEntregaVal)}</span></div>}
-              <div className="flex justify-between font-black text-base text-zinc-900 pt-1 border-t border-zinc-100">
-                <span>Total</span><span className="text-brand">{fmt(total)}</span>
-              </div>
-            </div>
-
-            {/* Pagamento */}
-            <div className="grid grid-cols-3 gap-1.5">
-              {(["Dinheiro", "Cartão", "PIX"] as const).map((f) => (
-                <button key={f} onClick={() => { setPagamento(f); setValorCliente(""); }}
-                  className={`py-2 rounded-xl text-xs font-bold transition-all ${pagamento === f ? "bg-brand text-white shadow-sm" : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"}`}>
-                  {f === "Dinheiro" ? "💵" : f === "Cartão" ? "💳" : "🔵"} {f}
-                </button>
-              ))}
-            </div>
-
-            {/* PIX QR Code */}
-            {pagamento === "PIX" && (
-              <div className="rounded-xl border border-zinc-100 bg-zinc-50 p-3 flex flex-col items-center gap-2">
-                {!empresaData?.chave_pix ? (
-                  <p className="text-xs text-amber-600 text-center">Configure a chave PIX nas Configurações para usar este método.</p>
-                ) : pixQrUrl && total > 0 ? (
-                  <>
-                    <img src={pixQrUrl} alt="QR PIX" className="w-40 h-40 rounded-lg" />
-                    <p className="text-xs text-zinc-500 text-center">Mostre o QR para o cliente escanear</p>
-                    <p className="text-sm font-bold text-zinc-800">{fmt(total)}</p>
-                  </>
-                ) : (
-                  <p className="text-xs text-zinc-400">Adicione itens para gerar o QR PIX</p>
-                )}
-              </div>
-            )}
-
-            {/* Troco */}
-            {pagamento === "Dinheiro" && (
+              {/* Taxa de entrega */}
               <div className="space-y-1">
-                <Label className="text-[10px] text-zinc-400">Cliente pagou R$</Label>
-                <Input value={valorCliente} onChange={(e) => setValorCliente(e.target.value)} placeholder="0,00" className="h-8 text-sm" />
-                {trocoVal !== null && (
-                  <p className={`text-xs font-bold ${trocoVal < 0 ? "text-red-500" : "text-green-600"}`}>
-                    {trocoVal < 0 ? `⚠️ Falta ${fmt(Math.abs(trocoVal))}` : `Troco: ${fmt(trocoVal)}`}
-                  </p>
-                )}
+                <Label className="text-[10px] text-zinc-400">Taxa de entrega R$ (entrega domiciliar)</Label>
+                <Input value={taxaEntrega} onChange={(e) => setTaxaEntrega(e.target.value)} placeholder="0,00" className="h-8 text-sm" />
               </div>
-            )}
 
-            {/* Cliente */}
-            <div className="flex gap-2">
-              <div className="flex-1 space-y-1">
-                <Label className="text-[10px] text-zinc-400">Nome do cliente</Label>
-                <Input value={nomeCliente} onChange={(e) => setNomeCliente(e.target.value)} placeholder="Opcional" className="h-8 text-sm" />
+              {/* Totais */}
+              <div className="space-y-1 text-sm">
+                <div className="flex justify-between text-zinc-500"><span>Subtotal</span><span>{fmt(subtotal)}</span></div>
+                {desconto > 0 && <div className="flex justify-between text-green-600 font-medium"><span>Desconto</span><span>-{fmt(desconto)}</span></div>}
+                {taxaEntregaVal > 0 && <div className="flex justify-between text-zinc-500 font-medium"><span>Taxa de entrega</span><span>+{fmt(taxaEntregaVal)}</span></div>}
+                <div className="flex justify-between font-black text-base text-zinc-900 pt-1 border-t border-zinc-100">
+                  <span>Total</span><span className="text-brand">{fmt(total)}</span>
+                </div>
               </div>
-              <div className="flex-1 space-y-1">
-                <Label className="text-[10px] text-zinc-400">CPF (nota fiscal)</Label>
-                <Input value={cpfCliente} onChange={(e) => setCpfCliente(e.target.value)} placeholder="000.000.000-00" className="h-8 text-sm" />
+
+              {/* Pagamento */}
+              <div className="grid grid-cols-3 gap-1.5">
+                {(["Dinheiro", "Cartão", "PIX"] as const).map((f) => (
+                  <button key={f} onClick={() => { setPagamento(f); setValorCliente(""); }}
+                    className={`py-2 rounded-xl text-xs font-bold transition-all ${pagamento === f ? "bg-brand text-white shadow-sm" : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"}`}>
+                    {f === "Dinheiro" ? "💵" : f === "Cartão" ? "💳" : "🔵"} {f}
+                  </button>
+                ))}
               </div>
+
+              {/* PIX QR Code */}
+              {pagamento === "PIX" && (
+                <div className="rounded-xl border border-zinc-100 bg-zinc-50 p-3 flex flex-col items-center gap-2">
+                  {!empresaData?.chave_pix ? (
+                    <p className="text-xs text-amber-600 text-center">Configure a chave PIX nas Configurações para usar este método.</p>
+                  ) : pixQrUrl && total > 0 ? (
+                    <>
+                      <img src={pixQrUrl} alt="QR PIX" className="w-40 h-40 rounded-lg" />
+                      <p className="text-xs text-zinc-500 text-center">Mostre o QR para o cliente escanear</p>
+                      <p className="text-sm font-bold text-zinc-800">{fmt(total)}</p>
+                    </>
+                  ) : (
+                    <p className="text-xs text-zinc-400">Adicione itens para gerar o QR PIX</p>
+                  )}
+                </div>
+              )}
+
+              {/* Troco */}
+              {pagamento === "Dinheiro" && (
+                <div className="space-y-1">
+                  <Label className="text-[10px] text-zinc-400">Cliente pagou R$</Label>
+                  <Input value={valorCliente} onChange={(e) => setValorCliente(e.target.value)} placeholder="0,00" className="h-8 text-sm" />
+                  {trocoVal !== null && (
+                    <p className={`text-xs font-bold ${trocoVal < 0 ? "text-red-500" : "text-green-600"}`}>
+                      {trocoVal < 0 ? `⚠️ Falta ${fmt(Math.abs(trocoVal))}` : `Troco: ${fmt(trocoVal)}`}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Cliente */}
+              <div className="flex gap-2">
+                <div className="flex-1 space-y-1">
+                  <Label className="text-[10px] text-zinc-400">Nome do cliente</Label>
+                  <Input value={nomeCliente} onChange={(e) => setNomeCliente(e.target.value)} placeholder="Opcional" className="h-8 text-sm" />
+                </div>
+                <div className="flex-1 space-y-1">
+                  <Label className="text-[10px] text-zinc-400">CPF (nota fiscal)</Label>
+                  <Input value={cpfCliente} onChange={(e) => setCpfCliente(e.target.value)} placeholder="000.000.000-00" className="h-8 text-sm" />
+                </div>
+              </div>
+
+              {/* Obs */}
+              <Textarea value={obs} onChange={(e) => setObs(e.target.value)} placeholder="Observação (opcional)" className="resize-none text-xs h-14" />
             </div>
-
-            {/* Obs */}
-            <Textarea value={obs} onChange={(e) => setObs(e.target.value)} placeholder="Observação (opcional)" className="resize-none text-xs h-14" />
-          </div>
 
             {/* Finalizar — sempre visível na base */}
             <div className="px-4 pb-3 pt-2 border-t border-zinc-100 shrink-0">
-            <Button onClick={finalizar} disabled={finishing || items.length === 0}
-              className="w-full bg-brand hover:bg-brand/90 h-11 text-sm font-black disabled:opacity-50">
-              {finishing ? "Registrando…" : `Finalizar — ${fmt(total)}`}
-            </Button>
+              <Button onClick={finalizar} disabled={finishing || items.length === 0}
+                className="w-full bg-brand hover:bg-brand/90 h-11 text-sm font-black disabled:opacity-50">
+                {finishing ? "Registrando…" : `Finalizar — ${fmt(total)}`}
+              </Button>
             </div>
           </div>
         </div>
