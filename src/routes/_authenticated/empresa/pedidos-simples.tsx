@@ -470,9 +470,14 @@ function PedidosSimplesPage() {
     if (action === "pronto") {
       const proximoStatus = getStatusAposPreparado(pedido);
 
-      // Delivery + modo fixos → pede entregador antes de avançar
+      // Delivery + modo fixos → auto-atribui se só 1 entregador, senão abre modal
       if (proximoStatus === "entrega" && tipoOp === "fixos" && !extra) {
-        setProntoParaEntrega(pedido);
+        if ((entregadoresFixos as any[]).length === 1) {
+          const ent = (entregadoresFixos as any[])[0];
+          await handleAction("pronto", pedido, { entregadorId: ent.id, nome: ent.nome });
+        } else {
+          setProntoParaEntrega(pedido);
+        }
         return;
       }
 

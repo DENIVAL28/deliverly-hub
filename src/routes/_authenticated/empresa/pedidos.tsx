@@ -576,10 +576,14 @@ function PedidosPage() {
     const next = nextMap[p.status];
     if (!next) return;
     const params: Parameters<typeof rpcPedido>[1] = { status: next };
-    if (next === "entrega" && entregadorId) {
-      const ent = entregadores.find((e: any) => e.id === entregadorId);
-      params.entregador_id   = entregadorId;
-      params.entregador_nome = ent?.nome ?? null;
+    if (next === "entrega") {
+      // Auto-atribui se só 1 entregador fixo; caso contrário usa seleção manual
+      const assignId = entregadorId || (entregadores.length === 1 ? entregadores[0].id : null);
+      if (assignId) {
+        const ent = entregadores.find((e: any) => e.id === assignId);
+        params.entregador_id   = assignId;
+        params.entregador_nome = ent?.nome ?? null;
+      }
     }
     const err = await rpcPedido(p.id, params);
     if (err) { toast.error(traduzirErro(err)); return; }
@@ -982,18 +986,23 @@ function PedidosPage() {
 
                       return (
                         <div className="flex items-center gap-2">
-                          {/* Seletor de entregador — só para delivery */}
-                          {!p.mesa && p.tipo !== "pdv" && p.tipo !== "retirada" && NEXT[p.status] === "entrega" && entregadores.length > 0 && (
+                          {/* Seletor de entregador — só para delivery com múltiplos fixos */}
+                          {!p.mesa && p.tipo !== "pdv" && p.tipo !== "retirada" && NEXT[p.status] === "entrega" && entregadores.length > 1 && (
                             <select
                               value={entregadorSel[p.id] ?? ""}
                               onChange={(e) => setEntregadorSel((s) => ({ ...s, [p.id]: e.target.value }))}
                               className="h-11 sm:h-9 rounded-xl border border-zinc-200 px-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/30"
                             >
-                              <option value="">Entregador (opcional)</option>
+                              <option value="">Selecionar entregador</option>
                               {entregadores.map((e: any) => (
                                 <option key={e.id} value={e.id}>{e.nome}</option>
                               ))}
                             </select>
+                          )}
+                          {!p.mesa && p.tipo !== "pdv" && p.tipo !== "retirada" && NEXT[p.status] === "entrega" && entregadores.length === 1 && (
+                            <span className="text-xs text-zinc-500 bg-zinc-50 border border-zinc-200 px-3 py-2 rounded-xl">
+                              🛵 {entregadores[0].nome} (auto)
+                            </span>
                           )}
                           <Button onClick={() => advance(p, entregadorSel[p.id])} className="bg-brand hover:bg-brand/90">
                             Avançar → {STATUS.find((s) => s.value === nextStatus)?.label}

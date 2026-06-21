@@ -106,6 +106,7 @@ function EntregadorPage() {
   const [erroDisponiveis, setErroDisponiveis] = useState<string | null>(null);
   const [ultimaAtualizacao, setUltimaAtualizacao] = useState<Date | null>(null);
   const isFreelancer = entregador.tipo === "freelancer";
+  const isFixo       = entregador.tipo === "fixo";
 
   const [pixKey,     setPixKey]     = useState(entregador.chave_pix ?? "");
   const [pixTipo,    setPixTipo]    = useState(entregador.tipo_chave_pix ?? "aleatoria");
@@ -178,7 +179,7 @@ function EntregadorPage() {
     if (!ok) return;
     setTracking(true);
     localStorage.setItem(GPS_KEY, "1");
-    intervalRef.current = setInterval(enviarPosicao, 30000);
+    intervalRef.current = setInterval(enviarPosicao, 15000);
   }
 
   function pararTracking() {
@@ -279,7 +280,7 @@ function EntregadorPage() {
     const poll = setInterval(() => {
       carregarPedidos();
       if (isFreelancer) carregarDisponiveis();
-    }, 15000);
+    }, 8000);
 
     const ch = supabase.channel(`entregador-pedidos-${entregador.id}`)
       .on("postgres_changes",
@@ -338,25 +339,35 @@ function EntregadorPage() {
 
       <div className="max-w-lg mx-auto px-4 py-5 space-y-5">
 
-        {/* Mudar status */}
-        <div className="bg-white rounded-2xl shadow-sm p-5">
-          <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-wider mb-3">Meu status</h2>
-          <div className="grid grid-cols-3 gap-2">
-            {STATUS_OPTIONS.map((s) => (
-              <button key={s.value}
-                onClick={() => mudarStatus(s.value)}
-                disabled={atualizando}
-                className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 font-semibold text-xs transition-all ${
-                  entregador.status === s.value
-                    ? `${s.light} border-current`
-                    : "bg-zinc-50 border-zinc-200 text-zinc-400 hover:border-zinc-300"
-                }`}>
-                <span className={`size-3 rounded-full ${s.cor}`} />
-                {s.label}
-              </button>
-            ))}
+        {/* Status */}
+        {isFixo ? (
+          <div className="bg-white rounded-2xl shadow-sm p-5 flex items-center gap-3">
+            <span className={`size-3 rounded-full shrink-0 ${statusAtual.cor} ${entregador.status === "disponivel" ? "animate-pulse" : ""}`} />
+            <div>
+              <p className="text-sm font-semibold text-zinc-700">{statusAtual.label}</p>
+              <p className="text-xs text-zinc-400 mt-0.5">O estabelecimento atribui os pedidos para você</p>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="bg-white rounded-2xl shadow-sm p-5">
+            <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-wider mb-3">Meu status</h2>
+            <div className="grid grid-cols-3 gap-2">
+              {STATUS_OPTIONS.map((s) => (
+                <button key={s.value}
+                  onClick={() => mudarStatus(s.value)}
+                  disabled={atualizando}
+                  className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 font-semibold text-xs transition-all ${
+                    entregador.status === s.value
+                      ? `${s.light} border-current`
+                      : "bg-zinc-50 border-zinc-200 text-zinc-400 hover:border-zinc-300"
+                  }`}>
+                  <span className={`size-3 rounded-full ${s.cor}`} />
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* ── Pedidos em andamento (ativos) ── */}
         {pedidosAtivos.length > 0 && (
