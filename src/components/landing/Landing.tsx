@@ -528,22 +528,14 @@ function Features() {
   return (
     <section id="recursos" className="py-28 bg-white border-y border-zinc-100">
       <div className="mx-auto max-w-7xl px-6">
-        <div className="grid lg:grid-cols-2 gap-12 items-center mb-16">
-          <div>
-            <span className="text-xs font-bold uppercase tracking-widest text-orange-500 mb-3 block">Recursos</span>
-            <h2 className="text-3xl md:text-4xl font-bold text-zinc-900 text-balance leading-tight tracking-tight">
-              Cada recurso pensado para o dia a dia do seu delivery
-            </h2>
-            <p className="text-zinc-500 text-sm leading-relaxed mt-4 max-w-[44ch]">
-              Um sistema completo que começa com o cardápio e vai até o entregador — tudo em um lugar só.
-            </p>
-          </div>
-          <div className="relative overflow-hidden rounded-3xl ring-1 ring-zinc-200 shadow-2xl bg-zinc-950 aspect-video">
-            <video autoPlay muted loop playsInline className="w-full h-full object-cover opacity-90">
-              <source src="/segments/Create_a_modern_D_vector_anim.mp4" type="video/mp4" />
-            </video>
-            <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/60 to-transparent" />
-          </div>
+        <div className="text-center mb-16">
+          <span className="text-xs font-bold uppercase tracking-widest text-orange-500 mb-3 block">Recursos</span>
+          <h2 className="text-3xl md:text-4xl font-bold text-zinc-900 mb-3 tracking-tight">
+            Cada recurso pensado para o dia a dia do seu delivery
+          </h2>
+          <p className="text-zinc-500 max-w-[52ch] mx-auto text-sm leading-relaxed">
+            Um sistema completo que começa com o cardápio e vai até o entregador — tudo em um lugar só.
+          </p>
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
