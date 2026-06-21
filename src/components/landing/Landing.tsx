@@ -201,43 +201,19 @@ function Hero() {
       <div className="relative mx-auto max-w-7xl px-6 py-20 w-full">
         <div className="grid lg:grid-cols-2 gap-16 items-center">
           <div>
-            <div className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/25 text-orange-400 text-xs font-bold px-4 py-1.5 rounded-full mb-8 uppercase tracking-widest shadow-[0_0_20px_rgba(249,115,22,0.10)]">
-              <span className="size-1.5 rounded-full bg-orange-400 animate-pulse" />
-              Alternativa ao iFood · sem comissão por pedido
-            </div>
-
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-black leading-[1.06] text-white mb-6 tracking-tight">
-              Chega de pagar<br />
-              <span className="relative inline-block">
-                <span className="relative z-10 text-orange-400">comissão</span>
-                <span className="absolute -bottom-1 left-0 right-0 h-[3px] bg-gradient-to-r from-orange-500 to-orange-400/0 rounded-full" />
-              </span>
-              {" "}em cada pedido.
+              Sua comida favorita,<br />
+              <span className="text-orange-400">entregue rapidinho.</span>
             </h1>
 
-            <p className="text-zinc-300 text-lg leading-relaxed mb-8 max-w-[44ch]">
-              Cardápio digital, caixa PDV e entregadores no mesmo painel —{" "}
-              <strong className="text-white">tudo por R$99/mês, sem cobrar nada por pedido.</strong>
+            <p className="text-zinc-300 text-lg leading-relaxed mb-10 max-w-[46ch]">
+              Encontre os melhores restaurantes da sua cidade e peça direto pelo DeliveryHub. Simples, rápido e sem complicações.
             </p>
 
-            <div className="flex flex-col sm:flex-row items-center gap-4 mb-10">
-              <Link to="/auth"
-                className="flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 text-white font-bold px-7 py-4 rounded-2xl text-base transition-all duration-300 hover:scale-[1.03] shadow-2xl shadow-orange-500/30 hover:shadow-orange-500/50 w-full sm:w-auto">
-                Testar grátis por 7 dias <ArrowRight className="size-5" />
-              </Link>
-              <a href={WA_LINK} target="_blank" rel="noreferrer"
-                className="flex items-center gap-1.5 text-sm text-zinc-400 hover:text-white transition-colors group">
-                <MessageCircle className="size-3.5 group-hover:text-green-400 transition-colors" /> Falar no WhatsApp
-              </a>
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              {["7 dias grátis para testar", "0% de comissão por pedido", "Cancele quando quiser"].map((t) => (
-                <span key={t} className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-full px-3 py-1.5 text-xs font-medium text-zinc-300 backdrop-blur-sm">
-                  <Check className="size-3 text-orange-400 shrink-0" /> {t}
-                </span>
-              ))}
-            </div>
+            <Link to="/lojas"
+              className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white font-bold px-8 py-4 rounded-2xl text-base transition-all duration-300 hover:scale-[1.03] shadow-2xl shadow-orange-500/30 hover:shadow-orange-500/50">
+              Ver restaurantes disponíveis <ArrowRight className="size-5" />
+            </Link>
           </div>
 
           {/* Phone mockup */}
