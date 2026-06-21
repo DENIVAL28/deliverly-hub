@@ -118,6 +118,22 @@ function ConfiguracoesPage() {
     setDias((prev) => prev.includes(key) ? prev.filter((d) => d !== key) : [...prev, key]);
   }
 
+  // Salva o modo IMEDIATAMENTE no clique, sem precisar do botão "Salvar"
+  async function salvarModoOperacao(novo: "full_delivery" | "simplified_delivery") {
+    if (!empresaId || novo === operationMode) return;
+    const anterior = operationMode;
+    setOperationMode(novo); // optimistic
+    const { error } = await supabase.from("empresas").update({ operation_mode: novo } as any).eq("id", empresaId);
+    if (error) {
+      toast.error("Erro ao salvar modo: " + error.message);
+      setOperationMode(anterior); // revert
+      return;
+    }
+    localStorage.setItem(`devhub_op_mode_${empresaId}`, novo);
+    qc.invalidateQueries({ queryKey: ["operation-mode", empresaId] });
+    qc.invalidateQueries({ queryKey: ["empresa-config", empresaId] });
+  }
+
   async function uploadImagem(file: File, path: string): Promise<string | null> {
     if (!file.type.startsWith("image/")) { toast.error("Envie apenas imagens (JPG, PNG, WebP)."); return null; }
     if (file.size > 5 * 1024 * 1024) { toast.error("A imagem deve ter no máximo 5 MB."); return null; }
@@ -822,13 +838,13 @@ function ConfiguracoesPage() {
               <p className="text-xs text-zinc-500 mt-0.5">Escolha como deseja gerenciar os pedidos dentro da plataforma.</p>
             </div>
             <div className="grid sm:grid-cols-2 gap-3">
-              <button type="button" onClick={() => setOperationMode("full_delivery")}
+              <button type="button" onClick={() => salvarModoOperacao("full_delivery")}
                 className={`text-left rounded-xl border-2 p-4 transition-colors ${operationMode === "full_delivery" ? "border-brand bg-brand/5" : "border-zinc-200 hover:border-zinc-300"}`}>
                 <div className="font-semibold text-sm text-ink mb-1">📋 Painel completo</div>
                 <p className="text-xs text-zinc-500">Kanban com todas as etapas, edição de itens, notas, entregadores e histórico detalhado.</p>
                 <p className="text-xs text-zinc-400 mt-1">Recomendado para lojas com maior volume ou equipe.</p>
               </button>
-              <button type="button" onClick={() => setOperationMode("simplified_delivery")}
+              <button type="button" onClick={() => salvarModoOperacao("simplified_delivery")}
                 className={`text-left rounded-xl border-2 p-4 transition-colors ${operationMode === "simplified_delivery" ? "border-brand bg-brand/5" : "border-zinc-200 hover:border-zinc-300"}`}>
                 <div className="font-semibold text-sm text-ink mb-1">⚡ Painel simplificado</div>
                 <p className="text-xs text-zinc-500">Três colunas simples: Novos → Em preparo → Em entrega. Botões grandes e rápidos.</p>

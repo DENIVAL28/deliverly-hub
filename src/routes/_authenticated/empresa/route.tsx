@@ -29,14 +29,17 @@ function EmpresaLayout() {
   const { loading, plano, empresaId, user } = useAuth();
   const basico = plano === "basico";
 
-  // staleTime = 0: sempre refetch ao montar — garante modo correto após F5 e após salvar config
-  const { data: operationMode = "full_delivery" } = useQuery({
+  // Lê do localStorage para exibição instantânea (sem flash após F5), e sempre verifica o DB
+  const localOpMode = empresaId ? localStorage.getItem(`devhub_op_mode_${empresaId}`) : null;
+  const { data: operationMode = localOpMode ?? "full_delivery" } = useQuery({
     queryKey: ["operation-mode", empresaId],
     enabled: !!empresaId,
     staleTime: 0,
     queryFn: async () => {
       const { data } = await supabase.from("empresas").select("operation_mode").eq("id", empresaId!).single();
-      return (data as any)?.operation_mode ?? "full_delivery";
+      const mode = (data as any)?.operation_mode ?? "full_delivery";
+      localStorage.setItem(`devhub_op_mode_${empresaId!}`, mode);
+      return mode;
     },
   });
 
