@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/use-auth";
 import { PageHeader } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
-import { Bell, BellOff, Printer, Bike, MessageCircle, ChevronLeft, ChevronRight, Download } from "lucide-react";
+import { Bell, BellOff, Printer, Bike, MessageCircle, ChevronLeft, ChevronRight, Download, Pencil, X, AlertTriangle as AlertTriangleIcon } from "lucide-react";
 import { gerarCSV, baixarCSV, COLUNAS_PEDIDOS } from "@/lib/exportar";
 import { toast } from "sonner";
 import { LimiteBanner } from "@/components/UpgradeGuard";
@@ -197,6 +197,121 @@ function playBeep() {
   } catch (_) {}
 }
 
+/* ─── Modal: editar itens do pedido ─── */
+function EditarItensModal({ pedido, onClose, onSave }: {
+  pedido: any;
+  onClose: () => void;
+  onSave: () => void;
+}) {
+  const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  const itens: any[] = pedido.pedido_itens ?? [];
+  const [removidos, setRemovidosSet] = useState<Set<string>>(new Set());
+  const [saving, setSaving] = useState(false);
+
+  const itensRestantes = itens.filter((i) => !removidos.has(i.id));
+  const novoSubtotal   = itensRestantes.reduce((s, i) => s + Number(i.subtotal), 0);
+  const taxa           = Number(pedido.taxa_entrega ?? 0);
+  const desconto       = Math.min(Number(pedido.desconto ?? 0), novoSubtotal);
+  const novoTotal      = Math.max(0, novoSubtotal + taxa - desconto);
+  const reembolso      = Math.max(0, Number(pedido.total) - novoTotal);
+
+  function toggle(id: string) {
+    setRemovidosSet((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
+
+  async function confirmar() {
+    if (removidos.size === 0) { onClose(); return; }
+    if (itensRestantes.length === 0) { toast.error("O pedido deve ter ao menos 1 item."); return; }
+    setSaving(true);
+    const { data, error } = await (supabase as any).rpc("empresa_editar_itens_pedido", {
+      p_pedido_id:   pedido.id,
+      p_remover_ids: [...removidos],
+    });
+    setSaving(false);
+    if (error || data?.error) { toast.error(error?.message ?? data?.error); return; }
+    toast.success(reembolso > 0
+      ? `Itens removidos. Reembolsar ${fmt(reembolso)} ao cliente.`
+      : "Itens removidos com sucesso.");
+    onSave();
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div className="relative bg-white rounded-3xl w-full max-w-sm shadow-2xl flex flex-col max-h-[90vh]">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-100">
+          <div>
+            <p className="font-bold text-zinc-900">Editar pedido #{pedido.numero}</p>
+            <p className="text-xs text-zinc-400 mt-0.5">Desmarque os itens que o cliente não quer mais</p>
+          </div>
+          <button onClick={onClose} className="size-8 rounded-xl bg-zinc-100 flex items-center justify-center">
+            <X className="size-4 text-zinc-500" />
+          </button>
+        </div>
+
+        {/* Itens */}
+        <div className="overflow-y-auto flex-1 px-5 py-3 space-y-2">
+          {itens.map((item) => {
+            const ativo = !removidos.has(item.id);
+            return (
+              <button key={item.id} onClick={() => toggle(item.id)}
+                className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${
+                  ativo ? "border-zinc-200 bg-white" : "border-red-200 bg-red-50 opacity-60"
+                }`}>
+                <span className={`size-5 rounded flex items-center justify-center shrink-0 border ${
+                  ativo ? "bg-brand border-brand" : "bg-white border-red-300"
+                }`}>
+                  {ativo
+                    ? <span className="text-white text-[10px] font-black">✓</span>
+                    : <X className="size-3 text-red-400" />}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-zinc-800 leading-snug">
+                    {item.quantidade}x {item.nome}
+                  </p>
+                  {item.observacao && <p className="text-xs text-zinc-400 truncate">{item.observacao}</p>}
+                </div>
+                <span className={`text-sm font-bold shrink-0 ${ativo ? "text-brand" : "text-red-400 line-through"}`}>
+                  {fmt(Number(item.subtotal))}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Resumo */}
+        <div className="px-5 py-4 border-t border-zinc-100 space-y-2">
+          <div className="flex justify-between text-sm text-zinc-500">
+            <span>Total original</span><span>{fmt(Number(pedido.total))}</span>
+          </div>
+          <div className="flex justify-between text-sm font-bold text-zinc-900">
+            <span>Novo total</span><span className="text-brand">{fmt(novoTotal)}</span>
+          </div>
+          {reembolso > 0 && (
+            <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 mt-1">
+              <AlertTriangleIcon className="size-4 text-amber-500 shrink-0" />
+              <p className="text-xs text-amber-700 font-semibold">
+                Reembolsar <strong>{fmt(reembolso)}</strong> ao cliente
+              </p>
+            </div>
+          )}
+          <button
+            onClick={confirmar}
+            disabled={saving || removidos.size === 0}
+            className="w-full bg-brand hover:bg-brand/90 text-white font-bold py-3 rounded-2xl text-sm mt-1 transition-all disabled:opacity-40">
+            {saving ? "Salvando…" : removidos.size === 0 ? "Nenhum item selecionado" : `Confirmar remoção (${removidos.size} item${removidos.size > 1 ? "s" : ""})`}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function PedidosPage() {
   const { empresaId, plano } = useAuth();
   const qc = useQueryClient();
@@ -209,6 +324,7 @@ function PedidosPage() {
   });
   const [tab, setTab] = useState<Tab>("ativos");
   const [somAtivo, setSomAtivo] = useState(true);
+  const [editarPedido, setEditarPedido] = useState<any | null>(null);
   const [entregadorSel, setEntregadorSel] = useState<Record<string, string>>({});
   const [descontoInput, setDescontoInput] = useState<Record<string, string>>({});
   const [page, setPage] = useState(0);
@@ -553,6 +669,17 @@ function PedidosPage() {
 
   return (
     <>
+      {editarPedido && (
+        <EditarItensModal
+          pedido={editarPedido}
+          onClose={() => setEditarPedido(null)}
+          onSave={() => {
+            setEditarPedido(null);
+            qc.invalidateQueries({ queryKey: ["pedidos-ativos", empresaId] });
+            qc.invalidateQueries({ queryKey: ["pedidos-pag", empresaId] });
+          }}
+        />
+      )}
       <PageHeader
         title="Pedidos"
         subtitle="Acompanhe e atualize os pedidos em tempo real"
@@ -780,6 +907,14 @@ function PedidosPage() {
                   className="gap-1.5 text-zinc-600 hover:text-zinc-900">
                   <Printer className="size-3.5" /> Imprimir
                 </Button>
+
+                {isAtivo && (p.pedido_itens?.length ?? 0) > 1 && (
+                  <Button size="sm" variant="outline"
+                    onClick={() => setEditarPedido(p)}
+                    className="gap-1.5 text-amber-600 hover:text-amber-700 border-amber-200 hover:bg-amber-50">
+                    <Pencil className="size-3.5" /> Editar itens
+                  </Button>
+                )}
 
                 {/* Notificar cliente via WhatsApp */}
                 {p.cliente_telefone && MSGS[p.status] && (
