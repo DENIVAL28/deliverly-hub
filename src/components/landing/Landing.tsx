@@ -715,7 +715,9 @@ function Footer() {
       <div className="mx-auto max-w-7xl px-6">
         <div className="flex flex-col md:flex-row justify-between items-start gap-10 mb-10">
           <div className="max-w-[22rem]">
-            <div className="mb-3"><Logo dark /></div>
+            <div className="mb-3">
+              <img src="/segments/logo1.png" alt="SOS Sistemas" className="h-11 w-auto object-contain brightness-0 invert" />
+            </div>
             <p className="text-xs text-zinc-500 leading-relaxed">Plataforma de delivery próprio para restaurantes e comércios que não aceitam pagar comissão por pedido.</p>
             <div className="flex items-center gap-2 mt-5">
               <a href={WA_LINK} target="_blank" rel="noreferrer"
