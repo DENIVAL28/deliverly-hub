@@ -1,47 +1,77 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView, Linking } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "../../lib/supabase";
 
 const ETAPAS = [
-  { key: "aguardando_confirmacao", label: "Aguardando confirmação", icone: "⏳" },
-  { key: "novo",                   label: "Pedido recebido",         icone: "📋" },
-  { key: "aceito",                 label: "Aceito pela loja",        icone: "✅" },
-  { key: "preparo",                label: "Em preparo",              icone: "👨‍🍳" },
-  { key: "entrega",                label: "Saiu para entrega",       icone: "🛵" },
-  { key: "finalizado",             label: "Entregue!",               icone: "🎉" },
+  { key: "aguardando_confirmacao", label: "Aguardando confirmacao", icon: "..." },
+  { key: "aguardando_pagamento", label: "Aguardando pagamento", icon: "PIX" },
+  { key: "novo", label: "Pedido recebido", icon: "OK" },
+  { key: "aceito", label: "Aceito pela loja", icon: "OK" },
+  { key: "preparo", label: "Em preparo", icon: "FOGO" },
+  { key: "entrega", label: "Saiu para entrega", icon: "MOTO" },
+  { key: "finalizado", label: "Entregue", icon: "OK" },
 ];
 
-const STATUS_ORDER = ["aguardando_confirmacao", "aguardando_pagamento", "novo", "aceito", "preparo", "entrega", "finalizado"];
 const fmt = (v: number) => `R$ ${Number(v).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
 
 export default function RastreioScreen({ route, navigation }: any) {
   const { pedidoId, empresaNome } = route.params;
   const [pedido, setPedido] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [entregadorGps, setEntregadorGps] = useState<any | null>(null);
+  const [gpsAtualizadoEm, setGpsAtualizadoEm] = useState<string | null>(null);
 
   useEffect(() => {
     async function buscar() {
-      const { data } = await supabase
-        .from("pedidos")
-        .select("id, numero, status, total, taxa_entrega, subtotal, created_at, cliente_nome, forma_pagamento, tipo, observacao, endereco_entrega")
-        .eq("id", pedidoId)
-        .single();
+      // Usa RPC SECURITY DEFINER para bypass do RLS — query direta falha para sessões anônimas
+      const { data } = await (supabase as any).rpc("buscar_pedido_tracking", {
+        p_pedido_id: pedidoId,
+      });
       setPedido(data);
       setLoading(false);
     }
+
     buscar();
 
     const channel = supabase
       .channel(`rastreio-${pedidoId}`)
       .on("postgres_changes", {
-        event: "UPDATE", schema: "public", table: "pedidos",
+        event: "UPDATE",
+        schema: "public",
+        table: "pedidos",
         filter: `id=eq.${pedidoId}`,
       }, (payload) => setPedido((prev: any) => ({ ...prev, ...payload.new })))
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    const interval = setInterval(buscar, 8000);
+
+    return () => {
+      clearInterval(interval);
+      supabase.removeChannel(channel);
+    };
   }, [pedidoId]);
+
+  useEffect(() => {
+    if (pedido?.status !== "entrega") {
+      setEntregadorGps(null);
+      return;
+    }
+
+    async function buscarGps() {
+      const { data } = await (supabase as any).rpc("pedido_rastrear_entregador", {
+        p_pedido_id: pedidoId,
+      });
+      if (data?.gps_ativo) {
+        setEntregadorGps(data);
+        setGpsAtualizadoEm(new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }));
+      }
+    }
+
+    buscarGps();
+    const interval = setInterval(buscarGps, 20000);
+    return () => clearInterval(interval);
+  }, [pedido?.status, pedidoId]);
 
   if (loading || !pedido) {
     return <View style={s.center}><ActivityIndicator size="large" color="#f97316" /></View>;
@@ -50,31 +80,28 @@ export default function RastreioScreen({ route, navigation }: any) {
   const cancelado = pedido.status === "cancelado";
   const aguardandoPagamento = pedido.status === "aguardando_pagamento";
   const statusIdx = ETAPAS.findIndex((e) => e.key === pedido.status);
-
-  // Filtra etapas relevantes para o tipo de pedido
   const etapasFiltradas = pedido.tipo === "retirada"
     ? ETAPAS.filter((e) => e.key !== "entrega")
     : pedido.tipo === "mesa"
-    ? ETAPAS.filter((e) => !["entrega", "aguardando_confirmacao"].includes(e.key))
-    : ETAPAS;
+      ? ETAPAS.filter((e) => !["entrega", "aguardando_confirmacao"].includes(e.key))
+      : ETAPAS;
 
   return (
     <SafeAreaView style={s.container}>
       <View style={s.header}>
         <TouchableOpacity onPress={() => navigation.popToTop()} style={s.voltarBtn}>
-          <Text style={s.voltarTexto}>‹</Text>
+          <Text style={s.voltarTexto}>{"<"}</Text>
         </TouchableOpacity>
         <Text style={s.headerNome}>Pedido #{pedido.numero}</Text>
         <View style={{ width: 36 }} />
       </View>
 
       <ScrollView contentContainerStyle={s.scroll}>
-        {/* Info do pedido */}
         <View style={s.card}>
           <Text style={s.cardTitulo}>{empresaNome}</Text>
           <Text style={s.cardSub}>{pedido.cliente_nome}</Text>
-          {pedido.endereco_entrega && pedido.tipo === "delivery" && (
-            <Text style={s.cardSub}>📍 {pedido.endereco_entrega}</Text>
+          {pedido.cliente_endereco && pedido.tipo === "delivery" && (
+            <Text style={s.cardSub}>{pedido.cliente_endereco}</Text>
           )}
           <View style={s.divider} />
           <View style={s.cardRow}>
@@ -93,22 +120,42 @@ export default function RastreioScreen({ route, navigation }: any) {
           )}
         </View>
 
-        {/* Status aguardando pagamento */}
         {aguardandoPagamento && (
           <View style={s.pixCard}>
-            <Text style={s.pixTitulo}>💳 Aguardando pagamento</Text>
-            <Text style={s.pixTexto}>Realize o pagamento e aguarde a confirmação da loja.</Text>
+            <Text style={s.pixTitulo}>Aguardando pagamento</Text>
+            <Text style={s.pixTexto}>Realize o pagamento e aguarde a confirmacao da loja.</Text>
           </View>
         )}
 
-        {/* Cancelado */}
+        {pedido.status === "entrega" && (
+          <View style={s.gpsCard}>
+            <Text style={s.gpsTitulo}>
+              {entregadorGps?.nome ? `${entregadorGps.nome} esta a caminho` : "Entregador a caminho"}
+            </Text>
+            {entregadorGps?.gps_ativo ? (
+              <>
+                <Text style={s.gpsTexto}>
+                  Localizacao atualizada{gpsAtualizadoEm ? ` as ${gpsAtualizadoEm}` : ""}.
+                </Text>
+                <TouchableOpacity
+                  style={s.gpsBotao}
+                  onPress={() => Linking.openURL(`https://maps.google.com/maps?q=${entregadorGps.lat},${entregadorGps.lng}`)}
+                >
+                  <Text style={s.gpsBotaoTexto}>Abrir no mapa</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <Text style={s.gpsTexto}>Aguardando o entregador ativar o GPS.</Text>
+            )}
+          </View>
+        )}
+
         {cancelado ? (
           <View style={s.cancelado}>
-            <Text style={s.canceladoIcone}>❌</Text>
+            <Text style={s.canceladoIcone}>X</Text>
             <Text style={s.canceladoTexto}>Pedido cancelado</Text>
           </View>
         ) : (
-          /* Timeline */
           <View style={s.timelineCard}>
             <Text style={s.timelineTitulo}>Acompanhamento</Text>
             {etapasFiltradas.map((etapa, idx) => {
@@ -120,7 +167,7 @@ export default function RastreioScreen({ route, navigation }: any) {
                 <View key={etapa.key} style={s.etapaRow}>
                   <View style={s.etapaEsq}>
                     <View style={[s.etapaBolha, feito && s.etapaBolhaFeita, atual && s.etapaBolhaAtual]}>
-                      <Text style={{ fontSize: atual ? 16 : 14 }}>{feito ? etapa.icone : "○"}</Text>
+                      <Text style={{ fontSize: 11, fontWeight: "800", color: atual ? "#fff" : "#71717a" }}>{feito ? etapa.icon : ""}</Text>
                     </View>
                     {!ultimo && <View style={[s.etapaLinha, feito && !atual && s.etapaLinhaFeita]} />}
                   </View>
@@ -150,7 +197,7 @@ const s = StyleSheet.create({
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
   header: { flexDirection: "row", alignItems: "center", backgroundColor: "#fff", paddingHorizontal: 12, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: "#e4e4e7" },
   voltarBtn: { width: 36, height: 36, justifyContent: "center" },
-  voltarTexto: { fontSize: 28, color: "#18181b", lineHeight: 30 },
+  voltarTexto: { fontSize: 24, color: "#18181b", lineHeight: 28 },
   headerNome: { flex: 1, textAlign: "center", fontSize: 16, fontWeight: "700", color: "#18181b" },
   scroll: { padding: 14, gap: 14 },
   card: { backgroundColor: "#fff", borderRadius: 14, padding: 16, elevation: 2, shadowColor: "#000", shadowOpacity: 0.04, shadowRadius: 6 },
@@ -163,8 +210,13 @@ const s = StyleSheet.create({
   pixCard: { backgroundColor: "#fff7ed", borderRadius: 14, padding: 16, borderWidth: 1, borderColor: "#fed7aa" },
   pixTitulo: { fontSize: 16, fontWeight: "800", color: "#ea580c", marginBottom: 6 },
   pixTexto: { fontSize: 13, color: "#71717a" },
+  gpsCard: { backgroundColor: "#eef2ff", borderRadius: 14, padding: 16, borderWidth: 1, borderColor: "#c7d2fe" },
+  gpsTitulo: { fontSize: 16, fontWeight: "800", color: "#4338ca", marginBottom: 6 },
+  gpsTexto: { fontSize: 13, color: "#4f46e5", marginBottom: 12 },
+  gpsBotao: { backgroundColor: "#4f46e5", borderRadius: 12, height: 44, justifyContent: "center", alignItems: "center" },
+  gpsBotaoTexto: { color: "#fff", fontSize: 14, fontWeight: "800" },
   cancelado: { alignItems: "center", paddingVertical: 40, gap: 10 },
-  canceladoIcone: { fontSize: 48 },
+  canceladoIcone: { fontSize: 32, fontWeight: "900", color: "#dc2626" },
   canceladoTexto: { fontSize: 18, fontWeight: "700", color: "#dc2626" },
   timelineCard: { backgroundColor: "#fff", borderRadius: 14, padding: 20, elevation: 2, shadowColor: "#000", shadowOpacity: 0.04, shadowRadius: 6 },
   timelineTitulo: { fontSize: 13, fontWeight: "800", color: "#71717a", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 16 },
