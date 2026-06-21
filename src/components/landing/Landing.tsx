@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import {
   ArrowRight, Store, Check, MessageCircle, Smartphone, Zap, BarChart3,
   Menu, X, ChevronDown, Mail, ClipboardList, Utensils, Bike,
-  Shield, Star, TrendingUp, Package, ChevronRight, MapPin,
+  Shield, Star, TrendingUp, Package,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -10,15 +10,15 @@ const WHATSAPP = "5566981289787";
 const WA_LINK = `https://wa.me/${WHATSAPP}`;
 
 const segments = [
-  { img: "/segments/pizza.png",        emoji: "🍕", label: "Pizzas" },
-  { img: "/segments/burger.png",       emoji: "🍔", label: "Hambúrgueres" },
-  { img: "/segments/marmita.png",      emoji: "🍱", label: "Marmitas" },
-  { img: "/segments/acai.png",         emoji: "🍇", label: "Açaí" },
-  { img: "/segments/conveniencia.png", emoji: "🛒", label: "Conveniências" },
-  { img: "/segments/padaria.png",      emoji: "🥐", label: "Padarias" },
-  { img: "/segments/restaurante.png",  emoji: "🍝", label: "Restaurantes" },
-  { img: "/segments/espetinho.png",    emoji: "🍢", label: "Espetinhos" },
-  { img: "/segments/cafe.png",         emoji: "☕", label: "Cafeterias" },
+  { img: "/segments/pizza.png",        emoji: "🍕", label: "Pizzarias",     desc: "Monte sabores, tamanhos e bordas com facilidade.",        bg: "from-red-50 to-orange-50",    dot: "bg-red-400" },
+  { img: "/segments/burger.png",       emoji: "🍔", label: "Hamburguerias", desc: "Adicionais, pontos de carne e combos personalizados.",    bg: "from-yellow-50 to-amber-50",  dot: "bg-yellow-500" },
+  { img: "/segments/marmita.png",      emoji: "🍱", label: "Marmitarias",   desc: "Cardápio semanal e gestão de pedidos recorrentes.",       bg: "from-green-50 to-emerald-50", dot: "bg-green-500" },
+  { img: "/segments/acai.png",         emoji: "🍇", label: "Açaíterias",    desc: "Montagem personalizada direto no cardápio digital.",      bg: "from-purple-50 to-violet-50", dot: "bg-purple-500" },
+  { img: "/segments/conveniencia.png", emoji: "🛒", label: "Conveniências", desc: "Catálogo amplo com categorias e busca rápida.",           bg: "from-blue-50 to-sky-50",      dot: "bg-blue-500" },
+  { img: "/segments/padaria.png",      emoji: "🥐", label: "Padarias",      desc: "Agendamento de pedidos e horários flexíveis.",            bg: "from-amber-50 to-yellow-50",  dot: "bg-amber-500" },
+  { img: "/segments/restaurante.png",  emoji: "🍝", label: "Restaurantes",  desc: "Gestão completa do pedido até a entrega.",                bg: "from-orange-50 to-red-50",    dot: "bg-orange-500" },
+  { img: "/segments/espetinho.png",    emoji: "🍢", label: "Espetinhos",    desc: "Cardápio simples e checkout ágil pelo WhatsApp.",         bg: "from-rose-50 to-pink-50",     dot: "bg-rose-500" },
+  { img: "/segments/cafe.png",         emoji: "☕", label: "Cafeterias",    desc: "Personalização de bebidas e fidelização de clientes.",    bg: "from-stone-50 to-zinc-50",    dot: "bg-stone-500" },
 ];
 
 const features = [
@@ -63,11 +63,14 @@ const faqs = [
   { q: "Posso cancelar a qualquer momento?",           a: "Sim, sem multa e sem contrato. Ao cancelar, seu acesso continua até o fim do período já pago. Depois disso, a loja é desativada — e você pode reativar quando quiser." },
 ];
 
-/* ─── Logo ─── */
 function Logo() {
   return (
     <div className="flex items-center gap-3">
-      <img src="/logo-delivery-hub.png" alt="Delivery Hub" className="h-12 w-auto object-contain shrink-0" />
+      <img
+        src="/logo-delivery-hub.png"
+        alt="Delivery Hub"
+        className="h-12 w-auto object-contain shrink-0"
+      />
       <span className="text-xl font-black tracking-tight leading-none text-zinc-900">
         Delivery<span className="text-orange-500">Hub</span>
       </span>
@@ -75,72 +78,105 @@ function Logo() {
   );
 }
 
+export function Landing() {
+  return (
+    <div className="min-h-screen bg-white text-zinc-900 antialiased">
+      <Nav />
+      <Hero />
+      <SocialProof />
+      <Stats />
+      <LojistasSection />
+      <ComoFunciona />
+      <Segments />
+      <Features />
+      <Pricing />
+      <FAQ />
+      <Footer />
+      <WhatsAppFlutuante />
+    </div>
+  );
+}
+
 /* ─── Nav ─── */
 function Nav() {
   const [open, setOpen] = useState(false);
+
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 w-full bg-white border-b border-zinc-100 shadow-sm">
       <div className="mx-auto max-w-7xl px-6 h-20 flex items-center justify-between">
+        {/* Logo + Links */}
         <div className="flex items-center gap-8">
           <Link to="/" className="flex items-center shrink-0">
             <Logo />
           </Link>
           <div className="hidden md:flex items-center gap-1 text-sm font-medium">
+            {[
+              ["#como-funciona", "Como funciona"],
+              ["#recursos",      "Recursos"],
+              ["#planos",        "Planos"],
+            ].map(([href, label]) => (
+              <a key={href} href={href}
+                className="px-3 py-2 rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 transition-all duration-200">
+                {label}
+              </a>
+            ))}
             <Link to="/lojas"
-              className="px-3 py-2 rounded-lg text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 transition-all duration-200">
-              Ver restaurantes
+              className="px-3 py-2 rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 transition-all duration-200">
+              Ver lojas
             </Link>
-            <a href="#lojistas"
-              className="px-3 py-2 rounded-lg text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 transition-all duration-200">
-              Para lojistas
-            </a>
             <Link to="/entregadores"
-              className="px-3 py-2 rounded-lg text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 transition-all duration-200">
+              className="px-3 py-2 rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 transition-all duration-200">
               Entregadores
             </Link>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        {/* CTAs */}
+        <div className="flex items-center gap-2">
           <Link to="/auth"
-            className="hidden md:inline-flex items-center text-sm font-semibold text-zinc-700 hover:text-zinc-900 px-4 py-2 rounded-xl hover:bg-zinc-50 transition-all duration-200">
+            className="hidden sm:block text-sm font-medium px-4 py-2 rounded-xl text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 transition-all duration-200">
             Área do lojista
           </Link>
           <Link to="/auth"
-            className="hidden md:inline-flex items-center gap-1.5 bg-orange-500 hover:bg-orange-400 text-white text-sm font-bold px-5 py-2.5 rounded-xl transition-all duration-200 hover:scale-[1.02] shadow-lg shadow-orange-500/25">
+            className="hidden sm:flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-all duration-200 shadow-lg shadow-orange-500/25 hover:shadow-orange-500/40 hover:scale-[1.02]">
             Testar grátis <ArrowRight className="size-4" />
           </Link>
-          <button
-            onClick={() => setOpen(!open)}
-            className="md:hidden p-2 rounded-xl hover:bg-zinc-100 transition-colors"
-            aria-label="Menu">
+          <button onClick={() => setOpen((v) => !v)}
+            className="md:hidden p-2 rounded-lg text-zinc-500 hover:bg-zinc-100 transition-colors">
             {open ? <X className="size-5" /> : <Menu className="size-5" />}
           </button>
         </div>
       </div>
 
+      {/* Mobile menu */}
       {open && (
-        <div className="md:hidden bg-white border-t border-zinc-100 px-6 py-4 space-y-1">
+        <div className="md:hidden bg-white/98 backdrop-blur-xl border-t border-zinc-100 px-6 py-4 space-y-1 shadow-xl">
+          {[
+            ["#como-funciona", "Como funciona"],
+            ["#recursos",      "Recursos"],
+            ["#planos",        "Planos"],
+          ].map(([href, label]) => (
+            <a key={href} href={href} onClick={() => setOpen(false)}
+              className="block text-sm font-medium text-zinc-600 hover:text-orange-500 py-2.5 px-3 rounded-xl hover:bg-orange-50 transition-colors">
+              {label}
+            </a>
+          ))}
           <Link to="/lojas" onClick={() => setOpen(false)}
-            className="block px-3 py-3 rounded-xl text-zinc-700 hover:bg-zinc-50 font-medium text-sm">
-            Ver restaurantes
+            className="block text-sm font-medium text-zinc-600 hover:text-orange-500 py-2.5 px-3 rounded-xl hover:bg-orange-50 transition-colors">
+            Ver lojas
           </Link>
-          <a href="#lojistas" onClick={() => setOpen(false)}
-            className="block px-3 py-3 rounded-xl text-zinc-700 hover:bg-zinc-50 font-medium text-sm">
-            Para lojistas
-          </a>
           <Link to="/entregadores" onClick={() => setOpen(false)}
-            className="block px-3 py-3 rounded-xl text-zinc-700 hover:bg-zinc-50 font-medium text-sm">
+            className="block text-sm font-medium text-zinc-600 hover:text-orange-500 py-2.5 px-3 rounded-xl hover:bg-orange-50 transition-colors">
             Entregadores
           </Link>
           <div className="pt-3 border-t border-zinc-100 space-y-2">
             <Link to="/auth" onClick={() => setOpen(false)}
-              className="block px-3 py-3 rounded-xl text-zinc-700 hover:bg-zinc-50 font-medium text-sm">
-              Área do lojista
+              className="block text-center bg-orange-500 text-white text-sm font-bold px-4 py-3 rounded-2xl shadow-lg shadow-orange-500/20">
+              Testar grátis
             </Link>
             <Link to="/auth" onClick={() => setOpen(false)}
-              className="block w-full text-center bg-orange-500 text-white font-bold px-4 py-3 rounded-xl text-sm">
-              Testar grátis
+              className="block text-center text-sm font-medium px-4 py-2.5 border border-zinc-200 rounded-xl text-zinc-600 hover:border-zinc-300 transition-colors">
+              Área do lojista
             </Link>
           </div>
         </div>
@@ -149,126 +185,246 @@ function Nav() {
   );
 }
 
-/* ─── Hero cliente final ─── */
-function ClienteHero() {
+/* ─── Hero ─── */
+function Hero() {
   return (
-    <section className="relative bg-zinc-950 overflow-hidden min-h-screen flex items-end pb-0 pt-20">
+    <section className="relative bg-zinc-950 overflow-hidden min-h-screen flex items-center pt-20">
       <video
         autoPlay muted loop playsInline
-        className="absolute inset-0 w-full h-full object-cover opacity-45 pointer-events-none"
+        className="absolute inset-0 w-full h-full object-cover opacity-50 pointer-events-none"
         src="/segments/Ultra_realistic_cinematic_food.mp4"
       />
-      <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/80 via-zinc-950/50 to-zinc-950/95" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_50%_at_50%_0%,_rgba(249,115,22,0.15),_transparent)]" />
+      <div className="absolute inset-0 bg-zinc-950/55" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_60%_-10%,_rgba(249,115,22,0.28),_transparent)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_50%_40%_at_10%_80%,_rgba(249,115,22,0.14),_transparent)]" />
+      <div className="absolute inset-0 opacity-[0.03]" style={{
+        backgroundImage: "linear-gradient(rgba(255,255,255,0.8) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.8) 1px, transparent 1px)",
+        backgroundSize: "64px 64px",
+      }} />
 
-      <div className="relative w-full">
-        {/* Main content */}
-        <div className="mx-auto max-w-5xl px-6 py-20 text-center">
-          <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 text-white/90 text-xs font-semibold px-4 py-1.5 rounded-full mb-8 backdrop-blur-sm uppercase tracking-widest">
-            <span className="size-1.5 rounded-full bg-green-400 animate-pulse" />
-            Sem baixar aplicativo · Sem cadastro obrigatório
-          </div>
+      <div className="relative mx-auto max-w-7xl px-6 py-20 w-full">
+        <div className="grid lg:grid-cols-2 gap-16 items-center">
+          <div>
+            <div className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/25 text-orange-400 text-xs font-bold px-4 py-1.5 rounded-full mb-8 uppercase tracking-widest shadow-[0_0_20px_rgba(249,115,22,0.10)]">
+              <span className="size-1.5 rounded-full bg-orange-400 animate-pulse" />
+              Alternativa ao iFood · sem comissão por pedido
+            </div>
 
-          <h1 className="text-4xl md:text-6xl font-black leading-[1.05] text-white mb-6 tracking-tight">
-            Peça comida direto dos<br />
-            <span className="text-orange-400">restaurantes da sua cidade</span>
-          </h1>
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-black leading-[1.06] text-white mb-6 tracking-tight">
+              Chega de pagar<br />
+              <span className="relative inline-block">
+                <span className="relative z-10 text-orange-400">comissão</span>
+                <span className="absolute -bottom-1 left-0 right-0 h-[3px] bg-gradient-to-r from-orange-500 to-orange-400/0 rounded-full" />
+              </span>
+              {" "}em cada pedido.
+            </h1>
 
-          <p className="text-zinc-300 text-lg md:text-xl leading-relaxed mb-10 max-w-[50ch] mx-auto">
-            Escolha a loja, monte seu pedido e envie direto para o estabelecimento.{" "}
-            <span className="text-white font-medium">Sem app, sem cadastro.</span>
-          </p>
+            <p className="text-zinc-300 text-lg leading-relaxed mb-8 max-w-[44ch]">
+              Cardápio digital, caixa PDV e entregadores no mesmo painel —{" "}
+              <strong className="text-white">tudo por R$99/mês, sem cobrar nada por pedido.</strong>
+            </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
-            <Link to="/lojas"
-              className="flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 text-white font-bold px-8 py-4 rounded-2xl text-base transition-all duration-300 hover:scale-[1.03] shadow-2xl shadow-orange-500/35 w-full sm:w-auto">
-              <MapPin className="size-5" /> Ver restaurantes disponíveis
-            </Link>
-            <a href="#lojistas"
-              className="flex items-center gap-2 text-zinc-400 hover:text-white text-sm font-medium transition-colors">
-              Sou lojista <ChevronRight className="size-4" />
-            </a>
-          </div>
-        </div>
+            <div className="flex flex-col sm:flex-row items-center gap-4 mb-10">
+              <Link to="/auth"
+                className="flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 text-white font-bold px-7 py-4 rounded-2xl text-base transition-all duration-300 hover:scale-[1.03] shadow-2xl shadow-orange-500/30 hover:shadow-orange-500/50 w-full sm:w-auto">
+                Testar grátis por 7 dias <ArrowRight className="size-5" />
+              </Link>
+              <a href={WA_LINK} target="_blank" rel="noreferrer"
+                className="flex items-center gap-1.5 text-sm text-zinc-400 hover:text-white transition-colors group">
+                <MessageCircle className="size-3.5 group-hover:text-green-400 transition-colors" /> Falar no WhatsApp
+              </a>
+            </div>
 
-        {/* Category bar — pinned at bottom of hero */}
-        <div className="bg-zinc-950/80 backdrop-blur-md border-t border-white/8">
-          <div className="mx-auto max-w-5xl px-6 py-5">
-            <div className="flex items-center gap-4 overflow-x-auto pb-1 scrollbar-hide justify-center flex-wrap md:flex-nowrap">
-              {segments.map(({ img, emoji, label }) => (
-                <Link key={label} to="/lojas"
-                  className="flex flex-col items-center gap-1.5 group shrink-0">
-                  <div className="size-14 rounded-2xl bg-white/8 border border-white/12 flex items-center justify-center overflow-hidden group-hover:bg-white/18 group-hover:border-orange-500/50 group-hover:scale-110 transition-all duration-200 p-2">
-                    <img src={img} alt={label} className="w-full h-full object-contain drop-shadow"
-                      onError={(e) => {
-                        e.currentTarget.style.display = "none";
-                        const span = document.createElement("span");
-                        span.style.fontSize = "1.5rem";
-                        span.textContent = emoji;
-                        e.currentTarget.parentElement?.appendChild(span);
-                      }} />
-                  </div>
-                  <span className="text-[10px] text-zinc-400 group-hover:text-white transition-colors font-medium whitespace-nowrap">{label}</span>
-                </Link>
+            <div className="flex flex-wrap gap-2">
+              {["7 dias grátis para testar", "0% de comissão por pedido", "Cancele quando quiser"].map((t) => (
+                <span key={t} className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-full px-3 py-1.5 text-xs font-medium text-zinc-300 backdrop-blur-sm">
+                  <Check className="size-3 text-orange-400 shrink-0" /> {t}
+                </span>
               ))}
             </div>
           </div>
+
+          {/* Phone mockup */}
+          <div className="hidden lg:flex justify-center items-center">
+            <div className="relative">
+              <div className="absolute -inset-10 bg-orange-500/15 blur-3xl rounded-full" />
+              <div className="absolute -inset-4 bg-orange-500/8 blur-xl rounded-[3rem]" />
+
+              <div className="relative w-72 bg-zinc-900 rounded-[2.75rem] ring-2 ring-white/15 shadow-[0_40px_80px_rgba(0,0,0,0.6)] overflow-hidden" style={{ height: 580 }}>
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-6 bg-zinc-950 rounded-b-2xl z-10 flex items-center justify-center gap-1">
+                  <div className="size-1.5 rounded-full bg-zinc-700" />
+                  <div className="w-8 h-1.5 rounded-full bg-zinc-700" />
+                </div>
+
+                <div className="absolute inset-0 bg-zinc-100 overflow-hidden">
+                  <div className="bg-gradient-to-b from-zinc-700 to-zinc-800 h-24 relative">
+                    <div className="absolute inset-0 opacity-60" style={{
+                      backgroundImage: "url('/segments/banner_placeholder.jpg')",
+                      backgroundSize: "cover",
+                      backgroundPosition: "center",
+                    }} />
+                  </div>
+                  <div className="bg-white px-4 pb-3 shadow-sm">
+                    <div className="flex items-end gap-3 -mt-8 mb-3">
+                      <div className="size-16 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 ring-4 ring-white flex items-center justify-center shrink-0 shadow-lg shadow-orange-500/30">
+                        <Store className="size-7 text-white" />
+                      </div>
+                      <div className="pb-1">
+                        <div className="h-3 bg-zinc-800 rounded-full w-28 mb-1.5" />
+                        <div className="flex gap-1.5 items-center">
+                          <div className="h-2 bg-green-400 rounded-full w-12" />
+                          <div className="h-2 bg-zinc-200 rounded-full w-16" />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="h-8 bg-zinc-100 rounded-xl flex items-center px-3 gap-2">
+                      <div className="size-3 rounded-full bg-zinc-300" />
+                      <div className="h-1.5 bg-zinc-200 rounded-full w-20" />
+                    </div>
+                  </div>
+
+                  <div className="bg-white border-b border-zinc-100 px-4 py-2 flex gap-2 mt-1">
+                    {["Pizzas", "Bebidas", "Bordas"].map((c, i) => (
+                      <div key={c} className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all ${i === 0 ? "bg-orange-500 text-white shadow-md shadow-orange-500/30" : "bg-zinc-100 text-zinc-400"}`}>{c}</div>
+                    ))}
+                  </div>
+
+                  <div className="px-3 pt-3 space-y-2">
+                    {[
+                      { name: "Mussarela", w: "w-20", emoji: "🍕" },
+                      { name: "Calabresa", w: "w-24", emoji: "🍕" },
+                      { name: "Frango",    w: "w-16", emoji: "🍗" },
+                    ].map((p) => (
+                      <div key={p.name} className="bg-white rounded-2xl px-4 py-3 flex items-center justify-between shadow-sm ring-1 ring-zinc-100">
+                        <div className="flex-1">
+                          <div className={`h-2.5 bg-zinc-800 rounded-full ${p.w} mb-1.5`} />
+                          <div className="h-2 bg-zinc-200 rounded-full w-28 mb-2" />
+                          <div className="h-3 bg-orange-500 rounded-full w-16" />
+                        </div>
+                        <div className="size-14 rounded-xl bg-gradient-to-br from-orange-100 to-amber-100 ml-3 flex items-center justify-center text-2xl shrink-0">
+                          {p.emoji}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="absolute bottom-6 left-3 right-3">
+                  <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-2xl h-12 flex items-center justify-between px-4 shadow-xl shadow-orange-500/40">
+                    <span className="bg-white/20 text-white text-xs font-bold px-2 py-0.5 rounded-lg">2×</span>
+                    <span className="text-white text-xs font-bold">Ver carrinho</span>
+                    <span className="text-white text-xs font-bold">R$ 93,80</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Floating card — novo pedido */}
+              <div className="absolute -left-16 top-16 bg-white rounded-2xl shadow-2xl px-4 py-3 flex items-center gap-3 ring-1 ring-zinc-100"
+                style={{ animation: "float 3s ease-in-out infinite" }}>
+                <div className="size-9 rounded-xl bg-green-50 border border-green-100 flex items-center justify-center text-lg">🛒</div>
+                <div>
+                  <div className="text-xs font-bold text-zinc-900">Novo pedido!</div>
+                  <div className="text-[10px] text-zinc-400 flex items-center gap-1">
+                    <span className="size-1.5 rounded-full bg-green-400 inline-block animate-pulse" />
+                    Agora mesmo
+                  </div>
+                </div>
+              </div>
+
+              {/* Floating card — faturamento */}
+              <div className="absolute -right-14 bottom-24 bg-white rounded-2xl shadow-2xl px-4 py-3 ring-1 ring-zinc-100 border-l-2 border-orange-500">
+                <div className="text-[10px] text-zinc-400 mb-0.5 font-medium">Faturamento hoje</div>
+                <div className="text-sm font-black text-zinc-900">R$ 1.247
+                  <span className="text-green-500 text-xs font-bold ml-1.5 bg-green-50 px-1.5 py-0.5 rounded-full">▲ 18%</span>
+                </div>
+              </div>
+
+              {/* Floating card — pedidos */}
+              <div className="absolute -right-10 top-10 bg-zinc-900 rounded-xl shadow-xl px-3 py-2 ring-1 ring-white/10">
+                <div className="text-[10px] text-zinc-400 mb-1">Pedidos hoje</div>
+                <div className="flex items-center gap-1">
+                  {[40, 65, 50, 80, 60, 90, 75].map((h, i) => (
+                    <div key={i} className="w-1.5 bg-orange-500 rounded-full opacity-80" style={{ height: `${h * 0.28}px` }} />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
+      </div>
+
+      <style>{`
+        @keyframes float {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-10px); }
+        }
+        @keyframes marquee {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+        .animate-float { animation: float 3s ease-in-out infinite; }
+        .animate-marquee { animation: marquee 24s linear infinite; }
+      `}</style>
+    </section>
+  );
+}
+
+/* ─── Social Proof ─── */
+function SocialProof() {
+  const items = [
+    "🚫 Sem comissão por pedido",
+    "📱 Cardápio digital sem app",
+    "🛒 Caixa PDV para balcão",
+    "🛵 Gestão de entregadores inclusa",
+    "💰 PIX QR Code automático",
+    "✅ 7 dias grátis para testar",
+    "📲 Pedido chega direto no WhatsApp",
+  ];
+  return (
+    <section className="bg-gradient-to-r from-orange-500 via-orange-500 to-orange-600 py-3.5 overflow-hidden">
+      <div className="flex animate-marquee whitespace-nowrap">
+        {[...items, ...items].map((item, i) => (
+          <span key={i} className="inline-flex items-center gap-2 text-white text-sm font-semibold mx-8 shrink-0">
+            {item}
+            <span className="text-orange-300/60 mx-2">·</span>
+          </span>
+        ))}
       </div>
     </section>
   );
 }
 
-/* ─── Como pedir (cliente final) ─── */
-function ComoPedir() {
-  const steps = [
-    { n: "1", emoji: "🏪", title: "Escolha uma loja", desc: "Veja os restaurantes e comércios disponíveis e abra o cardápio." },
-    { n: "2", emoji: "🛒", title: "Monte seu pedido", desc: "Escolha os produtos, personalize e adicione ao carrinho." },
-    { n: "3", emoji: "📲", title: "Envie pelo WhatsApp", desc: "Seu pedido vai direto para o estabelecimento, formatado e pronto." },
-    { n: "4", emoji: "🤝", title: "Combine o pagamento", desc: "Acerte com a loja a forma de pagamento e se haverá entrega." },
+/* ─── Stats ─── */
+function Stats() {
+  const items = [
+    { icon: TrendingUp, value: "R$99",   label: "por mês, tudo incluso",           color: "text-orange-400" },
+    { icon: Star,       value: "0%",     label: "de comissão — você fica com tudo", color: "text-green-400" },
+    { icon: Zap,        value: "< 24h",  label: "pra ter seu delivery no ar",       color: "text-blue-400" },
+    { icon: Package,    value: "3 em 1", label: "cardápio + PDV + entregadores",    color: "text-purple-400" },
   ];
   return (
-    <section className="py-20 bg-white border-b border-zinc-100">
+    <section className="py-14 bg-zinc-950 border-b border-white/5">
       <div className="mx-auto max-w-5xl px-6">
-        <div className="text-center mb-12">
-          <h2 className="text-2xl md:text-3xl font-black text-zinc-900 mb-3">Como fazer seu pedido</h2>
-          <p className="text-zinc-500 text-sm">Simples, rápido e sem precisar criar conta.</p>
-        </div>
-
-        <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-8 relative">
-          <div className="hidden md:block absolute top-9 left-[13%] right-[13%] h-px bg-gradient-to-r from-transparent via-orange-200 to-transparent" />
-          {steps.map((s) => (
-            <div key={s.n} className="relative text-center z-10">
-              <div className="relative inline-flex mb-4">
-                <div className="size-[72px] rounded-3xl bg-orange-50 border-2 border-orange-100 flex items-center justify-center text-3xl">
-                  {s.emoji}
-                </div>
-                <span className="absolute -top-2 -right-2 size-6 rounded-full bg-orange-500 text-white text-xs font-black flex items-center justify-center shadow-md shadow-orange-500/30">
-                  {s.n}
-                </span>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-0 divide-x divide-white/8">
+          {items.map(({ icon: Icon, value, label, color }) => (
+            <div key={label} className="flex flex-col items-center text-center px-6 py-4 group">
+              <div className="size-10 rounded-2xl bg-white/5 flex items-center justify-center mb-3 group-hover:bg-white/10 transition-colors">
+                <Icon className={`size-5 ${color}`} />
               </div>
-              <h3 className="text-sm font-bold text-zinc-900 mb-1.5">{s.title}</h3>
-              <p className="text-xs text-zinc-500 leading-relaxed max-w-[20ch] mx-auto">{s.desc}</p>
+              <div className={`text-3xl md:text-4xl font-black mb-1.5 ${color}`}>{value}</div>
+              <div className="text-xs text-zinc-500 leading-relaxed max-w-[16ch] mx-auto">{label}</div>
             </div>
           ))}
         </div>
-
-        <div className="text-center mt-12">
-          <Link to="/lojas"
-            className="inline-flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white font-bold px-8 py-4 rounded-2xl text-sm transition-all duration-200 hover:scale-[1.02] shadow-lg">
-            <MapPin className="size-4" /> Ver restaurantes disponíveis <ArrowRight className="size-4" />
-          </Link>
-          <p className="text-xs text-zinc-400 mt-3">Sem cadastro obrigatório para fazer seu pedido</p>
-        </div>
       </div>
     </section>
   );
 }
 
-/* ─── Bloco transição → lojistas ─── */
+/* ─── Bloco lojistas ─── */
 function LojistasSection() {
   return (
-    <section id="lojistas" className="py-24 bg-zinc-950">
+    <section id="lojistas" className="py-24 bg-zinc-950 border-b border-white/5">
       <div className="mx-auto max-w-6xl px-6">
         <div className="grid lg:grid-cols-2 gap-16 items-center">
 
@@ -327,11 +483,11 @@ function LojistasSection() {
               </div>
               <div className="p-6 space-y-1">
                 {[
-                  { icon: Smartphone,    label: "Cardápio digital",     detail: "Link exclusivo da loja",   color: "text-blue-400" },
-                  { icon: ClipboardList, label: "Caixa PDV",            detail: "Vendas no balcão",         color: "text-green-400" },
-                  { icon: MessageCircle, label: "Pedidos no WhatsApp",  detail: "Tempo real com alerta",    color: "text-orange-400" },
-                  { icon: Bike,          label: "Entregadores",         detail: "Gestão de rotas",          color: "text-purple-400" },
-                  { icon: BarChart3,     label: "Relatórios",           detail: "Faturamento e produtos",   color: "text-cyan-400" },
+                  { icon: Smartphone,    label: "Cardápio digital",    detail: "Link exclusivo da loja",  color: "text-blue-400" },
+                  { icon: ClipboardList, label: "Caixa PDV",           detail: "Vendas no balcão",        color: "text-green-400" },
+                  { icon: MessageCircle, label: "Pedidos no WhatsApp", detail: "Tempo real com alerta",   color: "text-orange-400" },
+                  { icon: Bike,          label: "Entregadores",        detail: "Gestão de rotas",         color: "text-purple-400" },
+                  { icon: BarChart3,     label: "Relatórios",          detail: "Faturamento e produtos",  color: "text-cyan-400" },
                 ].map(({ icon: Icon, label, detail, color }) => (
                   <div key={label} className="flex items-center justify-between py-2.5 border-b border-white/5 last:border-0">
                     <div className="flex items-center gap-3">
@@ -360,33 +516,34 @@ function LojistasSection() {
   );
 }
 
-/* ─── Como funciona (lojistas) ─── */
+/* ─── Como Funciona ─── */
 function ComoFunciona() {
   const steps = [
-    { num: "1", icon: ClipboardList, title: "Crie sua conta",          desc: "Em menos de 5 minutos, sua loja já está no ar. Sem cartão de crédito, sem complicação." },
-    { num: "2", icon: Utensils,      title: "Monte seu cardápio",       desc: "Adicione produtos, fotos e preços com facilidade. Personalize cores, logo e identidade visual." },
-    { num: "3", icon: Bike,          title: "Comece a receber pedidos", desc: "Compartilhe o link com seus clientes. Pedidos chegam direto no WhatsApp e no seu painel." },
+    { num: "1", icon: ClipboardList, title: "Crie sua conta",            desc: "Em menos de 5 minutos, sua loja já está no ar. Sem cartão de crédito, sem complicação." },
+    { num: "2", icon: Utensils,      title: "Monte seu cardápio",         desc: "Adicione produtos, fotos e preços com facilidade. Personalize cores, logo e identidade visual." },
+    { num: "3", icon: Bike,          title: "Comece a receber pedidos",   desc: "Compartilhe o link com seus clientes. Pedidos chegam direto no WhatsApp e no seu painel." },
   ];
   return (
-    <section id="como-funciona" className="py-24 bg-white border-y border-zinc-100">
+    <section id="como-funciona" className="py-28 bg-white border-y border-zinc-100">
       <div className="mx-auto max-w-7xl px-6">
-        <div className="text-center mb-14">
+        <div className="text-center mb-16">
           <span className="text-xs font-bold uppercase tracking-widest text-orange-500 mb-3 block">Como funciona</span>
           <h2 className="text-3xl md:text-4xl font-bold text-zinc-900 mb-3 tracking-tight">
             Do zero ao primeiro pedido em menos de 24h
           </h2>
           <p className="text-zinc-500 max-w-[48ch] mx-auto text-sm leading-relaxed">
-            Você configura tudo sozinho ou com nossa ajuda gratuita. Sem técnico, sem contrato.
+            Sem técnico, sem contrato, sem complicação. Você configura tudo sozinho ou com nossa ajuda gratuita.
           </p>
         </div>
 
         <div className="grid md:grid-cols-3 gap-6 relative">
           <div className="hidden md:block absolute top-[2.75rem] left-[calc(16.67%+3rem)] right-[calc(16.67%+3rem)] h-px bg-gradient-to-r from-orange-200 via-orange-300 to-orange-200 z-0" />
+
           {steps.map(({ num, icon: Icon, title, desc }) => (
             <div key={num} className="relative z-10 group">
               <div className="bg-white rounded-3xl p-8 ring-1 ring-zinc-200 hover:ring-orange-300 hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 text-center">
                 <div className="relative inline-flex mb-6">
-                  <div className="size-20 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-xl shadow-orange-500/30 group-hover:scale-[1.05] transition-all duration-300">
+                  <div className="size-20 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-xl shadow-orange-500/30 group-hover:shadow-orange-500/50 group-hover:scale-[1.05] transition-all duration-300">
                     <Icon className="size-8 text-white" />
                   </div>
                   <span className="absolute -top-2 -right-2 size-6 rounded-full bg-white border-2 border-orange-500 flex items-center justify-center text-[10px] font-black text-orange-500 shadow-md">
@@ -411,12 +568,59 @@ function ComoFunciona() {
   );
 }
 
+/* ─── Segment Card ─── */
+function SegmentCard({ img, emoji, label, desc, bg, dot }: {
+  img: string; emoji: string; label: string; desc: string; bg: string; dot: string;
+}) {
+  const [imgOk, setImgOk] = useState(true);
+  return (
+    <div className="bg-white rounded-3xl ring-1 ring-zinc-200 hover:ring-orange-300 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 group cursor-default overflow-hidden">
+      <div className={`relative w-full bg-gradient-to-br ${bg} flex items-center justify-center overflow-hidden`} style={{ height: "160px" }}>
+        {imgOk ? (
+          <img src={img} alt={label} onError={() => setImgOk(false)}
+            className="h-full w-full object-contain p-4 transition-transform duration-500 group-hover:scale-110 drop-shadow-lg" />
+        ) : (
+          <span className="transition-transform duration-500 group-hover:scale-110 select-none"
+            style={{ fontSize: "72px", lineHeight: 1, filter: "drop-shadow(0 8px 16px rgba(0,0,0,0.10))" }}
+            role="img" aria-label={label}>{emoji}</span>
+        )}
+        <span className={`absolute top-3 right-3 size-2 rounded-full ${dot} opacity-70 shadow-sm`} />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+      </div>
+      <div className="p-5">
+        <h3 className="font-bold text-zinc-900 mb-1.5 group-hover:text-orange-500 transition-colors duration-200">{label}</h3>
+        <p className="text-xs text-zinc-500 leading-relaxed">{desc}</p>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Segments ─── */
+function Segments() {
+  return (
+    <section id="segmentos" className="py-28 bg-zinc-50 overflow-hidden">
+      <div className="mx-auto max-w-7xl px-6">
+        <div className="text-center mb-16">
+          <span className="text-xs font-bold uppercase tracking-widest text-orange-500 mb-3 block">Segmentos</span>
+          <h2 className="text-3xl md:text-4xl font-bold text-zinc-900 mb-3 tracking-tight">Para cada cozinha, o cardápio certo.</h2>
+          <p className="text-zinc-500 max-w-[52ch] mx-auto text-sm leading-relaxed">Do espetinho ao restaurante — o sistema se adapta ao ritmo da sua operação.</p>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-5">
+          {segments.map(({ img, emoji, label, desc, bg, dot }) => (
+            <SegmentCard key={label} img={img} emoji={emoji} label={label} desc={desc} bg={bg} dot={dot} />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 /* ─── Features ─── */
 function Features() {
   return (
-    <section id="recursos" className="py-24 bg-zinc-50 border-b border-zinc-100">
+    <section id="recursos" className="py-28 bg-white border-y border-zinc-100">
       <div className="mx-auto max-w-7xl px-6">
-        <div className="text-center mb-14">
+        <div className="text-center mb-16">
           <span className="text-xs font-bold uppercase tracking-widest text-orange-500 mb-3 block">Recursos</span>
           <h2 className="text-3xl md:text-4xl font-bold text-zinc-900 mb-3 tracking-tight">
             Cada recurso pensado para o dia a dia do seu delivery
@@ -430,7 +634,7 @@ function Features() {
           {features.map(({ icon: Icon, title, body, badge }) => (
             <div key={title} className="bg-white hover:bg-gradient-to-br hover:from-orange-50 hover:to-white rounded-3xl p-7 ring-1 ring-zinc-200 hover:ring-orange-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
               <div className="flex items-center justify-between mb-5">
-                <div className="size-12 rounded-2xl bg-orange-100 group-hover:bg-orange-200 flex items-center justify-center text-orange-500 transition-all duration-300 group-hover:scale-[1.08]">
+                <div className="size-12 rounded-2xl bg-orange-100 group-hover:bg-orange-200 flex items-center justify-center text-orange-500 transition-all duration-300 shadow-sm group-hover:shadow-md group-hover:scale-[1.08]">
                   <Icon className="size-5" />
                 </div>
                 {badge && (
@@ -452,26 +656,26 @@ function Features() {
 /* ─── Pricing ─── */
 function Pricing() {
   return (
-    <section id="planos" className="py-24 bg-zinc-950">
+    <section id="planos" className="py-28 bg-zinc-950">
       <div className="mx-auto max-w-7xl px-6">
-        <div className="text-center mb-14">
+        <div className="text-center mb-16">
           <span className="text-xs font-bold uppercase tracking-widest text-orange-400 mb-3 block">Planos</span>
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-3 tracking-tight">Planos simples, sem letra miúda.</h2>
           <p className="text-zinc-400 text-sm max-w-[56ch] mx-auto leading-relaxed">
-            Todos os módulos já estão inclusos no mesmo plano —{" "}
-            <strong className="text-orange-400">sem cobrar separado por cardápio, PDV ou entregadores.</strong>
+            Outros sistemas cobram separado por cada módulo. Aqui,{" "}
+            <strong className="text-orange-400">tudo já está incluso no mesmo plano</strong> — sem surpresas na fatura.
           </p>
         </div>
         <div className="grid md:grid-cols-3 gap-6 items-stretch">
           {plans.map((p) => (
             <div key={p.name} className={`rounded-3xl p-8 flex flex-col relative transition-all duration-300 ${
               p.highlight
-                ? "bg-gradient-to-b from-orange-500 to-orange-600 ring-2 ring-orange-400 scale-[1.03] shadow-[0_0_80px_rgba(249,115,22,0.30)]"
-                : "bg-zinc-900/70 ring-1 ring-white/10 hover:ring-white/20 hover:bg-zinc-900 hover:shadow-xl"
+                ? "bg-gradient-to-b from-orange-500 to-orange-600 ring-2 ring-orange-400 scale-[1.03] shadow-[0_0_80px_rgba(249,115,22,0.30)] hover:shadow-[0_0_100px_rgba(249,115,22,0.40)]"
+                : "bg-zinc-900/70 ring-1 ring-white/10 hover:ring-white/20 hover:bg-zinc-900 hover:shadow-xl hover:shadow-black/30"
             }`}>
               {p.highlight && (
                 <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-white text-orange-500 text-[10px] font-black px-4 py-1 rounded-full uppercase tracking-widest shadow-lg">
-                  ⭐ Recomendado
+                  ⭐ Mais popular
                 </div>
               )}
               <div className={`text-xs font-bold uppercase tracking-widest mb-4 ${p.highlight ? "text-white/80" : "text-zinc-400"}`}>{p.name}</div>
@@ -521,40 +725,14 @@ function Pricing() {
   );
 }
 
-/* ─── CTA final ─── */
-function CTAFinal() {
-  return (
-    <section className="py-20 bg-orange-500">
-      <div className="mx-auto max-w-3xl px-6 text-center">
-        <h2 className="text-3xl md:text-4xl font-black text-white mb-4 tracking-tight">
-          Pronto para vender pelo seu próprio delivery?
-        </h2>
-        <p className="text-orange-100 mb-8 leading-relaxed text-lg">
-          Crie sua loja, monte seu cardápio e comece a receber pedidos pelo seu link.
-        </p>
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-          <Link to="/auth"
-            className="flex items-center gap-2 bg-white hover:bg-orange-50 text-orange-500 font-bold px-8 py-4 rounded-2xl text-base transition-all duration-200 hover:scale-[1.02] shadow-xl w-full sm:w-auto justify-center">
-            Testar grátis por 7 dias <ArrowRight className="size-5" />
-          </Link>
-          <a href={WA_LINK} target="_blank" rel="noreferrer"
-            className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 border border-orange-400/30 text-white font-semibold px-8 py-4 rounded-2xl text-base transition-all duration-200 w-full sm:w-auto justify-center">
-            <MessageCircle className="size-5" /> Falar no WhatsApp
-          </a>
-        </div>
-        <p className="text-orange-200 text-xs mt-5">7 dias grátis · Sem cartão de crédito · Cancele quando quiser</p>
-      </div>
-    </section>
-  );
-}
-
 /* ─── FAQ ─── */
 function FAQ() {
   const [open, setOpen] = useState<number | null>(null);
   return (
-    <section className="py-24 bg-white border-t border-zinc-100">
+    <section className="py-28 bg-white border-t border-zinc-100">
       <div className="mx-auto max-w-7xl px-6">
         <div className="grid lg:grid-cols-[1fr_1.6fr] gap-16 items-start">
+
           <div className="lg:sticky lg:top-28">
             <span className="text-xs font-bold uppercase tracking-widest text-orange-500 mb-4 block">Dúvidas</span>
             <h2 className="text-3xl md:text-4xl font-bold text-zinc-900 mb-4 leading-tight tracking-tight">
@@ -603,20 +781,23 @@ function FAQ() {
 /* ─── WhatsApp Flutuante ─── */
 function WhatsAppFlutuante() {
   const [visible, setVisible] = useState(false);
+
   useEffect(() => {
     const onScroll = () => setVisible(window.scrollY > 500);
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
   return (
     <a
       href={WA_LINK}
       target="_blank"
       rel="noreferrer"
       aria-label="Falar no WhatsApp"
-      className={`fixed bottom-20 sm:bottom-6 right-4 sm:right-6 z-50 flex items-center gap-2.5 bg-green-500 hover:bg-green-400 text-white font-bold px-4 py-3.5 rounded-2xl shadow-2xl shadow-green-500/30 transition-all duration-300 hover:scale-[1.05] ${
+      className={`fixed bottom-20 sm:bottom-6 right-4 sm:right-6 z-50 flex items-center gap-2.5 bg-green-500 hover:bg-green-400 text-white font-bold px-4 py-3.5 rounded-2xl shadow-2xl shadow-green-500/30 transition-all duration-300 hover:scale-[1.05] hover:shadow-green-500/50 ${
         visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
-      }`}>
+      }`}
+    >
       <MessageCircle className="size-5 shrink-0" />
       <span className="text-sm hidden sm:block">Falar no WhatsApp</span>
     </a>
@@ -633,9 +814,7 @@ function Footer() {
             <div className="mb-3">
               <img src="/segments/logo1.png" alt="SOS Sistemas" className="h-11 w-auto object-contain brightness-0 invert" />
             </div>
-            <p className="text-xs text-zinc-500 leading-relaxed">
-              Plataforma de delivery próprio para restaurantes e comércios locais. Sem comissão por pedido.
-            </p>
+            <p className="text-xs text-zinc-500 leading-relaxed">Plataforma de delivery próprio para restaurantes e comércios que não aceitam pagar comissão por pedido.</p>
             <div className="flex items-center gap-2 mt-5">
               <a href={WA_LINK} target="_blank" rel="noreferrer"
                 className="size-9 rounded-xl bg-white/5 hover:bg-green-500/20 border border-white/8 hover:border-green-500/30 flex items-center justify-center text-zinc-400 hover:text-green-400 transition-all duration-200 hover:scale-110">
@@ -650,15 +829,9 @@ function Footer() {
 
           <div className="flex flex-wrap gap-12">
             <div>
-              <div className="text-xs font-bold text-zinc-300 uppercase tracking-widest mb-4">Para clientes</div>
-              <div className="space-y-2.5 text-xs text-zinc-500">
-                <Link to="/lojas" className="block hover:text-white transition-colors duration-150">Ver restaurantes</Link>
-              </div>
-            </div>
-            <div>
               <div className="text-xs font-bold text-zinc-300 uppercase tracking-widest mb-4">Para lojistas</div>
               <div className="space-y-2.5 text-xs text-zinc-500">
-                {[["#lojistas","Conheça a solução"],["#como-funciona","Como funciona"],["#recursos","Recursos"],["#planos","Planos e preços"]].map(([href, label]) => (
+                {[["#como-funciona","Como funciona"],["#recursos","Recursos"],["#planos","Planos e preços"],["#segmentos","Segmentos"]].map(([href, label]) => (
                   <a key={href} href={href} className="block hover:text-white transition-colors duration-150 hover:translate-x-0.5 transform">{label}</a>
                 ))}
               </div>
@@ -667,6 +840,7 @@ function Footer() {
               <div className="text-xs font-bold text-zinc-300 uppercase tracking-widest mb-4">Acesso</div>
               <div className="space-y-2.5 text-xs text-zinc-500">
                 <Link to="/auth" className="block hover:text-white transition-colors duration-150">Área do lojista</Link>
+                <Link to="/lojas" className="block hover:text-white transition-colors duration-150">Ver lojas</Link>
                 <Link to="/entregadores" className="block hover:text-white transition-colors duration-150">Entregadores</Link>
               </div>
             </div>
@@ -693,24 +867,5 @@ function Footer() {
         </div>
       </div>
     </footer>
-  );
-}
-
-/* ─── Landing ─── */
-export function Landing() {
-  return (
-    <div className="min-h-screen bg-white text-zinc-900 antialiased">
-      <Nav />
-      <ClienteHero />
-      <ComoPedir />
-      <LojistasSection />
-      <ComoFunciona />
-      <Features />
-      <Pricing />
-      <CTAFinal />
-      <FAQ />
-      <Footer />
-      <WhatsAppFlutuante />
-    </div>
   );
 }
