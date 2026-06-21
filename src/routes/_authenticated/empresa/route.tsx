@@ -1,7 +1,8 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { useAuth } from "@/lib/use-auth";
 import { AppShell } from "@/components/AppShell";
-import { LayoutDashboard, ShoppingBag, UtensilsCrossed, FolderTree, Users, Settings, BarChart2, Tag, Bike, Star, ReceiptText, CreditCard, TrendingUp, Grid2x2 } from "lucide-react";
+import { LayoutDashboard, ShoppingBag, UtensilsCrossed, FolderTree, Users, Settings, BarChart2, Tag, Bike, Star, ReceiptText, CreditCard, TrendingUp, Grid2x2, Layers } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 
@@ -25,8 +26,54 @@ export const Route = createFileRoute("/_authenticated/empresa")({
 });
 
 function EmpresaLayout() {
-  const { loading, plano, empresaId } = useAuth();
+  const { loading, plano, empresaId, user } = useAuth();
   const basico = plano === "basico";
+
+  const { data: operationMode = "full_delivery" } = useQuery({
+    queryKey: ["operation-mode", empresaId],
+    enabled: !!empresaId,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const { data } = await supabase.from("empresas").select("operation_mode").eq("id", empresaId!).single();
+      return (data as any)?.operation_mode ?? "full_delivery";
+    },
+  });
+
+  useEffect(() => {
+    if (!empresaId || !user) return;
+    const rnBridge = (window as any).ReactNativeWebView;
+    if (!rnBridge?.postMessage) return;
+
+    rnBridge.postMessage(JSON.stringify({
+      type: "DEVHUB_EMPRESA_CONTEXT",
+      empresaId,
+      userId: user.id,
+    }));
+
+    async function handleNativePushToken(event: Event) {
+      const detail = (event as CustomEvent<{ token?: string; platform?: string }>).detail;
+      const token = detail?.token;
+      if (!token || !empresaId || !user) return;
+
+      const lastToken = localStorage.getItem("devhub_native_expo_token");
+      if (lastToken === token) return;
+
+      const { error } = await supabase.from("expo_push_tokens" as any).upsert({
+        empresa_id: empresaId,
+        user_id: user.id,
+        token,
+      }, { onConflict: "token" });
+
+      if (!error) {
+        localStorage.setItem("devhub_native_expo_token", token);
+      } else {
+        console.warn("[push] falha ao salvar Expo Push Token:", error.message);
+      }
+    }
+
+    window.addEventListener("devhub:nativePushToken", handleNativePushToken);
+    return () => window.removeEventListener("devhub:nativePushToken", handleNativePushToken);
+  }, [empresaId, user]);
 
   const { data: pedidosPendentes = 0 } = useQuery({
     queryKey: ["badge-pedidos", empresaId],
@@ -50,6 +97,7 @@ function EmpresaLayout() {
       items={[
         { to: "/empresa",               label: "Dashboard",                                    icon: LayoutDashboard },
         { to: "/empresa/pedidos",       label: "Pedidos",                                      icon: ShoppingBag,    section: "Operação", badge: pedidosPendentes, badgeColor: "red" },
+        ...(operationMode === "simplified_delivery" ? [{ to: "/empresa/pedidos-simples" as const, label: "Painel Simples", icon: Layers }] : []),
         { to: "/empresa/mesas",         label: "Mesas",                                        icon: Grid2x2 },
         { to: "/empresa/pdv",           label: "Caixa / PDV",                                  icon: ReceiptText },
         { to: "/empresa/categorias",    label: "Categorias",                                   icon: FolderTree,     section: "Cardápio" },

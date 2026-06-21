@@ -7,7 +7,7 @@ import { PageHeader } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ImagePlus, Store, ExternalLink, CheckCircle2, Palette, QrCode, Bot, FlaskConical, XCircle, MapPin, Mail, KeyRound } from "lucide-react";
+import { ImagePlus, Store, ExternalLink, CheckCircle2, Palette, QrCode, Bot, FlaskConical, XCircle, MapPin, Mail, KeyRound, Layers } from "lucide-react";
 import { mascaraCNPJ, cnpjStatus, copiarTexto } from "@/lib/validacoes";
 import { toast } from "sonner";
 
@@ -69,6 +69,7 @@ function ConfiguracoesPage() {
   const [empresaLat,     setEmpresaLat]     = useState("");
   const [empresaLng,     setEmpresaLng]     = useState("");
   const [tipoOperacaoEntrega, setTipoOperacaoEntrega] = useState<"plataforma" | "fixos">("plataforma");
+  const [operationMode, setOperationMode] = useState<"full_delivery" | "simplified_delivery">("full_delivery");
   const [detectandoLoc,  setDetectandoLoc]  = useState(false);
 
   // Conta
@@ -109,6 +110,7 @@ function ConfiguracoesPage() {
     setEmpresaLat(emp.empresa_lat != null ? String(emp.empresa_lat) : "");
     setEmpresaLng(emp.empresa_lng != null ? String(emp.empresa_lng) : "");
     setTipoOperacaoEntrega((emp.tipo_operacao_entrega ?? "plataforma") as "plataforma" | "fixos");
+    setOperationMode((emp.operation_mode ?? "full_delivery") as "full_delivery" | "simplified_delivery");
     setSynced(true);
   }
 
@@ -167,6 +169,7 @@ function ConfiguracoesPage() {
       empresa_lat: empresaLat ? Number(empresaLat) : null,
       empresa_lng: empresaLng ? Number(empresaLng) : null,
       tipo_operacao_entrega: tipoOperacaoEntrega,
+      operation_mode: operationMode,
     };
 
     const logoFile   = logoRef.current?.files?.[0];
@@ -807,6 +810,36 @@ function ConfiguracoesPage() {
                 <p className="text-xs text-zinc-400 mt-1">Marmitarias, restaurantes, comércios que negociam valores…</p>
               </button>
             </div>
+          </section>
+
+          {/* Modo de operação */}
+          <section className="bg-background rounded-2xl ring-1 ring-black/5 p-6 space-y-4">
+            <div>
+              <h2 className="font-semibold text-ink flex items-center gap-2">
+                <Layers className="size-4 text-zinc-400" /> Modo de operação do painel
+              </h2>
+              <p className="text-xs text-zinc-500 mt-0.5">Escolha como deseja gerenciar os pedidos dentro da plataforma.</p>
+            </div>
+            <div className="grid sm:grid-cols-2 gap-3">
+              <button type="button" onClick={() => setOperationMode("full_delivery")}
+                className={`text-left rounded-xl border-2 p-4 transition-colors ${operationMode === "full_delivery" ? "border-brand bg-brand/5" : "border-zinc-200 hover:border-zinc-300"}`}>
+                <div className="font-semibold text-sm text-ink mb-1">📋 Painel completo</div>
+                <p className="text-xs text-zinc-500">Kanban com todas as etapas, edição de itens, notas, entregadores e histórico detalhado.</p>
+                <p className="text-xs text-zinc-400 mt-1">Recomendado para lojas com maior volume ou equipe.</p>
+              </button>
+              <button type="button" onClick={() => setOperationMode("simplified_delivery")}
+                className={`text-left rounded-xl border-2 p-4 transition-colors ${operationMode === "simplified_delivery" ? "border-brand bg-brand/5" : "border-zinc-200 hover:border-zinc-300"}`}>
+                <div className="font-semibold text-sm text-ink mb-1">⚡ Painel simplificado</div>
+                <p className="text-xs text-zinc-500">Três colunas simples: Novos → Em preparo → Em entrega. Botões grandes e rápidos.</p>
+                <p className="text-xs text-zinc-400 mt-1">Ideal para quem está começando ou prefere mais simplicidade.</p>
+              </button>
+            </div>
+            {operationMode === "simplified_delivery" && (
+              <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-xl px-4 py-2.5">
+                <Layers className="size-4 text-blue-500" />
+                <span className="text-sm text-blue-700 font-medium">Painel simplificado ativo — acesse via "Painel Simples" no menu lateral</span>
+              </div>
+            )}
           </section>
 
           {/* Dados da conta */}
