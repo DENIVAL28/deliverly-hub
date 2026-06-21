@@ -48,30 +48,35 @@ function EntregadoresLanding() {
       </nav>
 
       {/* Hero */}
-      <section className="pt-32 pb-20 px-6 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_60%_at_50%_-10%,_rgba(249,115,22,0.15),_transparent)]" />
-        <div className="relative mx-auto max-w-2xl text-center">
-          <div className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 text-orange-400 text-xs font-bold px-4 py-1.5 rounded-full mb-8 uppercase tracking-widest">
-            <Bike className="size-3.5" /> Para entregadores
-          </div>
-          <h1 className="text-5xl md:text-6xl font-black leading-[1.05] tracking-tight mb-6">
-            Entregue quando<br />
-            <span className="text-orange-400">quiser, quanto quiser.</span>
-          </h1>
-          <p className="text-zinc-400 text-lg leading-relaxed mb-10 max-w-[42ch] mx-auto">
-            Restaurantes que usam o Delivery Hub convidam motoboys e entregadores freelancers. Você escolhe as corridas — sem vínculo, sem horário obrigatório.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+      <section className="pt-28 pb-20 px-6 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_80%_20%,_rgba(249,115,22,0.12),_transparent)]" />
+        <div className="relative mx-auto max-w-6xl grid lg:grid-cols-2 gap-12 items-center">
+          {/* Texto */}
+          <div>
+            <div className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 text-orange-400 text-xs font-bold px-4 py-1.5 rounded-full mb-8 uppercase tracking-widest">
+              <Bike className="size-3.5" /> Para entregadores
+            </div>
+            <h1 className="text-4xl md:text-5xl font-black leading-[1.05] tracking-tight mb-6">
+              Entregue quando<br />
+              <span className="text-orange-400">quiser, quanto quiser.</span>
+            </h1>
+            <p className="text-zinc-400 text-lg leading-relaxed mb-10 max-w-[42ch]">
+              Cadastre-se na plataforma, aguarde a aprovação do seu perfil e comece a receber pedidos. Sem vínculo, sem horário obrigatório.
+            </p>
             <Link to="/entregadores/cadastro"
-              className="inline-flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 text-white font-bold px-8 py-4 rounded-2xl text-base transition-all duration-200 hover:scale-[1.02] shadow-2xl shadow-orange-500/25">
-              <UserPlus className="size-5" /> Quero me cadastrar
+              className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white font-bold px-8 py-4 rounded-2xl text-base transition-all duration-200 hover:scale-[1.02] shadow-2xl shadow-orange-500/25">
+              <UserPlus className="size-5" /> Quero me cadastrar <ArrowRight className="size-5" />
             </Link>
-            <Link to="/entregadores/login"
-              className="inline-flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-semibold px-8 py-4 rounded-2xl text-base transition-all duration-200">
-              <LogIn className="size-5" /> Já tenho conta
-            </Link>
+            <p className="text-xs text-zinc-600 mt-4">Gratuito · Sem contrato · Sem app para instalar</p>
           </div>
-          <p className="text-xs text-zinc-600 mt-5">Gratuito · Sem contrato · Sem app para instalar</p>
+
+          {/* Vídeo */}
+          <div className="relative overflow-hidden rounded-3xl ring-1 ring-white/10 shadow-2xl shadow-black/40 bg-zinc-900 aspect-video">
+            <video autoPlay muted loop playsInline className="w-full h-full object-cover">
+              <source src="/segments/Create_a_modern_D_vector_anim.mp4" type="video/mp4" />
+            </video>
+            <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/50 to-transparent pointer-events-none" />
+          </div>
         </div>
       </section>
 
