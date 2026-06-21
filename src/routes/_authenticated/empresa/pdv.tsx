@@ -65,7 +65,7 @@ function OpcoesModal({ produto, onConfirm, onClose }: {
   onConfirm: (opcoes: OpcaoSel[], preco: number) => void;
   onClose: () => void;
 }) {
-  const [selecionadas, setSelecionadas] = useState<Record<string, OpcaoSel>>({});
+  const [selecionadas, setSelecionadas] = useState<Record<string, OpcaoSel[]>>({});
   useEffect(() => { setSelecionadas({}); }, [produto.id]);
 
   const { data: grupos = [] } = useQuery({
@@ -80,16 +80,29 @@ function OpcoesModal({ produto, onConfirm, onClose }: {
     },
   });
 
-  const obrigatoriosPendentes = grupos.filter((g: any) => g.obrigatorio && !selecionadas[g.id]);
-  const precoAdicional = Object.values(selecionadas).reduce((s, o) => s + o.precoAdicional, 0);
+  const obrigatoriosPendentes = grupos.filter((g: any) => g.obrigatorio && !(selecionadas[g.id]?.length));
+  const precoAdicional = Object.values(selecionadas).flat().reduce((s, o) => s + o.precoAdicional, 0);
   const precoBase = Number(produto.preco_promocional ?? produto.preco);
 
   function toggle(grupo: any, opcao: any) {
+    const novaOpcao: OpcaoSel = { grupoId: grupo.id, grupoNome: grupo.nome, opcaoId: opcao.id, opcaoNome: opcao.nome, precoAdicional: Number(opcao.preco_adicional ?? 0) };
     setSelecionadas((prev) => {
-      if (prev[grupo.id]?.opcaoId === opcao.id) {
-        const n = { ...prev }; delete n[grupo.id]; return n;
+      const atual = prev[grupo.id] ?? [];
+      const jaSelected = atual.some((s) => s.opcaoId === opcao.id);
+
+      if (grupo.multiplo) {
+        if (jaSelected) {
+          const novo = atual.filter((s) => s.opcaoId !== opcao.id);
+          if (novo.length === 0) { const n = { ...prev }; delete n[grupo.id]; return n; }
+          return { ...prev, [grupo.id]: novo };
+        }
+        const max = grupo.max_escolhas;
+        if (max && atual.length >= max) return prev;
+        return { ...prev, [grupo.id]: [...atual, novaOpcao] };
+      } else {
+        if (jaSelected) { const n = { ...prev }; delete n[grupo.id]; return n; }
+        return { ...prev, [grupo.id]: [novaOpcao] };
       }
-      return { ...prev, [grupo.id]: { grupoId: grupo.id, grupoNome: grupo.nome, opcaoId: opcao.id, opcaoNome: opcao.nome, precoAdicional: Number(opcao.preco_adicional ?? 0) } };
     });
   }
 
@@ -107,29 +120,47 @@ function OpcoesModal({ produto, onConfirm, onClose }: {
           </button>
         </div>
         <div className="overflow-y-auto flex-1 px-5 py-4 space-y-5">
-          {grupos.map((g: any) => (
-            <div key={g.id}>
-              <div className="flex items-center gap-2 mb-2">
-                <p className="text-sm font-bold text-zinc-800">{g.nome}</p>
-                {g.obrigatorio && <span className="text-[10px] bg-red-100 text-red-600 font-bold px-2 py-0.5 rounded-full">Obrigatório</span>}
+          {grupos.map((g: any) => {
+            const qtdSel = selecionadas[g.id]?.length ?? 0;
+            return (
+              <div key={g.id}>
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  <p className="text-sm font-bold text-zinc-800">{g.nome}</p>
+                  {g.obrigatorio && <span className="text-[10px] bg-red-100 text-red-600 font-bold px-2 py-0.5 rounded-full">Obrigatório</span>}
+                  {g.multiplo && (
+                    <span className="text-[10px] bg-blue-100 text-blue-600 font-semibold px-2 py-0.5 rounded-full">
+                      {g.max_escolhas ? `Até ${g.max_escolhas}` : "Vários"}{qtdSel > 0 ? ` · ${qtdSel} sel.` : ""}
+                    </span>
+                  )}
+                </div>
+                <div className="space-y-1.5">
+                  {(g.opcoes ?? []).filter((o: any) => o.ativo !== false).map((o: any) => {
+                    const sel = (selecionadas[g.id] ?? []).some((s) => s.opcaoId === o.id);
+                    const bloqueado = g.multiplo && g.max_escolhas && !sel && qtdSel >= g.max_escolhas;
+                    return (
+                      <button key={o.id} onClick={() => !bloqueado && toggle(g, o)}
+                        disabled={!!bloqueado}
+                        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl border transition-all text-left ${
+                          sel ? "border-brand bg-brand/5 ring-1 ring-brand" : bloqueado ? "border-zinc-100 opacity-40 cursor-not-allowed" : "border-zinc-200 hover:border-zinc-300"
+                        }`}>
+                        <div className="flex items-center gap-2">
+                          <span className={`size-4 rounded flex items-center justify-center shrink-0 border ${sel ? "bg-brand border-brand" : "border-zinc-300"}`}>
+                            {sel && <span className="text-white text-[10px] font-black">✓</span>}
+                          </span>
+                          <span className="text-sm font-medium text-zinc-800">{o.nome}</span>
+                        </div>
+                        {Number(o.preco_adicional) > 0 && <span className="text-sm font-semibold text-brand">+{fmt(Number(o.preco_adicional))}</span>}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-              <div className="space-y-1.5">
-                {(g.opcoes ?? []).filter((o: any) => o.ativo !== false).map((o: any) => (
-                  <button key={o.id} onClick={() => toggle(g, o)}
-                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl border transition-all text-left ${
-                      selecionadas[g.id]?.opcaoId === o.id ? "border-brand bg-brand/5 ring-1 ring-brand" : "border-zinc-200 hover:border-zinc-300"
-                    }`}>
-                    <span className="text-sm font-medium text-zinc-800">{o.nome}</span>
-                    {Number(o.preco_adicional) > 0 && <span className="text-sm font-semibold text-brand">+{fmt(Number(o.preco_adicional))}</span>}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
         <div className="px-5 py-4 border-t border-zinc-100">
           <Button disabled={obrigatoriosPendentes.length > 0}
-            onClick={() => onConfirm(Object.values(selecionadas), precoBase + precoAdicional)}
+            onClick={() => onConfirm(Object.values(selecionadas).flat(), precoBase + precoAdicional)}
             className="w-full bg-brand hover:bg-brand/90 h-12 text-base font-bold gap-2 disabled:opacity-50">
             {obrigatoriosPendentes.length > 0
               ? `Selecione: ${obrigatoriosPendentes.map((g: any) => g.nome).join(", ")}`

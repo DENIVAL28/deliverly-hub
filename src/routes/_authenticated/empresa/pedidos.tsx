@@ -44,6 +44,10 @@ function precisaPreparo(pedido: any): boolean {
 const ATIVOS = ["aguardando_confirmacao", "aguardando_pagamento", "novo", "aceito", "preparo", "entrega"];
 const PAGE_SIZE = 20;
 
+const VEICULO_LABEL: Record<string, string> = {
+  moto: "🏍️ Moto", carro: "🚗 Carro", bicicleta: "🚲 Bicicleta",
+};
+
 const TABS = [
   { id: "ativos",      label: "Ativos" },
   { id: "todos",       label: "Todos" },
@@ -395,6 +399,32 @@ function PedidosPage() {
       (await supabase.from("entregadores").select("id,nome").eq("empresa_id", empresaId!).eq("ativo", true).eq("tipo", "fixo").order("nome")).data ?? [],
   });
 
+  // IDs únicos de entregadores referenciados nos pedidos paginados
+  const entregadorIdsPag = useMemo(() => {
+    const ids = new Set<string>();
+    (pedidosPag?.items ?? []).forEach((p: any) => { if (p.entregador_id) ids.add(p.entregador_id); });
+    return [...ids];
+  }, [pedidosPag?.items]);
+
+  // Fetch secundário: detalhes dos entregadores para abas históricas
+  const { data: entregadoresPag = [] } = useQuery({
+    queryKey: ["entregadores-pag", entregadorIdsPag],
+    enabled: entregadorIdsPag.length > 0,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("entregadores")
+        .select("id,nome,telefone,veiculo,placa")
+        .in("id", entregadorIdsPag);
+      return data ?? [];
+    },
+  });
+
+  const entregadoresMap = useMemo(() => {
+    const m: Record<string, any> = {};
+    entregadoresPag.forEach((e: any) => { m[e.id] = e; });
+    return m;
+  }, [entregadoresPag]);
+
   const filtered    = tab === "ativos" ? pedidosAtivos : (pedidosPag?.items ?? []);
   const totalAtivos = pedidosAtivos.length;
   const totalPages  = tab !== "ativos" ? Math.ceil((pedidosPag?.total ?? 0) / PAGE_SIZE) : 1;
@@ -682,11 +712,23 @@ function PedidosPage() {
                     </span>
                   </div>
                   <div className="text-sm text-zinc-600 mt-1">{p.cliente_nome} • {p.cliente_telefone || "—"}</div>
-                  {p.entregador_nome && (
-                    <div className="flex items-center gap-1 text-xs text-purple-600 font-medium mt-0.5">
-                      <Bike className="size-3" /> {p.entregador_nome}
-                    </div>
-                  )}
+                  {p.entregador_id && (() => {
+                    const ent = tab === "ativos"
+                      ? { nome: p.entregador_nome, telefone: p.entregador_telefone, veiculo: p.entregador_veiculo, placa: p.entregador_placa }
+                      : { nome: entregadoresMap[p.entregador_id]?.nome ?? p.entregador_nome, telefone: entregadoresMap[p.entregador_id]?.telefone, veiculo: entregadoresMap[p.entregador_id]?.veiculo, placa: entregadoresMap[p.entregador_id]?.placa };
+                    if (!ent.nome) return null;
+                    return (
+                      <div className="flex items-start gap-1.5 mt-1 text-xs text-purple-700 bg-purple-50 rounded-lg px-2 py-1.5">
+                        <Bike className="size-3 mt-0.5 shrink-0" />
+                        <div>
+                          <span className="font-semibold">{ent.nome}</span>
+                          {ent.veiculo && <span className="text-purple-500"> · {VEICULO_LABEL[ent.veiculo] ?? ent.veiculo}</span>}
+                          {ent.placa && <span className="text-purple-500"> · {ent.placa.toUpperCase()}</span>}
+                          {ent.telefone && <span className="text-purple-500"> · {ent.telefone}</span>}
+                        </div>
+                      </div>
+                    );
+                  })()}
                   {p.cliente_endereco && <div className="text-xs text-zinc-500">{p.cliente_endereco}</div>}
                   {(p.cliente_cep || p.cliente_cidade) && (
                     <div className="text-xs text-zinc-400">{[p.cliente_cep, p.cliente_cidade].filter(Boolean).join(" — ")}</div>
