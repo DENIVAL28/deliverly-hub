@@ -63,7 +63,7 @@ const faqs = [
   { q: "Posso cancelar a qualquer momento?",           a: "Sim, sem multa e sem contrato. Ao cancelar, seu acesso continua até o fim do período já pago. Depois disso, a loja é desativada — e você pode reativar quando quiser." },
 ];
 
-function Logo({ dark }: { dark?: boolean }) {
+function Logo() {
   return (
     <div className="flex items-center gap-3">
       <img
@@ -71,8 +71,8 @@ function Logo({ dark }: { dark?: boolean }) {
         alt="Delivery Hub"
         className="h-12 w-auto object-contain shrink-0"
       />
-      <span className={`text-xl font-black tracking-tight leading-none transition-colors duration-500 ${dark ? "text-white" : "text-zinc-900"}`}>
-        Delivery<span className={dark ? "text-orange-400" : "text-orange-500"}>Hub</span>
+      <span className="text-xl font-black tracking-tight leading-none text-zinc-900">
+        Delivery<span className="text-orange-500">Hub</span>
       </span>
     </div>
   );
@@ -99,27 +99,14 @@ export function Landing() {
 /* ─── Nav ─── */
 function Nav() {
   const [open, setOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 40);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
-  const dark = !scrolled && !open;
 
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-50 w-full transition-all duration-500 ${
-      scrolled || open
-        ? "bg-white/95 backdrop-blur-xl saturate-150 border-b border-zinc-100/80 shadow-[0_1px_0_rgba(0,0,0,0.06)]"
-        : "bg-transparent border-b border-transparent"
-    }`}>
+    <nav className="fixed top-0 left-0 right-0 z-50 w-full bg-white border-b border-zinc-100 shadow-sm">
       <div className="mx-auto max-w-7xl px-6 h-20 flex items-center justify-between">
         {/* Logo + Links */}
         <div className="flex items-center gap-8">
           <Link to="/" className="flex items-center shrink-0">
-            <Logo dark={dark} />
+            <Logo />
           </Link>
           <div className="hidden md:flex items-center gap-1 text-sm font-medium">
             {[
@@ -128,16 +115,16 @@ function Nav() {
               ["#planos",        "Planos"],
             ].map(([href, label]) => (
               <a key={href} href={href}
-                className={`px-3 py-2 rounded-lg transition-all duration-200 ${dark ? "text-white/70 hover:text-white hover:bg-white/10" : "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100"}`}>
+                className="px-3 py-2 rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 transition-all duration-200">
                 {label}
               </a>
             ))}
             <Link to="/lojas"
-              className={`px-3 py-2 rounded-lg transition-all duration-200 ${dark ? "text-white/70 hover:text-white hover:bg-white/10" : "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100"}`}>
+              className="px-3 py-2 rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 transition-all duration-200">
               Ver lojas
             </Link>
             <Link to="/entregadores"
-              className={`px-3 py-2 rounded-lg transition-all duration-200 ${dark ? "text-white/70 hover:text-white hover:bg-white/10" : "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100"}`}>
+              className="px-3 py-2 rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 transition-all duration-200">
               Entregadores
             </Link>
           </div>
@@ -146,9 +133,7 @@ function Nav() {
         {/* CTAs */}
         <div className="flex items-center gap-2">
           <Link to="/auth"
-            className={`hidden sm:block text-sm font-medium px-4 py-2 rounded-xl transition-all duration-200 ${
-              dark ? "text-white/70 hover:text-white hover:bg-white/10" : "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100"
-            }`}>
+            className="hidden sm:block text-sm font-medium px-4 py-2 rounded-xl text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 transition-all duration-200">
             Área do lojista
           </Link>
           <Link to="/auth"
@@ -156,7 +141,7 @@ function Nav() {
             Testar grátis <ArrowRight className="size-4" />
           </Link>
           <button onClick={() => setOpen((v) => !v)}
-            className={`md:hidden p-2 rounded-lg transition-colors ${dark ? "text-white hover:bg-white/10" : "text-zinc-500 hover:bg-zinc-100"}`}>
+            className="md:hidden p-2 rounded-lg text-zinc-500 hover:bg-zinc-100 transition-colors">
             {open ? <X className="size-5" /> : <Menu className="size-5" />}
           </button>
         </div>
