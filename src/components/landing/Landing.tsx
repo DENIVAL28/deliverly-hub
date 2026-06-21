@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import {
   ArrowRight, Store, Check, MessageCircle, Smartphone, Zap, BarChart3,
   Menu, X, ChevronDown, Mail, ClipboardList, Utensils, Bike,
-  Trophy, Shield, Sparkles, Star, TrendingUp, Package, Users,
+  Trophy, Shield, Star, TrendingUp, Package, Users,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -76,8 +76,6 @@ export function Landing() {
   return (
     <div className="min-h-screen bg-white text-zinc-900 antialiased">
       <Nav />
-      <ConsumerHeroV2 />
-      <div id="para-restaurantes" />
       <Hero />
       <SocialProof />
       <Stats />
@@ -92,72 +90,6 @@ export function Landing() {
       <Footer />
       <WhatsAppFlutuante />
     </div>
-  );
-}
-
-/* ─── Consumer Hero ─── */
-function ConsumerHeroV2() {
-  const categorias = ["Pizzas", "Hambúrgueres", "Marmitas", "Açaí", "Padarias", "Restaurantes"];
-  return (
-    <section className="relative overflow-hidden bg-zinc-950 pt-28 pb-16 md:pt-36 md:pb-24">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_20%_0%,_rgba(249,115,22,0.30),_transparent)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_50%_40%_at_90%_90%,_rgba(249,115,22,0.10),_transparent)]" />
-      <div className="absolute inset-0 bg-[linear-gradient(120deg,_rgba(9,9,11,0.96),_rgba(9,9,11,0.70)_48%,_rgba(249,115,22,0.08))]" />
-
-      <div className="relative mx-auto grid max-w-7xl gap-10 px-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
-        <div className="max-w-2xl">
-          <div className="inline-flex items-center gap-2 rounded-full border border-orange-500/30 bg-orange-500/10 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-orange-300 mb-8 shadow-[0_0_20px_rgba(249,115,22,0.12)]">
-            <Sparkles className="size-3 text-orange-400" />
-            Delivery direto, sem app e sem cadastro
-            <span className="size-1.5 rounded-full bg-green-400 animate-pulse" />
-          </div>
-
-          <h1 className="text-4xl font-black leading-[1.04] text-white md:text-6xl tracking-tight">
-            Peça comida direto dos restaurantes da sua cidade
-          </h1>
-
-          <p className="mt-5 max-w-[52ch] text-base leading-relaxed text-zinc-300 md:text-lg">
-            Escolha a loja, monte seu pedido e envie direto para o estabelecimento. Mais rápido para você, melhor para o restaurante, sem intermediários.
-          </p>
-
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-            <Link to="/lojas"
-              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-orange-500 px-7 py-4 text-base font-black text-white shadow-2xl shadow-orange-500/30 transition-all duration-300 hover:scale-[1.03] hover:bg-orange-400 hover:shadow-orange-500/40">
-              <Bike className="size-5" /> Ver restaurantes disponíveis <ArrowRight className="size-5" />
-            </Link>
-          </div>
-
-          <div className="mt-6 flex flex-wrap gap-2 text-sm text-zinc-400">
-            {["Sem cadastro", "Sem aplicativo", "Pedido direto com a loja"].map((item) => (
-              <span key={item} className="inline-flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-full px-3 py-1 backdrop-blur-sm text-xs font-medium">
-                <Check className="size-3 text-orange-400" /> {item}
-              </span>
-            ))}
-          </div>
-        </div>
-
-        <div className="relative">
-          <div className="absolute -inset-10 rounded-full bg-orange-500/15 blur-3xl" />
-          <div className="relative overflow-hidden rounded-[2rem] border border-white/10 shadow-2xl shadow-black/50 ring-1 ring-orange-500/15 bg-zinc-950">
-            <video autoPlay muted loop playsInline className="w-full h-full object-cover block" style={{ maxHeight: 480 }}>
-              <source src="/segments/Create_a_high_end_animated_vec.mp4" type="video/mp4" />
-              <source src="/segments/Create_a_modern_D_vector_anim.mp4" type="video/mp4" />
-            </video>
-            <div className="absolute inset-0 pointer-events-none" style={{
-              background: "linear-gradient(to bottom, rgba(9,9,11,0.20) 0%, transparent 20%, transparent 80%, rgba(9,9,11,0.60) 100%)",
-            }} />
-          </div>
-
-          <div className="mt-5 flex flex-wrap justify-center gap-2 lg:justify-start">
-            {categorias.map((c) => (
-              <span key={c} className="rounded-full border border-white/10 bg-white/5 backdrop-blur-sm px-3 py-1.5 text-xs font-semibold text-white hover:bg-white/10 hover:border-orange-500/30 transition-all cursor-default">
-                {c}
-              </span>
-            ))}
-          </div>
-        </div>
-      </div>
-    </section>
   );
 }
 
