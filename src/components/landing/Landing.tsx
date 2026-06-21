@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import {
   ArrowRight, Store, Check, MessageCircle, Smartphone, Zap, BarChart3,
   Menu, X, ChevronDown, Mail, ClipboardList, Utensils, Bike,
-  Trophy, Shield, Star, TrendingUp, Package, Users,
+  Trophy, Shield, Sparkles, Star, TrendingUp, Package, Users,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -76,6 +76,8 @@ export function Landing() {
   return (
     <div className="min-h-screen bg-white text-zinc-900 antialiased">
       <Nav />
+      <ConsumerHeroV2 />
+      <div id="para-restaurantes" />
       <Hero />
       <SocialProof />
       <Stats />
@@ -85,11 +87,76 @@ export function Landing() {
       <Features />
       <SejaEntregador />
       <Pricing />
-      <CTA />
       <FAQ />
       <Footer />
       <WhatsAppFlutuante />
     </div>
+  );
+}
+
+/* ─── Consumer Hero ─── */
+function ConsumerHeroV2() {
+  const categorias = ["Pizzas", "Hambúrgueres", "Marmitas", "Açaí", "Padarias", "Restaurantes"];
+  return (
+    <section className="relative overflow-hidden bg-zinc-950 pt-28 pb-16 md:pt-36 md:pb-24">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_20%_0%,_rgba(249,115,22,0.30),_transparent)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_50%_40%_at_90%_90%,_rgba(249,115,22,0.10),_transparent)]" />
+      <div className="absolute inset-0 bg-[linear-gradient(120deg,_rgba(9,9,11,0.96),_rgba(9,9,11,0.70)_48%,_rgba(249,115,22,0.08))]" />
+
+      <div className="relative mx-auto grid max-w-7xl gap-10 px-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+        <div className="max-w-2xl">
+          <div className="inline-flex items-center gap-2 rounded-full border border-orange-500/30 bg-orange-500/10 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-orange-300 mb-8 shadow-[0_0_20px_rgba(249,115,22,0.12)]">
+            <Sparkles className="size-3 text-orange-400" />
+            Delivery direto, sem app e sem cadastro
+            <span className="size-1.5 rounded-full bg-green-400 animate-pulse" />
+          </div>
+
+          <h1 className="text-4xl font-black leading-[1.04] text-white md:text-6xl tracking-tight">
+            Peça comida direto dos restaurantes da sua cidade
+          </h1>
+
+          <p className="mt-5 max-w-[52ch] text-base leading-relaxed text-zinc-300 md:text-lg">
+            Escolha a loja, monte seu pedido e envie direto para o estabelecimento. Mais rápido para você, melhor para o restaurante, sem intermediários.
+          </p>
+
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <Link to="/lojas"
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-orange-500 px-7 py-4 text-base font-black text-white shadow-2xl shadow-orange-500/30 transition-all duration-300 hover:scale-[1.03] hover:bg-orange-400 hover:shadow-orange-500/40">
+              <Bike className="size-5" /> Ver restaurantes disponíveis <ArrowRight className="size-5" />
+            </Link>
+          </div>
+
+          <div className="mt-6 flex flex-wrap gap-2 text-sm text-zinc-400">
+            {["Sem cadastro", "Sem aplicativo", "Pedido direto com a loja"].map((item) => (
+              <span key={item} className="inline-flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-full px-3 py-1 backdrop-blur-sm text-xs font-medium">
+                <Check className="size-3 text-orange-400" /> {item}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <div className="relative">
+          <div className="absolute -inset-10 rounded-full bg-orange-500/15 blur-3xl" />
+          <div className="relative overflow-hidden rounded-[2rem] border border-white/10 shadow-2xl shadow-black/50 ring-1 ring-orange-500/15 bg-zinc-950">
+            <video autoPlay muted loop playsInline className="w-full h-full object-cover block" style={{ maxHeight: 480 }}>
+              <source src="/segments/Create_a_high_end_animated_vec.mp4" type="video/mp4" />
+              <source src="/segments/Create_a_modern_D_vector_anim.mp4" type="video/mp4" />
+            </video>
+            <div className="absolute inset-0 pointer-events-none" style={{
+              background: "linear-gradient(to bottom, rgba(9,9,11,0.20) 0%, transparent 20%, transparent 80%, rgba(9,9,11,0.60) 100%)",
+            }} />
+          </div>
+
+          <div className="mt-5 flex flex-wrap justify-center gap-2 lg:justify-start">
+            {categorias.map((c) => (
+              <span key={c} className="rounded-full border border-white/10 bg-white/5 backdrop-blur-sm px-3 py-1.5 text-xs font-semibold text-white hover:bg-white/10 hover:border-orange-500/30 transition-all cursor-default">
+                {c}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -754,64 +821,6 @@ function Pricing() {
             <Shield className="size-3.5 text-zinc-500" />
             Todos os planos incluem 7 dias grátis. Sem cartão de crédito.
           </p>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ─── CTA Final ─── */
-function CTA() {
-  return (
-    <section id="cta" className="relative bg-zinc-950 overflow-hidden py-28">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_80%_at_0%_50%,_rgba(249,115,22,0.16),_transparent)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_70%_at_100%_50%,_rgba(249,115,22,0.08),_transparent)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_40%_40%_at_50%_100%,_rgba(249,115,22,0.06),_transparent)]" />
-      <div className="absolute inset-0 opacity-[0.025]" style={{
-        backgroundImage: "radial-gradient(circle, rgba(249,115,22,0.8) 1px, transparent 1px)",
-        backgroundSize: "32px 32px",
-      }} />
-
-      <div className="relative mx-auto max-w-7xl px-6">
-        <div className="grid lg:grid-cols-2 gap-14 items-center">
-          <div>
-            <span className="text-xs font-bold uppercase tracking-widest text-orange-400 mb-4 block">Comece hoje</span>
-            <h2 className="text-3xl md:text-5xl font-black text-white mb-5 leading-tight tracking-tight">
-              Seu delivery próprio no ar em menos de 24 horas.
-            </h2>
-            <p className="text-zinc-300 text-lg leading-relaxed">
-              Monte seu cardápio, gerencie pedidos e entregadores em um único painel — sem comissão e sem contrato. Cancele quando quiser.
-            </p>
-          </div>
-
-          <div className="bg-gradient-to-b from-white/8 to-white/3 border border-white/10 rounded-3xl p-8 backdrop-blur-sm flex flex-col gap-5 shadow-[0_0_60px_rgba(0,0,0,0.4)]">
-            <Link to="/auth"
-              className="flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500 text-white font-bold px-8 py-4 rounded-2xl text-base transition-all duration-300 hover:scale-[1.02] shadow-2xl shadow-orange-500/30">
-              Criar minha conta grátis <ArrowRight className="size-5" />
-            </Link>
-
-            <a href={WA_LINK} target="_blank" rel="noreferrer"
-              className="flex items-center justify-center gap-2 bg-white/5 hover:bg-green-500/15 border border-white/10 hover:border-green-500/30 text-white font-semibold px-8 py-4 rounded-2xl text-base transition-all duration-300">
-              <MessageCircle className="size-5 text-green-400" /> Falar no WhatsApp
-            </a>
-
-            <div className="space-y-2.5 pt-2 border-t border-white/10">
-              {["7 dias grátis, sem cartão de crédito", "Sem comissão por pedido, sem contrato", "Suporte na configuração sem custo"].map((t) => (
-                <div key={t} className="flex items-center gap-2.5 text-sm text-zinc-300">
-                  <span className="size-5 rounded-full bg-green-500/15 flex items-center justify-center shrink-0">
-                    <Check className="size-3 text-green-400" />
-                  </span>
-                  {t}
-                </div>
-              ))}
-            </div>
-
-            <div className="border-t border-white/10 pt-4 flex items-center justify-between text-sm">
-              <Link to="/auth" className="text-zinc-400 hover:text-orange-400 transition-colors">
-                Já tem conta? Entrar →
-              </Link>
-            </div>
-          </div>
         </div>
       </div>
     </section>
