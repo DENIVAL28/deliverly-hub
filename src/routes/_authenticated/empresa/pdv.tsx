@@ -186,11 +186,12 @@ function PDVPage() {
   const [valorCliente, setValorCliente]   = useState("");
   const [descontoValor, setDescontoValor] = useState("");
   const [descontoPct, setDescontoPct]     = useState("");
+  const [taxaEntrega, setTaxaEntrega]     = useState("");
   const [obs, setObs]                     = useState("");
   const [nomeCliente, setNomeCliente]     = useState("");
   const [cpfCliente, setCpfCliente]       = useState("");
   const [finishing, setFinishing]         = useState(false);
-  const [vendaFeita, setVendaFeita]       = useState<{ numero: number; total: number; nome: string; cpf: string; itens: CartItem[]; troco: number | null } | null>(null);
+  const [vendaFeita, setVendaFeita]       = useState<{ numero: number; total: number; nome: string; cpf: string; itens: CartItem[]; troco: number | null; taxa: number } | null>(null);
   const [mobileTab, setMobileTab]         = useState<"produtos" | "pedido">("produtos");
 
   const [pixQrUrl, setPixQrUrl] = useState<string | null>(null);
@@ -234,7 +235,8 @@ function PDVPage() {
     if (descontoPct)   return Math.min(subtotal, subtotal * ((parseFloat(descontoPct.replace(",", ".")) || 0) / 100));
     return 0;
   }, [descontoValor, descontoPct, subtotal]);
-  const total        = Math.max(0, subtotal - desconto);
+  const taxaEntregaVal = useMemo(() => Math.max(0, parseFloat(taxaEntrega.replace(",", ".")) || 0), [taxaEntrega]);
+  const total        = Math.max(0, subtotal - desconto + taxaEntregaVal);
   const trocoVal     = pagamento === "Dinheiro" && valorCliente ? parseFloat(valorCliente.replace(",", ".")) - total : null;
 
   // Gera QR PIX — precisa ficar APÓS total ser calculado
@@ -272,12 +274,12 @@ function PDVPage() {
   }
 
   function limparVenda() {
-    setCart({}); setDescontoValor(""); setDescontoPct("");
+    setCart({}); setDescontoValor(""); setDescontoPct(""); setTaxaEntrega("");
     setValorCliente(""); setObs(""); setPagamento("Dinheiro");
     setNomeCliente(""); setCpfCliente(""); setVendaFeita(null);
   }
 
-  function imprimirCupom(venda: NonNullable<typeof vendaFeita>, nomeEmpresa: string) {
+  function imprimirCupom(venda: NonNullable<typeof vendaFeita>, nomeEmpresa: string, taxaVal?: number) {
     const data = new Date().toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
     const itensHtml = venda.itens.map((i) =>
       `<tr><td>${i.qty}x ${i.nome}${i.opcoes?.length ? `<br><small>${i.opcoes.map(o => o.opcaoNome).join(", ")}</small>` : ""}</td><td style="text-align:right">${fmt(i.preco * i.qty)}</td></tr>`
@@ -296,6 +298,7 @@ function PDVPage() {
     ${(venda.nome || venda.cpf) ? '<div class="line"></div>' : ""}
     <table>${itensHtml}</table>
     <div class="line"></div>
+    ${taxaVal && taxaVal > 0 ? `<div style="display:flex;justify-content:space-between;font-size:12px"><span>Taxa de entrega</span><span>${fmt(taxaVal)}</span></div>` : ""}
     <div style="display:flex;justify-content:space-between;font-weight:bold;font-size:15px"><span>TOTAL</span><span>${fmt(venda.total)}</span></div>
     ${venda.troco !== null && venda.troco >= 0 ? `<div style="font-size:11px;margin-top:4px">Troco: ${fmt(venda.troco)}</div>` : ""}
     <div class="line"></div>
@@ -331,11 +334,12 @@ function PDVPage() {
         p_tipo:            "pdv",
         p_itens:           itensRpc,
         p_desconto_pdv:    desconto > 0 ? desconto : undefined,
+        p_taxa_entrega:    taxaEntregaVal > 0 ? taxaEntregaVal : undefined,
       });
 
       if (error || !data) { toast.error("Erro: " + (error?.message ?? "tente novamente")); return; }
       const pedido = data as { numero: number; total: number };
-      setVendaFeita({ numero: pedido.numero, total: pedido.total, nome: nomeCliente.trim(), cpf: cpfCliente.trim(), itens: items, troco: trocoVal });
+      setVendaFeita({ numero: pedido.numero, total: pedido.total, nome: nomeCliente.trim(), cpf: cpfCliente.trim(), itens: items, troco: trocoVal, taxa: taxaEntregaVal });
       qc.invalidateQueries({ queryKey: ["pedidos-empresa", empresaId] });
     } finally {
       setFinishing(false);
@@ -359,7 +363,7 @@ function PDVPage() {
           {vendaFeita.cpf  && <p className="text-sm text-zinc-600">CPF: <span className="font-semibold">{vendaFeita.cpf}</span></p>}
         </div>
         <div className="flex gap-3">
-          <Button variant="outline" onClick={() => imprimirCupom(vendaFeita, nomeEmpresa as string)} className="gap-2 border-zinc-300">
+          <Button variant="outline" onClick={() => imprimirCupom(vendaFeita, nomeEmpresa as string, vendaFeita.taxa)} className="gap-2 border-zinc-300">
             🖨️ Imprimir cupom
           </Button>
           <Button onClick={limparVenda} className="bg-brand hover:bg-brand/90 px-10 h-12 text-base font-bold gap-2">
@@ -494,10 +498,17 @@ function PDVPage() {
               </div>
             </div>
 
+            {/* Taxa de entrega */}
+            <div className="space-y-1">
+              <Label className="text-[10px] text-zinc-400">Taxa de entrega R$ (entrega domiciliar)</Label>
+              <Input value={taxaEntrega} onChange={(e) => setTaxaEntrega(e.target.value)} placeholder="0,00" className="h-8 text-sm" />
+            </div>
+
             {/* Totais */}
             <div className="space-y-1 text-sm">
               <div className="flex justify-between text-zinc-500"><span>Subtotal</span><span>{fmt(subtotal)}</span></div>
               {desconto > 0 && <div className="flex justify-between text-green-600 font-medium"><span>Desconto</span><span>-{fmt(desconto)}</span></div>}
+              {taxaEntregaVal > 0 && <div className="flex justify-between text-zinc-500 font-medium"><span>Taxa de entrega</span><span>+{fmt(taxaEntregaVal)}</span></div>}
               <div className="flex justify-between font-black text-base text-zinc-900 pt-1 border-t border-zinc-100">
                 <span>Total</span><span className="text-brand">{fmt(total)}</span>
               </div>
