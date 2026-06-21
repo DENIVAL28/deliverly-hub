@@ -589,8 +589,11 @@ function LojaPage() {
       {/* Nav de categorias — filtro ativo */}
       {categoriasComProdutos.length > 0 && (
         <div className="sticky top-0 z-20 bg-white border-b border-zinc-200 shadow-sm">
-          <div className="max-w-2xl mx-auto px-4">
-            <div className="flex gap-1.5 overflow-x-auto py-3 scrollbar-none">
+          <div className="max-w-2xl mx-auto relative">
+            {/* fade direito indica que há mais para rolar */}
+            <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-10 bg-gradient-to-l from-white to-transparent z-10" />
+            <div className="flex gap-1.5 overflow-x-auto py-3 px-4 pr-10"
+                 style={{ scrollbarWidth: "none", msOverflowStyle: "none" } as React.CSSProperties}>
               <button
                 onClick={() => selecionarCat(null)}
                 className={`shrink-0 px-4 py-1.5 rounded-full text-sm font-semibold transition-colors whitespace-nowrap ${
