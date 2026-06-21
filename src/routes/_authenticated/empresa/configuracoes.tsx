@@ -134,6 +134,20 @@ function ConfiguracoesPage() {
     qc.invalidateQueries({ queryKey: ["empresa-config", empresaId] });
   }
 
+  // Salva tipo de operação de entrega IMEDIATAMENTE — crítico para o trigger de push
+  async function salvarTipoOperacaoEntrega(novo: "plataforma" | "fixos") {
+    if (!empresaId || novo === tipoOperacaoEntrega) return;
+    const anterior = tipoOperacaoEntrega;
+    setTipoOperacaoEntrega(novo); // optimistic
+    const { error } = await supabase.from("empresas").update({ tipo_operacao_entrega: novo } as any).eq("id", empresaId);
+    if (error) {
+      toast.error("Erro ao salvar tipo de entrega: " + error.message);
+      setTipoOperacaoEntrega(anterior); // revert
+      return;
+    }
+    qc.invalidateQueries({ queryKey: ["empresa-config", empresaId] });
+  }
+
   async function uploadImagem(file: File, path: string): Promise<string | null> {
     if (!file.type.startsWith("image/")) { toast.error("Envie apenas imagens (JPG, PNG, WebP)."); return null; }
     if (file.size > 5 * 1024 * 1024) { toast.error("A imagem deve ter no máximo 5 MB."); return null; }
@@ -657,7 +671,7 @@ function ConfiguracoesPage() {
                     name="tipo_operacao_entrega"
                     value={opt.value}
                     checked={tipoOperacaoEntrega === opt.value}
-                    onChange={() => setTipoOperacaoEntrega(opt.value)}
+                    onChange={() => salvarTipoOperacaoEntrega(opt.value)}
                     className="mt-0.5 accent-brand shrink-0"
                   />
                   <div>
