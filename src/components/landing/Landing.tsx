@@ -76,7 +76,6 @@ export function Landing() {
       <ComoFunciona />
       <Segments />
       <Features />
-      <SejaEntregador />
       <Pricing />
       <FAQ />
       <Footer />
@@ -622,124 +621,6 @@ function Features() {
               <p className="text-sm text-zinc-500 leading-relaxed">{body}</p>
             </div>
           ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ─── Seja um Entregador ─── */
-function SejaEntregador() {
-  const steps = [
-    { num: "1", emoji: "📲", title: "Receba o link de convite", desc: "O restaurante parceiro envia um link exclusivo para você. Abra no celular — sem precisar baixar nenhum aplicativo." },
-    { num: "2", emoji: "📝", title: "Faça o cadastro em 1 minuto", desc: "Preencha nome, WhatsApp e tipo de veículo. O estabelecimento analisa e aprova seu cadastro rapidamente." },
-    { num: "3", emoji: "🛵", title: "Escolha as entregas que quiser", desc: "Após aprovado, você recebe um link pessoal. Abra quando quiser, veja os pedidos disponíveis e aceite os que preferir." },
-    { num: "4", emoji: "💰", title: "Receba sua taxa por corrida", desc: "Cada entrega aceita tem a taxa exibida antes de você confirmar. O repasse é combinado diretamente com o estabelecimento." },
-  ];
-
-  const beneficios = [
-    { icon: "🕐", texto: "Trabalhe no seu horário — sem escala fixa" },
-    { icon: "📍", texto: "Sem mínimo de entregas por dia" },
-    { icon: "📱", texto: "Tudo pelo celular, sem instalar nada" },
-    { icon: "🗺️", texto: "Navegação integrada ao Google Maps" },
-    { icon: "⚡", texto: "Pedidos em tempo real, aceite com um clique" },
-    { icon: "🤝", texto: "Vínculo direto com o estabelecimento" },
-  ];
-
-  return (
-    <section id="seja-entregador" className="relative py-28 bg-zinc-950 overflow-hidden">
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_80%_50%,_rgba(249,115,22,0.08),_transparent)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_40%_40%_at_10%_80%,_rgba(249,115,22,0.05),_transparent)]" />
-      </div>
-
-      <div className="mx-auto max-w-7xl px-6">
-        <div className="text-center mb-16">
-          <div className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 text-orange-400 text-xs font-bold px-4 py-1.5 rounded-full mb-6 uppercase tracking-widest">
-            <Bike className="size-3.5" /> Para entregadores
-          </div>
-          <h2 className="text-3xl md:text-5xl font-black text-white mb-4 leading-tight tracking-tight">
-            Faça entregas no<br />
-            <span className="text-orange-400">seu próprio ritmo</span>
-          </h2>
-          <p className="text-zinc-400 text-lg max-w-[52ch] mx-auto leading-relaxed">
-            Restaurantes que usam o Delivery Hub podem convidar motoboys freelancers para entregar seus pedidos — sem vínculo fixo, sem horário obrigatório.
-          </p>
-        </div>
-
-        <div className="grid lg:grid-cols-2 gap-16 items-start">
-
-          {/* Timeline */}
-          <div>
-            <h3 className="text-lg font-bold text-white mb-8 flex items-center gap-2">
-              <span className="size-1.5 rounded-full bg-orange-400 inline-block animate-pulse" />
-              Como funciona
-            </h3>
-            <div className="relative space-y-0">
-              {steps.map((s, i) => (
-                <div key={s.num} className="flex items-start gap-5 relative">
-                  {/* Timeline line */}
-                  {i < steps.length - 1 && (
-                    <div className="absolute left-6 top-14 bottom-0 w-px bg-gradient-to-b from-orange-500/40 to-transparent" style={{ height: "calc(100% - 3rem)" }} />
-                  )}
-                  <div className="relative shrink-0">
-                    <div className="size-12 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-2xl z-10 relative shadow-lg group-hover:bg-orange-500/20 transition-colors">
-                      {s.emoji}
-                    </div>
-                    <span className="absolute -top-1.5 -right-1.5 size-5 rounded-full bg-orange-500 text-white text-[9px] font-black flex items-center justify-center shadow-md shadow-orange-500/30 z-20">
-                      {s.num}
-                    </span>
-                  </div>
-                  <div className="pb-8">
-                    <p className="text-sm font-bold text-white mb-1">{s.title}</p>
-                    <p className="text-sm text-zinc-400 leading-relaxed">{s.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-5">
-            <div className="bg-white/5 border border-white/10 rounded-3xl p-8 hover:bg-white/7 transition-colors">
-              <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
-                <span className="size-1.5 rounded-full bg-green-400 inline-block" />
-                Vantagens para o entregador
-              </h3>
-              <div className="grid grid-cols-1 gap-3">
-                {beneficios.map((b) => (
-                  <div key={b.texto} className="flex items-center gap-3 py-2 border-b border-white/5 last:border-0">
-                    <span className="text-xl shrink-0 w-8 text-center">{b.icon}</span>
-                    <span className="text-sm text-zinc-300">{b.texto}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="bg-gradient-to-br from-orange-500/12 to-orange-600/6 border border-orange-500/20 rounded-3xl p-8">
-              <p className="text-sm font-bold text-orange-300 mb-2">Como começar?</p>
-              <p className="text-sm text-zinc-400 leading-relaxed mb-5">
-                Crie seu cadastro diretamente na plataforma em menos de 5 minutos. Após aprovação, você começa a receber pedidos dos restaurantes parceiros.
-              </p>
-              <Link to="/entregadores/cadastro"
-                className="flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 text-white font-bold px-6 py-4 rounded-2xl text-sm transition-all duration-300 hover:scale-[1.02] shadow-2xl shadow-orange-500/30 w-full">
-                Quero ser entregador — Criar cadastro
-              </Link>
-              <p className="text-xs text-zinc-600 text-center mt-3">Gratuito · Sem contrato · Trabalhe quando quiser</p>
-            </div>
-
-            <div className="bg-white/5 border border-white/10 rounded-3xl p-6 space-y-0">
-              {[
-                { p: "Preciso ter CNH?", r: "Depende do veículo — para moto e carro sim. Para bicicleta e a pé, não." },
-                { p: "Preciso pagar para se cadastrar?", r: "Não. O cadastro é 100% gratuito." },
-                { p: "Posso trabalhar para vários restaurantes?", r: "Sim! Cada restaurante tem seu próprio link — você pode se cadastrar em quantos quiser." },
-              ].map((f, i) => (
-                <div key={i} className={`py-4 ${i > 0 ? "border-t border-white/6" : ""}`}>
-                  <p className="text-xs font-bold text-zinc-300 mb-1">❓ {f.p}</p>
-                  <p className="text-xs text-zinc-500 leading-relaxed">{f.r}</p>
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
       </div>
     </section>
