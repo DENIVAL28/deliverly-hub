@@ -42,33 +42,43 @@ function EntregadoresLanding() {
       </div>
 
       {/* Hero */}
-      <section className="relative overflow-hidden pt-32 pb-20 px-6">
+      <section className="relative overflow-hidden pt-28 pb-20 px-6">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_80%_20%,_rgba(249,115,22,0.12),_transparent)]" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_40%_40%_at_10%_80%,_rgba(249,115,22,0.07),_transparent)]" />
-        <div className="relative mx-auto max-w-3xl text-center">
-          <div className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 text-orange-400 text-xs font-bold px-4 py-1.5 rounded-full mb-6 uppercase tracking-widest">
-            <Bike className="size-3.5" /> Para entregadores
+        <div className="relative mx-auto max-w-6xl grid lg:grid-cols-2 gap-12 items-center">
+          {/* Texto */}
+          <div>
+            <div className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 text-orange-400 text-xs font-bold px-4 py-1.5 rounded-full mb-6 uppercase tracking-widest">
+              <Bike className="size-3.5" /> Para entregadores
+            </div>
+            <h1 className="text-4xl md:text-5xl font-black leading-tight tracking-tight mb-5">
+              Faça entregas no<br />
+              <span className="text-orange-400">seu próprio ritmo</span>
+            </h1>
+            <p className="text-zinc-400 text-lg leading-relaxed mb-10 max-w-[46ch]">
+              Restaurantes que usam o Delivery Hub podem convidar motoboys freelancers para entregar seus pedidos — sem vínculo fixo, sem horário obrigatório.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Link to="/entregadores/cadastro"
+                className="flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 text-white font-bold px-8 py-4 rounded-2xl text-base transition-all duration-300 hover:scale-[1.02] shadow-2xl shadow-orange-500/30">
+                <UserPlus className="size-5" /> Criar meu cadastro grátis <ArrowRight className="size-5" />
+              </Link>
+              <Link to="/entregadores/login"
+                className="flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-semibold px-8 py-4 rounded-2xl text-base transition-all duration-300">
+                <LogIn className="size-5" /> Já tenho cadastro
+              </Link>
+            </div>
+            <p className="text-xs text-zinc-600 mt-4">Gratuito · Sem contrato · Trabalhe quando quiser</p>
           </div>
-          <h1 className="text-4xl md:text-6xl font-black leading-tight tracking-tight mb-5">
-            Faça entregas no<br />
-            <span className="text-orange-400">seu próprio ritmo</span>
-          </h1>
-          <p className="text-zinc-400 text-lg max-w-[52ch] mx-auto leading-relaxed mb-10">
-            Restaurantes que usam o Delivery Hub podem convidar motoboys freelancers para entregar seus pedidos — sem vínculo fixo, sem horário obrigatório.
-          </p>
 
-          {/* Botões de ação */}
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link to="/entregadores/cadastro"
-              className="flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 text-white font-bold px-8 py-4 rounded-2xl text-base transition-all duration-300 hover:scale-[1.02] shadow-2xl shadow-orange-500/30">
-              <UserPlus className="size-5" /> Criar meu cadastro grátis <ArrowRight className="size-5" />
-            </Link>
-            <Link to="/entregadores/login"
-              className="flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-semibold px-8 py-4 rounded-2xl text-base transition-all duration-300">
-              <LogIn className="size-5" /> Já tenho cadastro
-            </Link>
+          {/* Vídeo */}
+          <div className="relative overflow-hidden rounded-3xl ring-1 ring-white/10 shadow-2xl shadow-black/40 bg-zinc-900 aspect-video">
+            <video autoPlay muted loop playsInline className="w-full h-full object-cover">
+              <source src="/segments/Create_a_modern_D_vector_anim.mp4" type="video/mp4" />
+            </video>
+            <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/50 to-transparent pointer-events-none" />
           </div>
-          <p className="text-xs text-zinc-600 mt-4">Gratuito · Sem contrato · Trabalhe quando quiser</p>
+        </div>
         </div>
       </section>
 
