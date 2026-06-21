@@ -79,7 +79,6 @@ function EntregadoresLanding() {
             <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/50 to-transparent pointer-events-none" />
           </div>
         </div>
-        </div>
       </section>
 
       {/* Como funciona + benefícios */}
