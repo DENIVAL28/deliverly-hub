@@ -485,7 +485,8 @@ function PDVPage() {
           </div>
 
           {/* Rodapé */}
-          <div className="border-t border-zinc-100 px-4 py-3 space-y-3 shrink-0">
+          <div className="border-t border-zinc-100 shrink-0 flex flex-col min-h-0 overflow-hidden">
+          <div className="px-4 py-3 space-y-3 overflow-y-auto flex-1 min-h-0">
             {/* Desconto */}
             <div className="flex gap-2">
               <div className="flex-1 space-y-1">
@@ -568,12 +569,15 @@ function PDVPage() {
 
             {/* Obs */}
             <Textarea value={obs} onChange={(e) => setObs(e.target.value)} placeholder="Observação (opcional)" className="resize-none text-xs h-14" />
+          </div>
 
-            {/* Finalizar */}
+            {/* Finalizar — sempre visível na base */}
+            <div className="px-4 pb-3 pt-2 border-t border-zinc-100 shrink-0">
             <Button onClick={finalizar} disabled={finishing || items.length === 0}
               className="w-full bg-brand hover:bg-brand/90 h-11 text-sm font-black disabled:opacity-50">
               {finishing ? "Registrando…" : `Finalizar — ${fmt(total)}`}
             </Button>
+            </div>
           </div>
         </div>
       </div>
