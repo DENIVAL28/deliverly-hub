@@ -63,6 +63,19 @@ const faqs = [
   { q: "Posso cancelar a qualquer momento?",           a: "Sim, sem multa e sem contrato. Ao cancelar, seu acesso continua até o fim do período já pago. Depois disso, a loja é desativada — e você pode reativar quando quiser." },
 ];
 
+function Logo({ dark }: { dark?: boolean }) {
+  return (
+    <div className="flex items-center gap-2.5">
+      <div className="size-9 rounded-xl bg-orange-500 flex items-center justify-center shadow-lg shadow-orange-500/30 shrink-0">
+        <img src="/icon-custom.png" alt="" className="size-6 object-contain brightness-0 invert" />
+      </div>
+      <span className={`text-lg font-black tracking-tight transition-colors duration-500 ${dark ? "text-white" : "text-zinc-900"}`}>
+        Delivery<span className={dark ? "text-orange-400" : "text-orange-500"}>Hub</span>
+      </span>
+    </div>
+  );
+}
+
 export function Landing() {
   return (
     <div className="min-h-screen bg-white text-zinc-900 antialiased">
@@ -104,11 +117,7 @@ function Nav() {
         {/* Logo + Links */}
         <div className="flex items-center gap-8">
           <Link to="/" className="flex items-center shrink-0">
-            <img
-              src="/segments/logo1.png"
-              alt="Delivery Hub"
-              className={`h-11 w-auto max-w-[150px] object-contain transition-all duration-500 ${dark ? "brightness-0 invert" : ""}`}
-            />
+            <Logo dark={dark} />
           </Link>
           <div className="hidden md:flex items-center gap-1 text-sm font-medium">
             {[
@@ -719,7 +728,7 @@ function Footer() {
       <div className="mx-auto max-w-7xl px-6">
         <div className="flex flex-col md:flex-row justify-between items-start gap-10 mb-10">
           <div className="max-w-[22rem]">
-            <img src="/segments/logo1.png" alt="Delivery Hub" className="h-11 w-auto object-contain brightness-0 invert mb-3" />
+            <div className="mb-3"><Logo dark /></div>
             <p className="text-xs text-zinc-500 leading-relaxed">Plataforma de delivery próprio para restaurantes e comércios que não aceitam pagar comissão por pedido.</p>
             <div className="flex items-center gap-2 mt-5">
               <a href={WA_LINK} target="_blank" rel="noreferrer"
