@@ -7,7 +7,7 @@ import { PageHeader } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Trash2, Bike, Phone, Share2, Link as LinkIcon, Navigation, Copy, Users, CheckCircle2 } from "lucide-react";
+import { Plus, Trash2, Bike, Phone, Navigation, Copy, Users, CheckCircle2 } from "lucide-react";
 import { copiarTexto } from "@/lib/validacoes";
 import { toast } from "sonner";
 import { LimiteBanner } from "@/components/UpgradeGuard";
@@ -141,12 +141,6 @@ function EntregadoresPage() {
     await supabase.from("entregadores").delete().eq("id", id);
     qc.invalidateQueries({ queryKey: ["entregadores-fixos", empresaId] });
     toast.success("Entregador removido");
-  }
-
-  function compartilharLink(token: string, nomeEnt: string) {
-    const url = `${window.location.origin}/entregador/${token}`;
-    if (navigator.share) navigator.share({ title: `Acesso — ${nomeEnt}`, url });
-    else copiarTexto(url).then(ok => ok ? toast.success("Link copiado!") : toast.error("Falha ao copiar"));
   }
 
   const comGps = (fixos as any[]).filter((e: any) => e.lat != null && e.lng != null);
@@ -317,14 +311,6 @@ function EntregadoresPage() {
                         )}
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
-                        <button onClick={() => compartilharLink(e.public_token, e.nome)} title="Enviar link"
-                          className="size-8 rounded-lg border border-zinc-200 flex items-center justify-center text-zinc-400 hover:text-brand hover:border-brand/30 transition-colors">
-                          <Share2 className="size-3.5" />
-                        </button>
-                        <a href={`/entregador/${e.public_token}`} target="_blank" rel="noreferrer" title="Abrir página"
-                          className="size-8 rounded-lg border border-zinc-200 flex items-center justify-center text-zinc-400 hover:text-brand hover:border-brand/30 transition-colors">
-                          <LinkIcon className="size-3.5" />
-                        </a>
                         <button onClick={() => excluir(e.id, e.nome)} title="Remover"
                           className="size-8 rounded-lg border border-zinc-200 flex items-center justify-center text-zinc-300 hover:text-red-500 hover:border-red-200 transition-colors">
                           <Trash2 className="size-3.5" />

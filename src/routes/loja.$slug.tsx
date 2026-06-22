@@ -343,17 +343,26 @@ function LojaPage() {
       const taxa     = Number(pedido.taxa_entrega ?? 0);
       const desconto = Number(pedido.desconto ?? 0);
       const total    = Number(pedido.total ?? Math.max(0, subtotal + taxa - desconto));
+      const separador = "─────────────────────";
+      const cabecalho = mesa
+        ? `📍 *Mesa ${mesa}*\n👤 Cliente: ${cliente_nome}\n`
+        : isRetirada
+          ? `🏪 *RETIRADA NO BALCÃO*\n👤 Cliente: ${cliente_nome}\n📞 Telefone: ${cliente_telefone}\n`
+          : `🛵 *DELIVERY*\n👤 Cliente: ${cliente_nome}\n📞 Telefone: ${cliente_telefone}\n📍 Endereço: ${cliente_endereco}\n`;
+      const linhaEntrega = isRetirada
+        ? `🏃 Retirada: _grátis_`
+        : `🛵 Entrega: ${fmt(taxa)}`;
       const msg = encodeURIComponent(
-        `*Pedido #${pedido.numero}*\n\n` +
-        (mesa ? `📍 Mesa ${mesa}\nCliente: ${cliente_nome}\n` : isRetirada ? `🏪 *Retirada no balcão*\nCliente: ${cliente_nome}\nTelefone: ${cliente_telefone}\n` : `Cliente: ${cliente_nome}\nTelefone: ${cliente_telefone}\nEndereço: ${cliente_endereco}\n`) + `\n` +
-        `*Itens:*\n${items.map((i) => {
+        `🔔 *Novo Pedido #${pedido.numero}*\n${separador}\n\n` +
+        cabecalho +
+        `\n${separador}\n*🛒 Itens:*\n${items.map((i) => {
           const opStr = i.opcoes?.length ? `\n   ↳ ${i.opcoes.map((o) => o.opcaoNome).join(", ")}` : "";
-          return `${i.qty}× ${i.nome} — ${fmt(i.preco * i.qty)}${opStr}`;
-        }).join("\n")}\n\n` +
-        `Subtotal: ${fmt(subtotal)}` +
-        (desconto > 0 ? `\nDesconto (${cupomAplicado?.codigo}): -${fmt(desconto)}` : "") +
-        `\nEntrega: ${fmt(taxa)}\n*Total: ${fmt(total)}*\n\n` +
-        `Pagamento: ${forma_pagamento}${observacao ? `\nObs: ${observacao}` : ""}`
+          return `▸ ${i.qty}× ${i.nome} — ${fmt(i.preco * i.qty)}${opStr}`;
+        }).join("\n")}\n${separador}\n` +
+        `💰 Subtotal: ${fmt(subtotal)}` +
+        (desconto > 0 ? `\n🎟 Desconto (${cupomAplicado?.codigo}): -${fmt(desconto)}` : "") +
+        `\n${linhaEntrega}\n✅ *Total: ${fmt(total)}*\n\n` +
+        `💳 Pagamento: ${forma_pagamento}${observacao ? `\n📝 Obs: ${observacao}` : ""}`
       );
 
       const waUrl = empresa.whatsapp ? `https://wa.me/${normalizeWA(empresa.whatsapp)}?text=${msg}` : null;

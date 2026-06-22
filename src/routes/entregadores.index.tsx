@@ -29,7 +29,7 @@ const beneficios = [
   { icon: MapPin,      texto: "Google Maps integrado",         sub: "Navegação com um toque direto para o cliente" },
   { icon: DollarSign,  texto: "Taxa exibida antes de aceitar", sub: "Você vê o valor da corrida antes de confirmar" },
   { icon: Shield,      texto: "Vínculo direto com o restaurante", sub: "Sem intermediário entre você e o estabelecimento" },
-  { icon: Bike,        texto: "Qualquer veículo",              sub: "Moto, bicicleta, carro ou a pé" },
+  { icon: Bike,        texto: "Qualquer veículo",              sub: "Moto, bicicleta ou carro." },
 ];
 
 function EntregadoresLanding() {

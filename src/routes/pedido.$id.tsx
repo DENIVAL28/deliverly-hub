@@ -52,6 +52,14 @@ const ETAPAS_LOCAL = [
 ];
 const ORDEM_LOCAL = ["novo","aceito","preparo","finalizado"];
 
+const ETAPAS_RETIRADA = [
+  { status: "novo",       label: "Pedido recebido",       icon: CheckCircle2, desc: "Aguardando confirmação do estabelecimento" },
+  { status: "aceito",     label: "Confirmado",             icon: CheckCircle2, desc: "O estabelecimento confirmou seu pedido" },
+  { status: "preparo",    label: "Em preparo",             icon: ChefHat,      desc: "Seu pedido está sendo preparado" },
+  { status: "finalizado", label: "Pronto para retirar! 🏪", icon: CheckCircle2, desc: "Venha buscar seu pedido no balcão. Bom apetite!" },
+];
+const ORDEM_RETIRADA = ["novo","aceito","preparo","finalizado"];
+
 const MANUAL_STATUSES = ["aguardando_confirmacao", "aguardando_pagamento"];
 
 // ── PIX helpers ──────────────────────────────────────────────────────────────
@@ -327,15 +335,15 @@ function PedidoTracking() {
 
   const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
   const cancelado  = pedido.status === "cancelado";
-  const finalizado = pedido.status === "finalizado";
-  const isLocal    = !!pedido.mesa;
-  const isManual   = MANUAL_STATUSES.includes(pedido.status) || (pedido.status === "aceito" && !pedido.mesa && false); // detecta pelo status inicial
+  const finalizado   = pedido.status === "finalizado";
+  const isLocal      = !!pedido.mesa;
+  const isRetirada   = pedido.tipo === "retirada";
 
   // fluxo_pedido="manual" salvo no banco — não depende do status atual
   const fluxoManual = pedido.fluxo_pedido === "manual" || MANUAL_STATUSES.includes(pedido.status);
 
-  const etapas = isLocal ? ETAPAS_LOCAL : fluxoManual ? ETAPAS_MANUAL : ETAPAS_AUTO;
-  const ordem  = isLocal ? ORDEM_LOCAL  : fluxoManual ? ORDEM_MANUAL  : ORDEM_AUTO;
+  const etapas = isRetirada ? ETAPAS_RETIRADA : isLocal ? ETAPAS_LOCAL : fluxoManual ? ETAPAS_MANUAL : ETAPAS_AUTO;
+  const ordem  = isRetirada ? ORDEM_RETIRADA  : isLocal ? ORDEM_LOCAL  : fluxoManual ? ORDEM_MANUAL  : ORDEM_AUTO;
   const idxAtual = ordem.indexOf(pedido.status);
 
   const desconto = Number(pedido.desconto ?? 0);

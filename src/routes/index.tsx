@@ -29,7 +29,7 @@ export const Route = createFileRoute("/")({
       { title: "Delivery Hub — Sistema de Delivery para Restaurantes | Cardápio Digital" },
       { name: "description", content: "Crie seu cardápio digital grátis e receba pedidos pelo WhatsApp. Sistema completo para pizzarias, hamburguerias, açaíterias e restaurantes. Sem taxas por pedido." },
       { property: "og:title", content: "Delivery Hub — Sistema de Delivery para Restaurantes" },
-      { property: "og:description", content: "Cardápio digital + pedidos pelo WhatsApp + PDV + relatórios. Tudo por R$99/mês. Sem taxas por pedido." },
+      { property: "og:description", content: "Cardápio digital + pedidos pelo WhatsApp + PDV + relatórios. Planos a partir de R$99/mês, sem comissão por pedido." },
       { property: "og:url", content: "https://delivery-hub.vercel.app" },
       { name: "script:ld+json", content: JSON.stringify(JSONLD) },
     ],

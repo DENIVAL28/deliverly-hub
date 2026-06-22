@@ -195,8 +195,8 @@ function ProdutosPage() {
                   <Textarea id="descricao" name="descricao" rows={2} />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <Field name="preco" label="Preço base (R$)" type="number" step="0.01" required />
-                  <Field name="preco_promocional" label="Preço promo (R$)" type="number" step="0.01" />
+                  <Field name="preco" label="Preço base (R$)" type="number" step="0.01" min="0" required />
+                  <Field name="preco_promocional" label="Preço promo (R$)" type="number" step="0.01" min="0" />
                 </div>
                 <div className="space-y-2">
                   <Label>Categoria</Label>
@@ -271,11 +271,11 @@ function ProdutosPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label htmlFor="edit-preco">Preço base (R$)</Label>
-                  <Input id="edit-preco" name="preco" type="number" step="0.01" defaultValue={editProduto.preco} required />
+                  <Input id="edit-preco" name="preco" type="number" step="0.01" min="0" defaultValue={editProduto.preco} required />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="edit-preco-promo">Preço promo (R$)</Label>
-                  <Input id="edit-preco-promo" name="preco_promocional" type="number" step="0.01" defaultValue={editProduto.preco_promocional ?? ""} />
+                  <Input id="edit-preco-promo" name="preco_promocional" type="number" step="0.01" min="0" defaultValue={editProduto.preco_promocional ?? ""} />
                 </div>
               </div>
               <div className="space-y-2">
@@ -662,11 +662,11 @@ function NovaOpcaoForm({ grupoId, produtoId, ordem }: { grupoId: string; produto
   );
 }
 
-function Field(props: { name: string; label: string; type?: string; step?: string; required?: boolean }) {
+function Field(props: { name: string; label: string; type?: string; step?: string; min?: string; required?: boolean }) {
   return (
     <div className="space-y-2">
       <Label htmlFor={props.name}>{props.label}</Label>
-      <Input id={props.name} name={props.name} type={props.type ?? "text"} step={props.step} required={props.required} />
+      <Input id={props.name} name={props.name} type={props.type ?? "text"} step={props.step} min={props.min} required={props.required} />
     </div>
   );
 }

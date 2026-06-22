@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import {
   ArrowRight, Store, Check, MessageCircle, Smartphone, Zap, BarChart3,
   Menu, X, ChevronDown, Mail, ClipboardList, Utensils, Bike,
-  Shield, Star, TrendingUp, Package,
+  Shield, Star, TrendingUp, Package, Search, MapPin, ReceiptText,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -210,10 +210,34 @@ function Hero() {
               Encontre os melhores restaurantes da sua cidade e peça direto pelo DeliveryHub. Simples, rápido e sem complicações.
             </p>
 
-            <Link to="/lojas"
-              className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white font-bold px-8 py-4 rounded-2xl text-base transition-all duration-300 hover:scale-[1.03] shadow-2xl shadow-orange-500/30 hover:shadow-orange-500/50">
-              Ver restaurantes disponíveis <ArrowRight className="size-5" />
-            </Link>
+            <div className="flex flex-col sm:flex-row gap-3 mb-6">
+              <Link to="/lojas"
+                className="inline-flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 text-white font-bold px-8 py-4 rounded-2xl text-base transition-all duration-300 hover:scale-[1.03] shadow-2xl shadow-orange-500/30 hover:shadow-orange-500/50">
+                Pedir delivery <ArrowRight className="size-5" />
+              </Link>
+              <Link to="/auth"
+                className="inline-flex items-center justify-center gap-2 bg-white/10 hover:bg-white/15 text-white font-bold px-6 py-4 rounded-2xl text-base transition-all duration-300 ring-1 ring-white/15">
+                Sou lojista <Store className="size-5" />
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 max-w-xl">
+              {[
+                { to: "/lojas", label: "Pedir delivery", desc: "Escolha sua cidade", icon: Search },
+                { to: "/lojas", label: "Ver restaurantes", desc: "Abertos perto de voce", icon: MapPin },
+                { to: "/lojas", label: "Acompanhar pedido", desc: "Rastreio em tempo real", icon: ReceiptText },
+                { to: "/auth", label: "Sou lojista", desc: "Entrar no painel", icon: Store },
+              ].map(({ to, label, desc, icon: Icon }) => (
+                <Link key={label} to={to as any}
+                  className="group rounded-2xl bg-white/8 p-4 ring-1 ring-white/12 backdrop-blur-sm hover:bg-white/12 hover:ring-orange-400/50 transition-all">
+                  <div className="mb-3 size-10 rounded-xl bg-orange-500/15 text-orange-300 flex items-center justify-center group-hover:bg-orange-500 group-hover:text-white transition-colors">
+                    <Icon className="size-5" />
+                  </div>
+                  <div className="text-sm font-bold text-white">{label}</div>
+                  <div className="text-xs text-zinc-400 mt-0.5">{desc}</div>
+                </Link>
+              ))}
+            </div>
           </div>
 
           {/* Phone mockup */}
@@ -504,7 +528,7 @@ function ComoFunciona() {
             Do zero ao primeiro pedido em menos de 24h
           </h2>
           <p className="text-zinc-500 max-w-[48ch] mx-auto text-sm leading-relaxed">
-            Sem técnico, sem contrato, sem complicação. Você configura tudo sozinho ou com nossa ajuda gratuita.
+            Nossa equipe realiza o cadastro inicial da sua loja e deixa tudo pronto para você começar a vender.
           </p>
         </div>
 
@@ -532,7 +556,7 @@ function ComoFunciona() {
         <div className="text-center mt-10">
           <p className="text-xs text-zinc-400 inline-flex items-center gap-2 bg-zinc-50 border border-zinc-200 px-4 py-2 rounded-full">
             <Shield className="size-3.5 text-orange-400" />
-            Sem técnico, sem contrato — você configura tudo ou pedimos ajuda gratuita.
+            Nossa equipe cuida do cadastro inicial — você começa a vender no mesmo dia.
           </p>
         </div>
       </div>

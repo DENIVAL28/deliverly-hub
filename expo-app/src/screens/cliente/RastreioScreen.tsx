@@ -79,9 +79,12 @@ export default function RastreioScreen({ route, navigation }: any) {
 
   const cancelado = pedido.status === "cancelado";
   const aguardandoPagamento = pedido.status === "aguardando_pagamento";
+  const isRetirada = pedido.tipo === "retirada";
   const statusIdx = ETAPAS.findIndex((e) => e.key === pedido.status);
-  const etapasFiltradas = pedido.tipo === "retirada"
-    ? ETAPAS.filter((e) => e.key !== "entrega")
+  const etapasFiltradas = isRetirada
+    ? ETAPAS.filter((e) => e.key !== "entrega").map((e) =>
+        e.key === "finalizado" ? { ...e, label: "Pronto para retirar! 🏪", icon: "OK" } : e
+      )
     : pedido.tipo === "mesa"
       ? ETAPAS.filter((e) => !["entrega", "aguardando_confirmacao"].includes(e.key))
       : ETAPAS;

@@ -502,7 +502,7 @@ function ConfiguracoesPage() {
               {taxaTipo === "fixo" ? (
                 <div className="space-y-1.5">
                   <Label htmlFor="taxa" className="text-xs text-zinc-500">Valor fixo (R$)</Label>
-                  <Input id="taxa" type="number" step="0.01" value={taxa}
+                  <Input id="taxa" type="number" step="0.01" min="0" value={taxa}
                     onChange={(e) => setTaxa(e.target.value)} className="h-10 rounded-xl"
                     placeholder="0 = grátis" />
                 </div>
@@ -511,12 +511,12 @@ function ConfiguracoesPage() {
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1.5">
                       <Label className="text-xs text-zinc-500">Taxa mínima (R$)</Label>
-                      <Input type="number" step="0.01" value={taxaBase}
+                      <Input type="number" step="0.01" min="0" value={taxaBase}
                         onChange={e => setTaxaBase(e.target.value)} className="h-10 rounded-xl" placeholder="0" />
                     </div>
                     <div className="space-y-1.5">
                       <Label className="text-xs text-zinc-500">Valor por km (R$)</Label>
-                      <Input type="number" step="0.01" value={taxaPorKm}
+                      <Input type="number" step="0.01" min="0" value={taxaPorKm}
                         onChange={e => setTaxaPorKm(e.target.value)} className="h-10 rounded-xl" placeholder="2" />
                     </div>
                   </div>
@@ -569,7 +569,7 @@ function ConfiguracoesPage() {
 
             <div className="space-y-1.5">
               <Label htmlFor="minimo">Pedido mínimo (R$)</Label>
-              <Input id="minimo" type="number" step="0.01" value={minimo}
+              <Input id="minimo" type="number" step="0.01" min="0" value={minimo}
                 onChange={(e) => setMinimo(e.target.value)} className="h-10 rounded-xl"
                 placeholder="0 = sem mínimo" />
             </div>

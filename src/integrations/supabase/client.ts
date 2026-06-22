@@ -2,6 +2,34 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
+// Chave usada para persistir a preferência de "manter conectado".
+// '1' (ou ausente) → localStorage  |  '0' → sessionStorage (limpa ao fechar o browser)
+export const LEMBRAR_KEY = '_lembrar';
+
+// Lê/grava a sessão no storage escolhido pelo usuário.
+// Fallback para localStorage quando a preferência não está definida.
+const smartStorage = {
+  getItem(key: string): string | null {
+    if (typeof window === 'undefined') return null;
+    return localStorage.getItem(LEMBRAR_KEY) === '0'
+      ? sessionStorage.getItem(key)
+      : localStorage.getItem(key);
+  },
+  setItem(key: string, value: string): void {
+    if (typeof window === 'undefined') return;
+    if (localStorage.getItem(LEMBRAR_KEY) === '0') {
+      sessionStorage.setItem(key, value);
+    } else {
+      localStorage.setItem(key, value);
+    }
+  },
+  removeItem(key: string): void {
+    if (typeof window === 'undefined') return;
+    sessionStorage.removeItem(key);
+    localStorage.removeItem(key);
+  },
+};
+
 function createSupabaseClient() {
   // Use import.meta.env for client-side (Vite build-time replacement)
   // Fall back to process.env for SSR (server-side rendering)
@@ -20,7 +48,7 @@ function createSupabaseClient() {
 
   return createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     auth: {
-      storage: typeof window !== 'undefined' ? localStorage : undefined,
+      storage: typeof window !== 'undefined' ? smartStorage : undefined,
       persistSession: true,
       autoRefreshToken: true,
     }

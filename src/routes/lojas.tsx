@@ -1,7 +1,7 @@
 ﻿import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { MapPin, Clock, ShoppingBag, Search, ChevronRight, ChevronDown, X, ChevronLeft } from "lucide-react";
+import { MapPin, Clock, ShoppingBag, Search, ChevronRight, ChevronDown, X, ChevronLeft, Info, Calendar } from "lucide-react";
 import { verificarAberto } from "@/lib/loja-horario";
 import { InstalarPWA } from "@/components/InstalarPWA";
 
@@ -53,7 +53,7 @@ function LojasPage() {
       const agora = new Date().toISOString();
       const { data } = await (supabase as any)
         .from("empresas")
-        .select("id,nome_fantasia,slug,logo_url,banner_url,cor_primaria,aberto,taxa_entrega,tempo_entrega,cidade,segmento,horario_abertura,horario_fechamento,dias_semana")
+        .select("id,nome_fantasia,slug,logo_url,banner_url,cor_primaria,aberto,taxa_entrega,tempo_entrega,cidade,segmento,horario_abertura,horario_fechamento,dias_semana,observacao")
         .eq("status", "ativa")
         .or(`vencimento.is.null,vencimento.gt.${agora}`)
         .order("nome_fantasia");
@@ -365,59 +365,113 @@ function LojasPage() {
 
 function LojaCard({ loja, fmt }: { loja: any; fmt: (v: number) => string }) {
   const cor = loja.cor_primaria ?? "#F97316";
+  const [detalhes, setDetalhes] = useState(false);
+  const { aberto, label: statusLabel } = verificarAberto(loja);
+  const diasMap: Record<string, string> = {
+    dom: "Dom", seg: "Seg", ter: "Ter", qua: "Qua", qui: "Qui", sex: "Sex", sab: "Sáb",
+  };
+
   return (
-    <Link
-      to="/loja/$slug"
-      params={{ slug: loja.slug }}
-      className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all hover:-translate-y-1 group border border-zinc-100"
-    >
-      <div className="relative h-40 overflow-hidden" style={{ backgroundColor: cor + "18" }}>
-        {loja.banner_url ? (
-          <img src={loja.banner_url} alt={loja.nome_fantasia}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <span className="text-6xl opacity-20">{EMOJI_SEGMENTO[loja.segmento] ?? "🍽️"}</span>
+    <>
+      <div className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all hover:-translate-y-1 border border-zinc-100 group">
+        <Link to="/loja/$slug" params={{ slug: loja.slug }} className="block">
+          <div className="relative h-40 overflow-hidden" style={{ backgroundColor: cor + "18" }}>
+            {loja.banner_url ? (
+              <img src={loja.banner_url} alt={loja.nome_fantasia}
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center">
+                <span className="text-6xl opacity-20">{EMOJI_SEGMENTO[loja.segmento] ?? "🍽️"}</span>
+              </div>
+            )}
+            <div className={`absolute top-3 left-3 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide backdrop-blur-sm ${
+              aberto ? "bg-green-500 text-white" : "bg-black/60 text-zinc-300"
+            }`}>
+              {aberto ? "● Aberto" : "○ Fechado"}
+            </div>
+            {loja.logo_url && (
+              <div className="absolute bottom-0 right-3 translate-y-1/2 size-12 rounded-xl overflow-hidden border-2 border-white shadow-md bg-white">
+                <img src={loja.logo_url} alt={loja.nome_fantasia} className="w-full h-full object-contain p-0.5" />
+              </div>
+            )}
           </div>
-        )}
-        {(() => { const { aberto: a } = verificarAberto(loja); return (
-        <div className={`absolute top-3 left-3 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide backdrop-blur-sm ${
-          a ? "bg-green-500 text-white" : "bg-black/60 text-zinc-300"
-        }`}>
-          {a ? "● Aberto" : "○ Fechado"}
-        </div>
-        ); })()}
-        {loja.logo_url && (
-          <div className="absolute bottom-0 right-3 translate-y-1/2 size-12 rounded-xl overflow-hidden border-2 border-white shadow-md bg-white">
-            <img src={loja.logo_url} alt={loja.nome_fantasia} className="w-full h-full object-contain p-0.5" />
+          <div className={`p-4 ${loja.logo_url ? "pr-16" : ""}`}>
+            <h3 className="font-bold text-zinc-900 truncate group-hover:text-orange-500 transition-colors text-base">
+              {loja.nome_fantasia}
+            </h3>
+            <p className="text-[11px] text-zinc-400 mt-0.5 truncate">{statusLabel}</p>
+            <div className="flex items-center gap-3 mt-3 pt-3 border-t border-zinc-50 text-xs text-zinc-500">
+              {loja.tempo_entrega && (
+                <span className="flex items-center gap-1">
+                  <Clock className="size-3 text-zinc-400" /> {loja.tempo_entrega}
+                </span>
+              )}
+              <span className="flex items-center gap-1 ml-auto font-medium">
+                <ShoppingBag className="size-3 text-zinc-400" />
+                {Number(loja.taxa_entrega) === 0
+                  ? <span className="text-green-600 font-semibold">Grátis</span>
+                  : fmt(Number(loja.taxa_entrega))
+                }
+              </span>
+            </div>
           </div>
-        )}
-      </div>
-      <div className={`p-4 ${loja.logo_url ? "pr-16" : ""}`}>
-        <h3 className="font-bold text-zinc-900 truncate group-hover:text-orange-500 transition-colors text-base">
-          {loja.nome_fantasia}
-        </h3>
-        <p className="text-[11px] text-zinc-400 mt-0.5 truncate">{verificarAberto(loja).label}</p>
-        <div className="flex items-center gap-3 mt-3 pt-3 border-t border-zinc-50 text-xs text-zinc-500">
-          {loja.tempo_entrega && (
-            <span className="flex items-center gap-1">
-              <Clock className="size-3 text-zinc-400" /> {loja.tempo_entrega}
-            </span>
-          )}
-          <span className="flex items-center gap-1 ml-auto font-medium">
-            <ShoppingBag className="size-3 text-zinc-400" />
-            {Number(loja.taxa_entrega) === 0
-              ? <span className="text-green-600 font-semibold">Grátis</span>
-              : fmt(Number(loja.taxa_entrega))
-            }
-          </span>
-        </div>
-        <div className="mt-3 flex items-center justify-end">
-          <span className="text-xs font-semibold text-orange-500 group-hover:underline flex items-center gap-1">
+        </Link>
+        <div className="px-4 pb-4 flex items-center justify-between -mt-1">
+          <button
+            onClick={() => setDetalhes(true)}
+            className="text-xs font-medium text-zinc-400 hover:text-orange-500 transition-colors flex items-center gap-1"
+          >
+            <Info className="size-3" /> Ver detalhes
+          </button>
+          <Link to="/loja/$slug" params={{ slug: loja.slug }}
+            className="text-xs font-semibold text-orange-500 hover:underline flex items-center gap-1">
             Ver cardápio <ChevronRight className="size-3" />
-          </span>
+          </Link>
         </div>
       </div>
-    </Link>
+
+      {detalhes && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          onClick={() => setDetalhes(false)}>
+          <div className="absolute inset-0 bg-black/50" />
+          <div className="relative bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl"
+            onClick={e => e.stopPropagation()}>
+            <button onClick={() => setDetalhes(false)}
+              className="absolute top-4 right-4 text-zinc-400 hover:text-zinc-700 transition-colors">
+              <X className="size-5" />
+            </button>
+            <h3 className="font-bold text-zinc-900 text-lg mb-4 pr-8">{loja.nome_fantasia}</h3>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <span className={`size-2.5 rounded-full shrink-0 ${aberto ? "bg-green-500" : "bg-zinc-400"}`} />
+                <span className="text-sm font-medium text-zinc-700">{statusLabel}</span>
+              </div>
+              {loja.horario_abertura && loja.horario_fechamento && (
+                <div className="flex items-center gap-2 text-sm text-zinc-600">
+                  <Clock className="size-4 text-zinc-400 shrink-0" />
+                  <span>{loja.horario_abertura} – {loja.horario_fechamento}</span>
+                </div>
+              )}
+              {Array.isArray(loja.dias_semana) && loja.dias_semana.length > 0 && (
+                <div className="flex items-start gap-2 text-sm text-zinc-600">
+                  <Calendar className="size-4 text-zinc-400 shrink-0 mt-0.5" />
+                  <span>{loja.dias_semana.map((d: string) => diasMap[d] ?? d).join(" · ")}</span>
+                </div>
+              )}
+              {loja.observacao && (
+                <p className="text-sm text-zinc-500 border-t border-zinc-100 pt-3 mt-1 leading-relaxed">
+                  {loja.observacao}
+                </p>
+              )}
+            </div>
+            <Link to="/loja/$slug" params={{ slug: loja.slug }}
+              onClick={() => setDetalhes(false)}
+              className="mt-5 flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 text-white font-bold py-3 rounded-xl text-sm transition-colors">
+              Ver cardápio <ChevronRight className="size-4" />
+            </Link>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

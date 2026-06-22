@@ -320,7 +320,7 @@ function PedidosPage() {
     queryKey: ["empresa-info", empresaId],
     enabled: !!empresaId,
     queryFn: async () =>
-      (await supabase.from("empresas").select("nome_fantasia,zapi_instance,zapi_token,zapi_client_token").eq("id", empresaId!).single()).data,
+      (await supabase.from("empresas").select("nome_fantasia,zapi_instance,zapi_token,zapi_client_token,tipo_operacao_entrega").eq("id", empresaId!).single()).data,
   });
   const [tab, setTab] = useState<Tab>("ativos");
   const [somAtivo, setSomAtivo] = useState(true);
@@ -975,8 +975,9 @@ function PedidosPage() {
                       const nextStatus = nextMap[p.status];
                       if (!nextStatus) return null;
 
-                      // Lojista não pode finalizar pedido que está em rota com entregador ativo
-                      if (nextStatus === "finalizado" && p.status === "entrega" && p.entregador_id) {
+                      // Em modo fixos o estabelecimento finaliza diretamente; bloco só se aplica à plataforma
+                      if (nextStatus === "finalizado" && p.status === "entrega"
+                          && (empresa as any)?.tipo_operacao_entrega !== "fixos") {
                         return (
                           <span className="text-xs text-zinc-500 flex items-center gap-1.5 bg-zinc-50 border border-zinc-200 px-3 py-2 rounded-xl">
                             🛵 Aguardando entregador finalizar
