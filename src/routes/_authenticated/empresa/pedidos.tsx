@@ -329,6 +329,7 @@ function PedidosPage() {
   const [descontoInput, setDescontoInput] = useState<Record<string, string>>({});
   const [page, setPage] = useState(0);
   const [exportando, setExportando] = useState(false);
+  const [advancingId, setAdvancingId] = useState<string | null>(null);
   const [dataSel, setDataSel] = useState<Date>(() => { const d = new Date(); d.setHours(0,0,0,0); return d; });
   const [notifPermissao, setNotifPermissao] = useState<NotificationPermission>(
     typeof Notification !== "undefined" ? Notification.permission : "denied"
@@ -579,7 +580,6 @@ function PedidosPage() {
     if (!next) return;
     const params: Parameters<typeof rpcPedido>[1] = { status: next };
     if (next === "entrega") {
-      // Auto-atribui se só 1 entregador fixo; caso contrário usa seleção manual
       const assignId = entregadorId || (entregadores.length === 1 ? entregadores[0].id : null);
       if (assignId) {
         const ent = entregadores.find((e: any) => e.id === assignId);
@@ -587,14 +587,18 @@ function PedidosPage() {
         params.entregador_nome = ent?.nome ?? null;
       }
     }
+    setAdvancingId(p.id);
     const err = await rpcPedido(p.id, params);
+    setAdvancingId(null);
     if (err) { toast.error(traduzirErro(err)); return; }
     qc.invalidateQueries({ queryKey: ["pedidos-ativos", empresaId] });
     qc.invalidateQueries({ queryKey: ["pedidos-pag", empresaId] });
   }
 
   async function confirmarPedido(p: any) {
+    setAdvancingId(p.id);
     const err = await rpcPedido(p.id, { status: "aguardando_pagamento" });
+    setAdvancingId(null);
     if (err) { toast.error(traduzirErro(err)); return; }
     qc.invalidateQueries({ queryKey: ["pedidos-ativos", empresaId] });
     qc.invalidateQueries({ queryKey: ["pedidos-pag", empresaId] });
@@ -602,7 +606,9 @@ function PedidosPage() {
   }
 
   async function confirmarPagamento(p: any) {
+    setAdvancingId(p.id);
     const err = await rpcPedido(p.id, { status: "aceito" });
+    setAdvancingId(null);
     if (err) { toast.error(traduzirErro(err)); return; }
     qc.invalidateQueries({ queryKey: ["pedidos-ativos", empresaId] });
     qc.invalidateQueries({ queryKey: ["pedidos-pag", empresaId] });
@@ -828,25 +834,69 @@ function PedidosPage() {
           const isAtivo = ATIVOS.includes(p.status);
           return (
             <div key={p.id} className="bg-background rounded-xl ring-1 ring-black/5 p-3 sm:p-5">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <span className="text-sm font-semibold text-ink">#{p.numero}</span>
-                    <span className={`px-2 py-1 text-[10px] font-bold rounded uppercase ${tone?.tone}`}>{tone?.label}</span>
-                    {p.mesa && (
-                      <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-amber-100 text-amber-700 uppercase tracking-wide">🪑 {p.mesa}</span>
-                    )}
-                    {p.tipo === "pdv" && !p.mesa && (
-                      <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-violet-100 text-violet-600 uppercase tracking-wide">PDV</span>
-                    )}
-                    {p.tipo === "retirada" && (
-                      <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-teal-100 text-teal-700 uppercase tracking-wide">🏪 Retirada</span>
-                    )}
-                    <span className="text-xs text-zinc-400">
-                      {new Date(p.created_at).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
-                    </span>
-                  </div>
-                  <div className="text-sm text-zinc-600 mt-1">{p.cliente_nome} • {p.cliente_telefone || "—"}</div>
+              {/* 1. Número + tipo + horário */}
+              <div className="flex flex-wrap items-center gap-2 mb-2">
+                <span className="text-sm font-semibold text-ink">#{p.numero}</span>
+                <span className={`px-2 py-1 text-[10px] font-bold rounded uppercase ${tone?.tone}`}>{tone?.label}</span>
+                {p.mesa && (
+                  <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-amber-100 text-amber-700 uppercase tracking-wide">🪑 {p.mesa}</span>
+                )}
+                {p.tipo === "pdv" && !p.mesa && (
+                  <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-violet-100 text-violet-600 uppercase tracking-wide">PDV</span>
+                )}
+                {p.tipo === "retirada" && (
+                  <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-teal-100 text-teal-700 uppercase tracking-wide">🏪 Retirada</span>
+                )}
+                <span className="ml-auto text-xs text-zinc-400">
+                  {new Date(p.created_at).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                </span>
+              </div>
+
+              {/* 2. Itens */}
+              {p.pedido_itens?.length > 0 && (
+                <ul className="pt-3 border-t border-black/5 text-sm text-zinc-700 space-y-1 mb-3">
+                  {p.pedido_itens.map((i: any) => (
+                    <li key={i.id} className="flex justify-between gap-4">
+                      <span className="font-medium">{i.quantidade}× {i.nome}{i.observacao ? ` (${i.observacao})` : ""}</span>
+                      <span className="text-zinc-500 shrink-0">{fmt(Number(i.subtotal))}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              {/* 3. Observações */}
+              {p.observacao && (
+                <div className="text-xs text-zinc-500 italic bg-zinc-50 rounded-lg px-3 py-2 mb-2">"{p.observacao}"</div>
+              )}
+
+              {/* 4. Pagamento */}
+              <div className="flex flex-wrap items-center gap-2 text-sm mb-2">
+                <span className="text-zinc-600">{p.forma_pagamento ?? "—"}</span>
+                {Number((p as any).troco) > 0 && (
+                  <span className="text-xs text-zinc-400">· 💵 Troco para {fmt(Number((p as any).troco))}</span>
+                )}
+                {(p as any).pagamento_online_status === "aprovado" && (
+                  <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-green-100 text-green-700 uppercase tracking-wide">✓ Pago online</span>
+                )}
+                {(p as any).pagamento_online_status === "pendente" && (
+                  <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-amber-100 text-amber-700 uppercase tracking-wide">⏳ Aguard. pagto</span>
+                )}
+                {(p as any).pagamento_online_status === "recusado" && (
+                  <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-red-100 text-red-700 uppercase tracking-wide">✗ Pagto recusado</span>
+                )}
+              </div>
+
+              {/* 5. Endereço */}
+              {p.cliente_endereco && <div className="text-xs text-zinc-500">{p.cliente_endereco}</div>}
+              {(p.cliente_cep || p.cliente_cidade) && (
+                <div className="text-xs text-zinc-400">{[p.cliente_cep, p.cliente_cidade].filter(Boolean).join(" — ")}</div>
+              )}
+              {p.cliente_cpf && <div className="text-xs text-zinc-400">CPF: {p.cliente_cpf}</div>}
+
+              {/* 6. Cliente + entregador + total */}
+              <div className="flex items-end justify-between gap-3 mt-2">
+                <div className="min-w-0">
+                  <div className="text-sm text-zinc-600">{p.cliente_nome} • {p.cliente_telefone || "—"}</div>
                   {p.entregador_id && (() => {
                     const ent = tab === "ativos"
                       ? { nome: p.entregador_nome, telefone: p.entregador_telefone, veiculo: p.entregador_veiculo, placa: p.entregador_placa }
@@ -864,49 +914,22 @@ function PedidosPage() {
                       </div>
                     );
                   })()}
-                  {p.cliente_endereco && <div className="text-xs text-zinc-500">{p.cliente_endereco}</div>}
-                  {(p.cliente_cep || p.cliente_cidade) && (
-                    <div className="text-xs text-zinc-400">{[p.cliente_cep, p.cliente_cidade].filter(Boolean).join(" — ")}</div>
-                  )}
-                  {p.cliente_cpf && <div className="text-xs text-zinc-400">CPF: {p.cliente_cpf}</div>}
-                  {p.observacao && <div className="text-xs text-zinc-500 italic mt-1">"{p.observacao}"</div>}
                 </div>
-                <div className="text-right">
+                <div className="text-right shrink-0">
                   {Number(p.desconto) > 0 ? (
-                    <div>
+                    <>
                       <div className="text-xs line-through text-zinc-400">{fmt(Number(p.total))}</div>
                       <div className="text-lg font-semibold text-green-600">{fmt(Number(p.total) - Number(p.desconto))}</div>
                       <div className="text-xs text-green-600 font-medium">-{fmt(Number(p.desconto))} desconto</div>
-                    </div>
+                    </>
                   ) : (
                     <div className="text-lg font-semibold text-ink">{fmt(Number(p.total))}</div>
-                  )}
-                  <div className="text-xs text-zinc-500">{p.forma_pagamento ?? "—"}</div>
-                  {(p as any).pagamento_online_status === "aprovado" && (
-                    <span className="inline-block mt-1 px-2 py-0.5 text-[10px] font-bold rounded bg-green-100 text-green-700 uppercase tracking-wide">✓ Pago online</span>
-                  )}
-                  {(p as any).pagamento_online_status === "pendente" && (
-                    <span className="inline-block mt-1 px-2 py-0.5 text-[10px] font-bold rounded bg-amber-100 text-amber-700 uppercase tracking-wide">⏳ Aguard. pagto</span>
-                  )}
-                  {(p as any).pagamento_online_status === "recusado" && (
-                    <span className="inline-block mt-1 px-2 py-0.5 text-[10px] font-bold rounded bg-red-100 text-red-700 uppercase tracking-wide">✗ Pagto recusado</span>
                   )}
                   {Number(p.taxa_entrega) > 0 && (
                     <div className="text-xs text-zinc-400">+ {fmt(Number(p.taxa_entrega))} entrega</div>
                   )}
                 </div>
               </div>
-
-              {p.pedido_itens?.length > 0 && (
-                <ul className="mt-3 pt-3 border-t border-black/5 text-sm text-zinc-600 space-y-1">
-                  {p.pedido_itens.map((i: any) => (
-                    <li key={i.id} className="flex justify-between">
-                      <span>{i.quantidade}× {i.nome}{i.observacao ? ` (${i.observacao})` : ""}</span>
-                      <span className="font-medium">{fmt(Number(i.subtotal))}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
 
               <div className="mt-4 flex flex-wrap justify-end gap-2">
                 {/* Imprimir — sempre visível */}
@@ -958,13 +981,13 @@ function PedidosPage() {
                       Cancelar
                     </Button>
                     {p.status === "aguardando_confirmacao" && (
-                      <Button onClick={() => confirmarPedido(p)} className="bg-green-600 hover:bg-green-700 text-white gap-1.5">
-                        ✓ Confirmar Pedido
+                      <Button onClick={() => confirmarPedido(p)} disabled={advancingId === p.id} className="bg-green-600 hover:bg-green-700 text-white gap-1.5 disabled:opacity-60">
+                        {advancingId === p.id ? "Confirmando…" : "✓ Confirmar Pedido"}
                       </Button>
                     )}
                     {p.status === "aguardando_pagamento" && (
-                      <Button onClick={() => confirmarPagamento(p)} className="bg-blue-600 hover:bg-blue-700 text-white gap-1.5">
-                        💰 Confirmar Pagamento
+                      <Button onClick={() => confirmarPagamento(p)} disabled={advancingId === p.id} className="bg-blue-600 hover:bg-blue-700 text-white gap-1.5 disabled:opacity-60">
+                        {advancingId === p.id ? "Confirmando…" : "💰 Confirmar Pagamento"}
                       </Button>
                     )}
                     {(() => {
@@ -1009,8 +1032,8 @@ function PedidosPage() {
                               🛵 {entregadores[0].nome} (auto)
                             </span>
                           )}
-                          <Button onClick={() => advance(p, entregadorSel[p.id])} className="bg-brand hover:bg-brand/90">
-                            Avançar → {STATUS.find((s) => s.value === nextStatus)?.label}
+                          <Button onClick={() => advance(p, entregadorSel[p.id])} disabled={advancingId === p.id} className="bg-brand hover:bg-brand/90 disabled:opacity-60">
+                            {advancingId === p.id ? "Avançando…" : `Avançar → ${STATUS.find((s) => s.value === nextStatus)?.label}`}
                           </Button>
                         </div>
                       );
