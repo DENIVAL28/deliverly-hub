@@ -551,13 +551,15 @@ function PedidosPage() {
     entregador_id?: string | null;
     entregador_nome?: string | null;
     desconto?: number;
+    motivo_cancelamento?: string | null;
   }): Promise<string | null> {
     const { data, error } = await (supabase as any).rpc("empresa_atualizar_pedido", {
-      p_pedido_id:       pedidoId,
-      p_status:          params.status          ?? null,
-      p_entregador_id:   params.entregador_id   ?? null,
-      p_entregador_nome: params.entregador_nome ?? null,
-      p_desconto:        params.desconto        ?? null,
+      p_pedido_id:             pedidoId,
+      p_status:                params.status                ?? null,
+      p_entregador_id:         params.entregador_id        ?? null,
+      p_entregador_nome:       params.entregador_nome      ?? null,
+      p_desconto:              params.desconto             ?? null,
+      p_motivo_cancelamento:   params.motivo_cancelamento  ?? null,
     });
     if (error) return error.message;
     if (data?.error) return data.error;
@@ -607,8 +609,10 @@ function PedidosPage() {
     toast.success(`Pagamento do pedido #${p.numero} confirmado!`);
   }
 
-  async function cancel(id: string) {
-    const err = await rpcPedido(id, { status: "cancelado" });
+  async function cancel(id: string, numero: number) {
+    const motivo = window.prompt(`Cancelar pedido #${numero}\n\nMotivo do cancelamento (opcional):`);
+    if (motivo === null) return; // usuário clicou em "Cancelar" no prompt
+    const err = await rpcPedido(id, { status: "cancelado", motivo_cancelamento: motivo.trim() || null });
     if (err) { toast.error(traduzirErro(err)); return; }
     toast.success("Pedido cancelado");
     qc.invalidateQueries({ queryKey: ["pedidos-ativos", empresaId] });
@@ -950,7 +954,7 @@ function PedidosPage() {
                         Aplicar
                       </Button>
                     </div>
-                    <Button size="sm" variant="outline" onClick={() => cancel(p.id)} className="text-red-500 hover:text-red-600 border-red-200 hover:bg-red-50">
+                    <Button size="sm" variant="outline" onClick={() => cancel(p.id, p.numero)} className="text-red-500 hover:text-red-600 border-red-200 hover:bg-red-50">
                       Cancelar
                     </Button>
                     {p.status === "aguardando_confirmacao" && (

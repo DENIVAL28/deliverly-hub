@@ -295,8 +295,13 @@ function LojaPage() {
     const trocoVal         = forma_pagamento === "Dinheiro" && !mesa && tipoEntrega === "delivery" && trocoDelivery.trim()
       ? parseFloat(trocoDelivery.replace(",", "."))
       : null;
-    const obsBase          = String(fd.get("observacao") || "").trim().slice(0, 400);
-    const observacao       = [obsBase, trocoVal && trocoVal > 0 ? `Troco para R$${trocoVal.toFixed(2).replace(".", ",")}` : ""].filter(Boolean).join(" | ").slice(0, 500);
+    const totalFinal       = Math.max(0, totalPrice + taxaEntrega - desconto);
+    if (trocoVal !== null && trocoVal < totalFinal) {
+      setCheckoutErro(`Troco deve ser no mínimo ${fmt(totalFinal)}. O cliente pagará com quanto?`);
+      return;
+    }
+    const obsBase          = String(fd.get("observacao") || "").trim().slice(0, 500);
+    const observacao       = obsBase || undefined;
 
     if (!cliente_nome || cliente_nome.length < 2) { setCheckoutErro("Informe seu nome completo."); return; }
     if (!mesa && !isRetirada && (!cliente_telefone || cliente_telefone.length < 8)) { setCheckoutErro("Informe um telefone válido."); return; }
@@ -334,6 +339,7 @@ function LojaPage() {
         p_cliente_cep:      clienteCep.replace(/\D/g, "").length === 8  ? clienteCep : undefined,
         p_cliente_cidade:   clienteCidade || undefined,
         p_idempotency_key:  checkoutKeyRef.current,
+        p_troco:            trocoVal ?? undefined,
       });
 
       if (error || !pedidoJson) {
@@ -366,7 +372,9 @@ function LojaPage() {
         `💰 Subtotal: ${fmt(subtotal)}` +
         (desconto > 0 ? `\n🎟 Desconto (${cupomAplicado?.codigo}): -${fmt(desconto)}` : "") +
         `\n${linhaEntrega}\n✅ *Total: ${fmt(total)}*\n\n` +
-        `💳 Pagamento: ${forma_pagamento}${observacao ? `\n📝 Obs: ${observacao}` : ""}`
+        `💳 Pagamento: ${forma_pagamento}` +
+        (trocoVal && trocoVal > 0 ? `\n💵 Troco para: ${fmt(trocoVal)}` : "") +
+        (observacao ? `\n📝 Obs: ${observacao}` : "")
       );
 
       const waUrl = empresa.whatsapp ? `https://wa.me/${normalizeWA(empresa.whatsapp)}?text=${msg}` : null;
@@ -817,7 +825,17 @@ function LojaPage() {
                 🔴 {lojaLabel} — pedidos desativados
               </div>
             ) : (
-            <button onClick={() => { checkoutKeyRef.current = crypto.randomUUID(); setCheckoutOpen(true); }}
+            <button onClick={() => {
+              checkoutKeyRef.current = crypto.randomUUID();
+              setCheckoutErro(null);
+              setTrocoDelivery("");
+              setClienteLat(null);
+              setClienteLng(null);
+              setClienteCep("");
+              setClienteCidade("");
+              setClienteCpf("");
+              setCheckoutOpen(true);
+            }}
               className="w-full b-btn text-white rounded-2xl h-14 flex items-center justify-between px-5 font-semibold transition-colors shadow-xl">
               <span className="bg-white/20 text-white text-sm font-bold px-2.5 py-1 rounded-lg min-w-[28px] text-center">
                 {totalQty}

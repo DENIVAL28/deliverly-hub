@@ -25,8 +25,11 @@ interface Pedido {
   cliente_lat: number | null;
   cliente_lng: number | null;
   taxa_entrega: number;
+  troco: number | null;
+  forma_pagamento: string | null;
   status: string;
   empresa_nome: string | null;
+  empresa_endereco: string | null;
 }
 
 const STATUS_OPCOES = [
@@ -394,8 +397,22 @@ export default function HomeScreen() {
                   <Text style={styles.taxaValor}>{fmt(p.taxa_entrega)}</Text>
                 </View>
 
+                {/* Pagamento e troco */}
+                {p.forma_pagamento && (
+                  <View style={styles.pgRow}>
+                    <Text style={styles.pgLabel}>
+                      {p.forma_pagamento === "Dinheiro" ? "💵" : p.forma_pagamento === "PIX" ? "🔑" : "💳"}{" "}
+                      {p.forma_pagamento}
+                      {p.troco && p.troco > 0 ? ` — Troco para ${fmt(p.troco)}` : ""}
+                    </Text>
+                  </View>
+                )}
+
                 {/* Informações do cliente */}
                 <View style={styles.infoBox}>
+                  {p.empresa_endereco && (
+                    <Text style={[styles.infoItem, { color: "#7c3aed", fontWeight: "600" }]}>🏪 Coleta: {p.empresa_endereco}</Text>
+                  )}
                   <Text style={styles.infoItem}>👤  {p.cliente_nome}</Text>
                   {p.cliente_endereco && (
                     <Text style={styles.infoItem}>📍  {p.cliente_endereco}</Text>
@@ -691,6 +708,9 @@ const styles = StyleSheet.create({
   },
   taxaLabel: { fontSize: 12, fontWeight: "600", color: C.green },
   taxaValor: { fontSize: 18, fontWeight: "900", color: C.green },
+
+  pgRow: { marginBottom: 10 },
+  pgLabel: { fontSize: 13, color: "#374151" },
 
   infoBox: {
     gap: 6,
