@@ -53,7 +53,7 @@ function LojasPage() {
       const agora = new Date().toISOString();
       const { data } = await (supabase as any)
         .from("empresas")
-        .select("id,nome_fantasia,slug,logo_url,banner_url,cor_primaria,aberto,taxa_entrega,tempo_entrega,cidade,segmento,horario_abertura,horario_fechamento,dias_semana,observacao")
+        .select("id,nome_fantasia,slug,logo_url,banner_url,cor_primaria,aberto,taxa_entrega,tempo_entrega,cidade,segmento,horario_abertura,horario_fechamento,dias_semana")
         .eq("status", "ativa")
         .or(`vencimento.is.null,vencimento.gt.${agora}`)
         .order("nome_fantasia");
