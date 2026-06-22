@@ -399,6 +399,7 @@ function LojaPage() {
           } catch (e) {
             console.error("Erro ao gerar QR PIX:", e);
             limparCheckout();
+            setWhatsappEnviado(false);
             setPedidoFeito({ id: pedido.id, numero: pedido.numero, waUrl });
           }
           return;

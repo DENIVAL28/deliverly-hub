@@ -120,6 +120,7 @@ Deno.serve(async (req) => {
 
     const notificarLoja = body.notificar_loja ?? true;
     const notificarEntregador = body.notificar_entregador ?? false;
+    const logId: string | null = body.log_id ?? null;
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -324,6 +325,13 @@ Deno.serve(async (req) => {
           }
         }
       }
+    }
+
+    if (logId) {
+      await supabase
+        .from("notification_log")
+        .update({ status: "delivered", atualizado_em: new Date().toISOString() })
+        .eq("id", logId);
     }
 
     return new Response(JSON.stringify({ ok: true }), {
