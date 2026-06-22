@@ -27,6 +27,29 @@ const NEXT: Record<string, string> = {
   aguardando_pagamento:   "aceito",
   novo: "aceito", aceito: "preparo", preparo: "entrega", entrega: "finalizado",
 };
+const NEXT_SEM_PREPARO: Record<string, string> = {
+  aguardando_confirmacao: "aceito", aguardando_pagamento: "aceito",
+  novo: "aceito", aceito: "entrega", entrega: "finalizado",
+};
+const NEXT_MESA:              Record<string, string> = { novo: "aceito", aceito: "preparo", preparo: "finalizado" };
+const NEXT_MESA_SEM_PREPARO:  Record<string, string> = { novo: "aceito", aceito: "finalizado" };
+const NEXT_RETIRADA           = NEXT_MESA;
+const NEXT_RETIRADA_SEM_PREPARO = NEXT_MESA_SEM_PREPARO;
+const NEXT_PDV:               Record<string, string> = { novo: "aceito", aceito: "finalizado" };
+
+function precisaPreparo(pedido: any): boolean {
+  const itens: any[] = pedido.pedido_itens ?? [];
+  if (itens.length === 0) return true;
+  return itens.some((i) => i.requer_preparo !== false);
+}
+
+function getNextMap(pedido: any): Record<string, string> {
+  const com = precisaPreparo(pedido);
+  if (pedido.tipo === "pdv")      return NEXT_PDV;
+  if (pedido.tipo === "retirada") return com ? NEXT_RETIRADA : NEXT_RETIRADA_SEM_PREPARO;
+  if (pedido.mesa)                return com ? NEXT_MESA : NEXT_MESA_SEM_PREPARO;
+  return com ? NEXT : NEXT_SEM_PREPARO;
+}
 
 const WA_NOTIF: Record<string, (p: any, origin: string) => string> = {
   aceito: (p, o) =>
@@ -96,7 +119,7 @@ function EmpresaDashboard() {
     queryKey: ["empresa-info-dash", empresaId],
     enabled: !!empresaId,
     queryFn: async () =>
-      (await supabase.from("empresas").select("nome_fantasia,slug,aberto,zapi_instance,zapi_token,zapi_client_token,horario_abertura,horario_fechamento").eq("id", empresaId!).single()).data,
+      (await supabase.from("empresas").select("nome_fantasia,slug,aberto,zapi_instance,zapi_token,zapi_client_token,horario_abertura,horario_fechamento,tipo_operacao_entrega").eq("id", empresaId!).single()).data,
   });
 
   useEffect(() => {
@@ -145,7 +168,7 @@ function EmpresaDashboard() {
   const { data: stats } = useQuery({
     queryKey: ["dashboard-stats", empresaId],
     enabled: !!empresaId,
-    refetchInterval: 30000,
+    refetchInterval: 15000,
     queryFn: async () => {
       const [{ data: pedidosHoje }, { data: ontem }] = await Promise.all([
         supabase.from("pedidos").select("total,status").eq("empresa_id", empresaId!).gte("created_at", isoToday),
@@ -179,7 +202,7 @@ function EmpresaDashboard() {
   const { data: recentes = [] } = useQuery({
     queryKey: ["dashboard-recentes", empresaId],
     enabled: !!empresaId,
-    refetchInterval: 30000,
+    refetchInterval: 15000,
     queryFn: async () =>
       (await supabase.from("pedidos").select("id,numero,cliente_nome,total,status,created_at")
         .eq("empresa_id", empresaId!)
@@ -251,12 +274,20 @@ function EmpresaDashboard() {
   }
 
   async function advance(pedido: any) {
-    // PIX manual: confirmar → aguardando_pagamento (não pular para aceito)
     const next = pedido.status === "aguardando_confirmacao" && pedido.forma_pagamento === "PIX"
       ? "aguardando_pagamento"
-      : NEXT[pedido.status];
+      : getNextMap(pedido)[pedido.status];
     if (!next) return;
-    await supabase.from("pedidos").update({ status: next as any }).eq("id", pedido.id);
+
+    const { data, error } = await supabase.rpc("empresa_atualizar_pedido" as any, {
+      p_pedido_id: pedido.id,
+      p_status: next,
+    });
+    if (error || (data as any)?.error) {
+      toast.error((data as any)?.error ?? error?.message ?? "Erro ao avançar pedido");
+      return;
+    }
+
     qc.invalidateQueries({ queryKey: ["dashboard-ativos", empresaId] });
     qc.invalidateQueries({ queryKey: ["dashboard-stats", empresaId] });
 
@@ -503,19 +534,36 @@ function EmpresaDashboard() {
 
                   {/* Ações */}
                   <div className="flex gap-2">
-                    {NEXT[p.status] && (
-                      <button onClick={() => advance(p)}
-                        className={`flex-1 text-white rounded-xl h-9 text-xs font-bold transition-colors flex items-center justify-center gap-1.5 ${
-                          isUrgente ? "bg-amber-500 hover:bg-amber-400" : "bg-brand hover:bg-brand/90"
-                        }`}>
-                        {p.status === "aguardando_confirmacao"
-                          ? <><RotateCcw className="size-3.5" /> Confirmar pedido</>
-                          : p.status === "aguardando_pagamento"
-                          ? <><CheckCircle2 className="size-3.5" /> PIX recebido</>
-                          : <>Avançar → {STATUS_CONFIG[NEXT[p.status]]?.label}</>
-                        }
-                      </button>
-                    )}
+                    {(() => {
+                      const nextStatus = p.status === "aguardando_confirmacao" && p.forma_pagamento === "PIX"
+                        ? "aguardando_pagamento"
+                        : getNextMap(p)[p.status];
+                      if (!nextStatus) return null;
+
+                      if (nextStatus === "finalizado" && p.status === "entrega"
+                          && (empresa as any)?.tipo_operacao_entrega !== "fixos") {
+                        return (
+                          <div className="flex-1 flex items-center justify-center gap-1.5 rounded-xl h-9 bg-purple-50 border border-purple-200 text-purple-700 text-xs font-semibold">
+                            <Bike className="size-3.5" />
+                            Aguardando entregador finalizar
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <button onClick={() => advance(p)}
+                          className={`flex-1 text-white rounded-xl h-9 text-xs font-bold transition-colors flex items-center justify-center gap-1.5 ${
+                            isUrgente ? "bg-amber-500 hover:bg-amber-400" : "bg-brand hover:bg-brand/90"
+                          }`}>
+                          {p.status === "aguardando_confirmacao"
+                            ? <><RotateCcw className="size-3.5" /> Confirmar pedido</>
+                            : p.status === "aguardando_pagamento"
+                            ? <><CheckCircle2 className="size-3.5" /> PIX recebido</>
+                            : <>Avançar → {STATUS_CONFIG[nextStatus]?.label}</>
+                          }
+                        </button>
+                      );
+                    })()}
                     {p.cliente_telefone && WA_NOTIF[p.status] && (
                       <button
                         onClick={() => notificarCliente(p, p.status)}
