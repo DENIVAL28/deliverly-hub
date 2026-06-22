@@ -40,8 +40,8 @@ export default function CheckoutScreen({ route, navigation }: any) {
 
   const total = Math.max(0, subtotal + taxa - desconto);
 
-  // Formas de pagamento disponÃ­veis
-  const pagamentos = ["Dinheiro", "CartÃ£o na entrega", ...(empresa.chave_pix ? ["PIX na entrega"] : [])];
+  // Formas de pagamento disponíveis
+  const pagamentos = ["Dinheiro", "Cartão na entrega", ...(empresa.chave_pix ? ["PIX na entrega"] : [])];
 
   async function aplicarCupom() {
     if (!cupomCodigo.trim()) return;
@@ -55,40 +55,44 @@ export default function CheckoutScreen({ route, navigation }: any) {
       .single();
 
     setAplicandoCupom(false);
-    if (error || !data) { setCupomErro("Cupom nÃ£o encontrado."); return; }
+    if (error || !data) { setCupomErro("Cupom não encontrado."); return; }
     if (!data.ativo) { setCupomErro("Cupom inativo."); return; }
     if (data.validade && new Date(data.validade) < new Date()) { setCupomErro("Cupom expirado."); return; }
     if (data.usos_max && data.usos_atual >= data.usos_max) { setCupomErro("Cupom esgotado."); return; }
     if (data.pedido_minimo && subtotal < data.pedido_minimo) {
-      setCupomErro(`Pedido mÃ­nimo para este cupom: ${fmt(data.pedido_minimo)}`); return;
+      setCupomErro(`Pedido mínimo para este cupom: ${fmt(data.pedido_minimo)}`); return;
     }
     setCupomAplicado(data);
     setCupomErro("");
   }
 
   async function finalizar() {
-    // ValidaÃ§Ãµes
+    // Validações
+    if (!carrinho || carrinho.length === 0) {
+      Alert.alert("Carrinho vazio", "Adicione itens antes de finalizar o pedido.");
+      return;
+    }
     if (!nome.trim()) { Alert.alert("Informe seu nome."); return; }
     if (tipoEntrega === "delivery") {
       if (!telefone.trim()) { Alert.alert("Informe seu telefone."); return; }
       if (!logradouro.trim() || !numero.trim() || !bairro.trim()) {
-        Alert.alert("Preencha o endereÃ§o completo."); return;
+        Alert.alert("Preencha o endereço completo."); return;
       }
     }
 
     // Validar loja aberta
     if (!empresa.aberto) {
       const ok = await new Promise((resolve) =>
-        Alert.alert("Loja fechada", "Esta loja estÃ¡ fechada no momento. Deseja enviar o pedido mesmo assim?",
+        Alert.alert("Loja fechada", "Esta loja está fechada no momento. Deseja enviar o pedido mesmo assim?",
           [{ text: "Cancelar", onPress: () => resolve(false) }, { text: "Enviar", onPress: () => resolve(true) }]
         )
       );
       if (!ok) return;
     }
 
-    // Validar pedido mÃ­nimo
+    // Validar Pedido mínimo
     if (empresa.pedido_minimo && subtotal < empresa.pedido_minimo) {
-      Alert.alert("Pedido mÃ­nimo", `O pedido mÃ­nimo desta loja Ã© ${fmt(empresa.pedido_minimo)}.`); return;
+      Alert.alert("Pedido mínimo", `O Pedido mínimo desta loja é ${fmt(empresa.pedido_minimo)}.`); return;
     }
 
     setLoading(true);
@@ -104,7 +108,7 @@ export default function CheckoutScreen({ route, navigation }: any) {
     ].filter(Boolean).join(" | ");
 
     const endereco = tipoEntrega === "retirada"
-      ? "Retirada no balcÃ£o"
+      ? "Retirada no balcão"
       : `${logradouro}, ${numero}${complemento ? `, ${complemento}` : ""} - ${bairro}`;
 
     const { data: pedidoJson, error } = await supabase.rpc("finalizar_pedido", {
@@ -144,7 +148,7 @@ export default function CheckoutScreen({ route, navigation }: any) {
     <SafeAreaView style={s.container}>
       <View style={s.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={s.voltarBtn}>
-          <Text style={s.voltarTexto}>â€¹</Text>
+          <Text style={s.voltarTexto}>‹</Text>
         </TouchableOpacity>
         <Text style={s.headerNome}>Finalizar pedido</Text>
         <View style={{ width: 36 }} />
@@ -156,7 +160,7 @@ export default function CheckoutScreen({ route, navigation }: any) {
           <Text style={s.secaoTitulo}>Resumo</Text>
           {carrinho.map((i: any, idx: number) => (
             <View key={idx} style={s.itemRow}>
-              <Text style={s.itemQty}>{i.qty}Ã—</Text>
+              <Text style={s.itemQty}>{i.qty}×</Text>
               <Text style={s.itemNome} numberOfLines={1}>{i.nome}</Text>
               <Text style={s.itemPreco}>{fmt(i.preco * i.qty)}</Text>
             </View>
@@ -178,7 +182,7 @@ export default function CheckoutScreen({ route, navigation }: any) {
             <View style={s.tipoRow}>
               {(["delivery", "retirada"] as const).map((t) => (
                 <TouchableOpacity key={t} style={[s.tipoBtn, tipoEntrega === t && s.tipoBtnAtivo]} onPress={() => setTipoEntrega(t)}>
-                  <Text style={[s.tipoTexto, tipoEntrega === t && s.tipoTextoAtivo]}>{t === "delivery" ? "ðŸ›µ Delivery" : "ðŸƒ Retirada"}</Text>
+                  <Text style={[s.tipoTexto, tipoEntrega === t && s.tipoTextoAtivo]}>{t === "delivery" ? "🛵 Delivery" : "🏃 Retirada"}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -194,10 +198,10 @@ export default function CheckoutScreen({ route, navigation }: any) {
           )}
         </View>
 
-        {/* EndereÃ§o */}
+        {/* Endereço */}
         {tipoEntrega === "delivery" && (
           <View style={s.secao}>
-            <Text style={s.secaoTitulo}>EndereÃ§o de entrega</Text>
+            <Text style={s.secaoTitulo}>Endereço de entrega</Text>
             <TextInput style={s.input} placeholder="Rua / Avenida *" placeholderTextColor="#a1a1aa" value={logradouro} onChangeText={setLogradouro} />
             <View style={{ flexDirection: "row", gap: 8 }}>
               <TextInput style={[s.input, { flex: 1 }]} placeholder="NÂº *" placeholderTextColor="#a1a1aa" value={numero} onChangeText={setNumero} keyboardType="numeric" />
@@ -212,7 +216,7 @@ export default function CheckoutScreen({ route, navigation }: any) {
           <Text style={s.secaoTitulo}>Cupom de desconto</Text>
           {cupomAplicado ? (
             <View style={s.cupomAplicado}>
-              <Text style={s.cupomAplicadoTexto}>ðŸŽ‰ {cupomAplicado.codigo} â€” desconto de {fmt(desconto)}</Text>
+              <Text style={s.cupomAplicadoTexto}>🎉 {cupomAplicado.codigo} â€” desconto de {fmt(desconto)}</Text>
               <TouchableOpacity onPress={() => { setCupomAplicado(null); setCupomCodigo(""); }}>
                 <Text style={s.cupomRemover}>Remover</Text>
               </TouchableOpacity>
@@ -221,7 +225,7 @@ export default function CheckoutScreen({ route, navigation }: any) {
             <View style={{ flexDirection: "row", gap: 8 }}>
               <TextInput
                 style={[s.input, { flex: 1, marginBottom: 0 }]}
-                placeholder="CÃ³digo do cupom"
+                placeholder="Código do cupom"
                 placeholderTextColor="#a1a1aa"
                 value={cupomCodigo}
                 onChangeText={(t) => setCupomCodigo(t.toUpperCase())}
@@ -249,14 +253,14 @@ export default function CheckoutScreen({ route, navigation }: any) {
           )}
         </View>
 
-        {/* ObservaÃ§Ã£o */}
+        {/* Observação */}
         <View style={s.secao}>
-          <Text style={s.secaoTitulo}>ObservaÃ§Ã£o</Text>
-          <TextInput style={[s.input, { height: 70 }]} placeholder="Ex: sem cebola, portÃ£o azul..." placeholderTextColor="#a1a1aa" value={obs} onChangeText={setObs} multiline />
+          <Text style={s.secaoTitulo}>Observação</Text>
+          <TextInput style={[s.input, { height: 70 }]} placeholder="Ex: sem cebola, portão azul..." placeholderTextColor="#a1a1aa" value={obs} onChangeText={setObs} multiline />
         </View>
 
         <TouchableOpacity style={s.botao} onPress={finalizar} disabled={loading}>
-          {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.botaoTexto}>Fazer pedido Â· {fmt(total)}</Text>}
+          {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.botaoTexto}>Fazer pedido · {fmt(total)}</Text>}
         </TouchableOpacity>
         <View style={{ height: 32 }} />
       </ScrollView>

@@ -77,6 +77,9 @@ function LojaPage() {
   const [pedidosBusca, setPedidosBusca]   = useState<any[] | null>(null);
   const [buscandoPedidos, setBuscandoPedidos] = useState(false);
   const catRefs = useRef<Record<string, HTMLElement | null>>({});
+  const checkoutKeyRef = useRef<string>(crypto.randomUUID());
+  const [cepCarregando, setCepCarregando] = useState(false);
+  const [whatsappEnviado, setWhatsappEnviado] = useState(false);
 
   // Sessão anônima autenticada — necessário para realtime e RLS em pedidos
   useEffect(() => {
@@ -296,7 +299,7 @@ function LojaPage() {
     const observacao       = [obsBase, trocoVal && trocoVal > 0 ? `Troco para R$${trocoVal.toFixed(2).replace(".", ",")}` : ""].filter(Boolean).join(" | ").slice(0, 500);
 
     if (!cliente_nome || cliente_nome.length < 2) { setCheckoutErro("Informe seu nome completo."); return; }
-    if (!mesa && (!cliente_telefone || cliente_telefone.length < 8)) { setCheckoutErro("Informe um telefone válido."); return; }
+    if (!mesa && !isRetirada && (!cliente_telefone || cliente_telefone.length < 8)) { setCheckoutErro("Informe um telefone válido."); return; }
     if (!mesa && !isRetirada && clienteCep.replace(/\D/g,"").length !== 8) { setCheckoutErro("Informe o CEP da entrega."); return; }
     if (!mesa && !isRetirada && (!cliente_endereco || cliente_endereco.length < 10)) { setCheckoutErro("Informe o endereço completo (rua, número e bairro)."); return; }
     if (!["Dinheiro", "Cartão", "PIX"].includes(forma_pagamento)) { setCheckoutErro("Selecione a forma de pagamento."); return; }
@@ -330,6 +333,7 @@ function LojaPage() {
         p_cliente_cpf:      clienteCpf.replace(/\D/g, "").length === 11 ? clienteCpf : undefined,
         p_cliente_cep:      clienteCep.replace(/\D/g, "").length === 8  ? clienteCep : undefined,
         p_cliente_cidade:   clienteCidade || undefined,
+        p_idempotency_key:  checkoutKeyRef.current,
       });
 
       if (error || !pedidoJson) {
@@ -367,10 +371,14 @@ function LojaPage() {
 
       const waUrl = empresa.whatsapp ? `https://wa.me/${normalizeWA(empresa.whatsapp)}?text=${msg}` : null;
 
-      setCart({}); setCheckoutOpen(false); setCupomAplicado(null); setCodigoCupom("");
+      const limparCheckout = () => {
+        setCart({}); setCheckoutOpen(false); setCupomAplicado(null); setCodigoCupom("");
+        checkoutKeyRef.current = crypto.randomUUID();
+      };
 
       // Fluxo manual: função já inseriu com status aguardando_confirmacao; aguarda dono confirmar
       if (pedido.status === "aguardando_confirmacao") {
+        limparCheckout();
         setAguardandoConfirmacao({ pedidoId: pedido.id, numero: pedido.numero });
         return;
       }
@@ -386,14 +394,18 @@ function LojaPage() {
           const payload   = gerarPixPayload(chave, nomeRec, cidadeRec, total);
           try {
             const qrUrl = await QRCode.toDataURL(payload, { width: 240, margin: 2, color: { dark: "#18181b", light: "#ffffff" } });
+            limparCheckout();
             setPixModal({ payload, qrUrl, total, desconto: 0, waLink: waUrl ?? "", pedidoNum: pedido.numero, pedidoId: pedido.id, pixChave: chave, pixNome: nomeRec, pixCidade: cidadeRec });
           } catch (e) {
             console.error("Erro ao gerar QR PIX:", e);
+            limparCheckout();
             setPedidoFeito({ id: pedido.id, numero: pedido.numero, waUrl });
           }
           return;
         }
       }
+      limparCheckout();
+      setWhatsappEnviado(false);
       setPedidoFeito({ id: pedido.id, numero: pedido.numero, waUrl });
     } catch (err) {
       console.error("Erro ao finalizar pedido", err);
@@ -804,7 +816,7 @@ function LojaPage() {
                 🔴 {lojaLabel} — pedidos desativados
               </div>
             ) : (
-            <button onClick={() => setCheckoutOpen(true)}
+            <button onClick={() => { checkoutKeyRef.current = crypto.randomUUID(); setCheckoutOpen(true); }}
               className="w-full b-btn text-white rounded-2xl h-14 flex items-center justify-between px-5 font-semibold transition-colors shadow-xl">
               <span className="bg-white/20 text-white text-sm font-bold px-2.5 py-1 rounded-lg min-w-[28px] text-center">
                 {totalQty}
@@ -927,16 +939,19 @@ function LojaPage() {
 
             {pedidoFeito.waUrl ? (
               <>
-                <div className="mt-3 mb-5 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
-                  <p className="text-sm font-bold text-amber-800">⚠️ Falta um passo!</p>
-                  <p className="text-xs text-amber-700 mt-0.5 leading-relaxed">Toque no botão abaixo para o restaurante receber seu pedido pelo WhatsApp. Sem isso, o pedido não chega.</p>
-                </div>
+                {!whatsappEnviado && (
+                  <div className="mt-3 mb-5 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+                    <p className="text-sm font-bold text-amber-800">⚠️ Falta um passo!</p>
+                    <p className="text-xs text-amber-700 mt-0.5 leading-relaxed">Toque no botão abaixo para o restaurante receber seu pedido pelo WhatsApp. Sem isso, o pedido não chega.</p>
+                  </div>
+                )}
                 <a
                   href={pedidoFeito.waUrl}
                   target="_blank" rel="noreferrer"
+                  onClick={() => setWhatsappEnviado(true)}
                   className="flex items-center justify-center gap-2 w-full bg-green-500 hover:bg-green-600 text-white rounded-2xl h-14 font-bold text-base transition-colors mb-3 shadow-lg"
                 >
-                  <MessageCircle className="size-5" /> Enviar pedido pelo WhatsApp
+                  <MessageCircle className="size-5" /> {whatsappEnviado ? "Reenviar pelo WhatsApp" : "Enviar pedido pelo WhatsApp"}
                 </a>
               </>
             ) : (
@@ -946,9 +961,14 @@ function LojaPage() {
             <a
               href={`/pedido/${pedidoFeito.id}`}
               target="_blank" rel="noreferrer"
-              className="flex items-center justify-center gap-2 w-full border border-zinc-200 text-zinc-600 rounded-2xl h-11 font-medium text-sm transition-colors hover:bg-zinc-50"
+              aria-disabled={!whatsappEnviado && !!pedidoFeito.waUrl}
+              className={`flex items-center justify-center gap-2 w-full border rounded-2xl h-11 font-medium text-sm transition-colors ${
+                !whatsappEnviado && pedidoFeito.waUrl
+                  ? "border-zinc-100 text-zinc-300 pointer-events-none select-none"
+                  : "border-zinc-200 text-zinc-600 hover:bg-zinc-50"
+              }`}
             >
-              Ver status do pedido →
+              {!whatsappEnviado && pedidoFeito.waUrl ? "Envie pelo WhatsApp primeiro" : "Ver status do pedido →"}
             </a>
           </div>
         </div>
@@ -1174,6 +1194,7 @@ function LojaPage() {
                     cep={clienteCep}
                     onCepChange={setClienteCep}
                     onCidadeChange={setClienteCidade}
+                    onLoadingChange={setCepCarregando}
                     brandColor={brandColor}
                   />
                 )}
@@ -1225,11 +1246,13 @@ function LojaPage() {
                     ⚠️ {checkoutErro}
                   </div>
                 )}
-                <Button type="submit" disabled={checkoutLoading}
+                <Button type="submit" disabled={checkoutLoading || cepCarregando}
                   className="w-full b-btn h-14 rounded-xl gap-2 text-base font-bold mt-2 text-white disabled:opacity-60">
                   {checkoutLoading
                     ? <><span className="animate-spin">⏳</span> Registrando pedido...</>
-                    : <><MessageCircle className="size-5" /> Finalizar via WhatsApp</>
+                    : cepCarregando
+                      ? <><span className="animate-spin">⏳</span> Consultando CEP...</>
+                      : <><MessageCircle className="size-5" /> Finalizar via WhatsApp</>
                   }
                 </Button>
               </form>
@@ -1561,10 +1584,11 @@ function TelField() {
 }
 
 /* ─── Campo CEP com auto-fill ViaCEP ─── */
-function CepField({ cep, onCepChange, onCidadeChange, brandColor }: {
+function CepField({ cep, onCepChange, onCidadeChange, onLoadingChange, brandColor }: {
   cep: string;
   onCepChange: (v: string) => void;
   onCidadeChange: (v: string) => void;
+  onLoadingChange?: (v: boolean) => void;
   brandColor: string;
 }) {
   const [loading, setLoading] = useState(false);
@@ -1579,7 +1603,7 @@ function CepField({ cep, onCepChange, onCidadeChange, brandColor }: {
   async function buscarCep(valor: string) {
     const digits = valor.replace(/\D/g, "");
     if (digits.length !== 8) return;
-    setLoading(true); setErro("");
+    setLoading(true); onLoadingChange?.(true); setErro("");
     let cidade = "";
     try {
       const res  = await fetch(`https://viacep.com.br/ws/${digits}/json/`);
@@ -1602,6 +1626,7 @@ function CepField({ cep, onCepChange, onCidadeChange, brandColor }: {
       setErro("CEP não encontrado. Preencha a cidade manualmente.");
     }
     setLoading(false);
+    onLoadingChange?.(false);
   }
 
   return (

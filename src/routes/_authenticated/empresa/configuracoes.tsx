@@ -137,6 +137,21 @@ function ConfiguracoesPage() {
   // Salva tipo de operação de entrega IMEDIATAMENTE — crítico para o trigger de push
   async function salvarTipoOperacaoEntrega(novo: "plataforma" | "fixos") {
     if (!empresaId || novo === tipoOperacaoEntrega) return;
+
+    // Verifica se há pedidos ativos antes de trocar o modo — pedidos em rota podem ficar órfãos
+    const { count } = await supabase
+      .from("pedidos")
+      .select("id", { count: "exact", head: true })
+      .eq("empresa_id", empresaId)
+      .in("status", ["aceito", "preparo", "entrega"]);
+
+    if ((count ?? 0) > 0) {
+      const ok = window.confirm(
+        `Atenção: você tem ${count} pedido(s) ativo(s). Trocar o modo de entrega agora pode deixar esses pedidos sem entregador visível. Deseja continuar mesmo assim?`
+      );
+      if (!ok) return;
+    }
+
     const anterior = tipoOperacaoEntrega;
     setTipoOperacaoEntrega(novo); // optimistic
     const { error } = await supabase.from("empresas").update({ tipo_operacao_entrega: novo } as any).eq("id", empresaId);

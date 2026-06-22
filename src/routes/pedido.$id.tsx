@@ -118,6 +118,8 @@ function PedidoTracking() {
   const [entregadorPos, setEntregadorPos] = useState<{ lat: number; lng: number; nome: string | null } | null>(null);
   const [gpsHora, setGpsHora] = useState<string | null>(null);
   const locIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const nullCountRef   = useRef(0);
+  const [pedidoRemovido, setPedidoRemovido] = useState(false);
 
   const empresa = pedido.empresas as any;
   const navigate = useNavigate();
@@ -247,7 +249,16 @@ function PedidoTracking() {
         .eq("id", curr.id)
         .maybeSingle();
 
-      if (data && data.status !== curr.status) {
+      if (data === null) {
+        nullCountRef.current += 1;
+        if (nullCountRef.current >= 3) {
+          clearInterval(interval);
+          setPedidoRemovido(true);
+        }
+        return;
+      }
+      nullCountRef.current = 0;
+      if (data.status !== curr.status) {
         await aplicarAtualizacao(data.status, data);
       }
     }, 5000);
@@ -351,6 +362,24 @@ function PedidoTracking() {
   // Não usar pedido.total porque ele já foi gravado com desconto deduzido pelo RPC,
   // mas o campo desconto pode ser sobrescrito manualmente pelo dono depois.
   const totalFinal = Math.max(0, Number(pedido.subtotal) + Number(pedido.taxa_entrega) - desconto);
+
+  if (pedidoRemovido) {
+    return (
+      <div className="min-h-screen bg-zinc-100 flex items-center justify-center px-4">
+        <div className="bg-white rounded-2xl shadow-sm p-8 max-w-sm w-full text-center">
+          <div className="text-4xl mb-4">🔍</div>
+          <h2 className="text-lg font-bold text-zinc-900 mb-2">Pedido não encontrado</h2>
+          <p className="text-sm text-zinc-500 mb-6">Este pedido foi removido ou não está mais disponível.</p>
+          <button
+            onClick={() => navigate({ to: "/lojas" })}
+            className="w-full bg-zinc-900 hover:bg-zinc-700 text-white rounded-2xl h-11 font-semibold text-sm transition-colors"
+          >
+            Voltar ao início
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-zinc-100">
