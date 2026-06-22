@@ -107,12 +107,111 @@ async function sendFcm(token: string, title: string, body: string, data: Record<
   return { ok: res.ok, status: res.status, json };
 }
 
+// ── Helpers de push para loja (WebPush + Expo) ──────────────────────────────
+
+async function pushParaLoja(
+  supabase: ReturnType<typeof createClient>,
+  empresaId: string,
+  title: string,
+  body: string,
+  pedidoId?: string,
+) {
+  const { data: subs } = await supabase
+    .from("push_subscriptions")
+    .select("endpoint, p256dh, auth")
+    .eq("empresa_id", empresaId);
+
+  if (subs?.length) {
+    webpush.setVapidDetails(
+      Deno.env.get("VAPID_SUBJECT") ?? "mailto:suporte@deliverlyhub.com.br",
+      Deno.env.get("VAPID_PUBLIC_KEY")!,
+      Deno.env.get("VAPID_PRIVATE_KEY")!,
+    );
+    const payload = JSON.stringify({ title, body, tag: pedidoId ? `pedido-${pedidoId}` : undefined, url: "/empresa/pedidos" });
+    await Promise.allSettled(
+      subs.map(async (sub) => {
+        try {
+          await webpush.sendNotification(
+            { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+            payload,
+            { TTL: 86400 },
+          );
+        } catch (err: any) {
+          if (err.statusCode === 410 || err.statusCode === 404) {
+            await supabase.from("push_subscriptions").delete().eq("endpoint", sub.endpoint);
+          }
+        }
+      }),
+    );
+  }
+
+  const { data: expoTokens } = await supabase
+    .from("expo_push_tokens")
+    .select("token")
+    .eq("empresa_id", empresaId);
+
+  if (expoTokens?.length) {
+    const tokens = [...new Set(expoTokens.map(({ token }: { token: string }) => token))];
+    for (const bloco of chunk(tokens, EXPO_CHUNK)) {
+      await fetch(EXPO_PUSH_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        body: JSON.stringify(bloco.map((token) => ({
+          to: token, title, body,
+          data: { pedidoId: pedidoId ?? "", screen: "Pedidos" },
+          sound: "default", priority: "high", channelId: "pedidos",
+        }))),
+      });
+    }
+    console.log(`ExpoPush loja: ${tokens.length} tokens`);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
 
   try {
     const body = await req.json();
     const pedido = body.record ?? body;
+    const eventType: string = body.event_type ?? "novo_pedido";
+
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+
+    // ── Eventos especiais de cancelamento / reclamação / reembolso ───────────
+    if (eventType === "cliente_cancelou") {
+      // Notifica lojista que cliente cancelou
+      const { empresa_id, numero, cliente_nome, motivo } = body;
+      if (empresa_id) {
+        await pushParaLoja(
+          supabase,
+          empresa_id,
+          `❌ Cliente cancelou o pedido #${numero}`,
+          `${cliente_nome} — Motivo: ${motivo ?? "não informado"}`,
+          body.pedido_id,
+        );
+      }
+      return new Response(JSON.stringify({ ok: true }), { headers: { ...CORS, "Content-Type": "application/json" } });
+    }
+
+    if (eventType === "reclamacao") {
+      const { empresa_id, numero, tipo } = body;
+      const tipoLabel: Record<string, string> = {
+        pedido_errado: "pedido errado", nao_chegou: "não chegou",
+        item_faltando: "item faltando", qualidade: "qualidade ruim", outro: "outro problema",
+      };
+      if (empresa_id) {
+        await pushParaLoja(
+          supabase, empresa_id,
+          `⚠️ Nova reclamação — pedido #${numero}`,
+          `Tipo: ${tipoLabel[tipo] ?? tipo}`,
+          body.pedido_id,
+        );
+      }
+      return new Response(JSON.stringify({ ok: true }), { headers: { ...CORS, "Content-Type": "application/json" } });
+    }
 
     if (!pedido?.empresa_id || !pedido?.numero) {
       return new Response("sem dados", { status: 400, headers: CORS });
@@ -121,11 +220,6 @@ Deno.serve(async (req) => {
     const notificarLoja = body.notificar_loja ?? true;
     const notificarEntregador = body.notificar_entregador ?? false;
     const logId: string | null = body.log_id ?? null;
-
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
 
     if (notificarLoja) {
       const isRetirada = pedido.tipo === "retirada";

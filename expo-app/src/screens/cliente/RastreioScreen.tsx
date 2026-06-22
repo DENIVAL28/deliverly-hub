@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView, Linking } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView, Linking, Modal, TextInput, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "../../lib/supabase";
 
@@ -21,6 +21,51 @@ export default function RastreioScreen({ route, navigation }: any) {
   const [loading, setLoading] = useState(true);
   const [entregadorGps, setEntregadorGps] = useState<any | null>(null);
   const [gpsAtualizadoEm, setGpsAtualizadoEm] = useState<string | null>(null);
+
+  const [cancelModal, setCancelModal]     = useState(false);
+  const [motivoCancel, setMotivoCancel]   = useState("");
+  const [cancelando, setCancelando]       = useState(false);
+  const [recModal, setRecModal]           = useState(false);
+  const [recTipo, setRecTipo]             = useState("");
+  const [recDesc, setRecDesc]             = useState("");
+  const [enviandoRec, setEnviandoRec]     = useState(false);
+  const [recEnviada, setRecEnviada]       = useState(false);
+
+  const PODE_CANCELAR = ["novo", "aguardando_confirmacao", "aguardando_pagamento"];
+
+  async function cancelarPedido() {
+    if (!motivoCancel.trim()) return;
+    setCancelando(true);
+    const { data, error } = await (supabase as any).rpc("cancelar_pedido_cliente", {
+      p_pedido_id: pedidoId,
+      p_motivo: motivoCancel,
+    });
+    setCancelando(false);
+    if (error || data?.error) {
+      Alert.alert("Erro", error?.message ?? data?.error);
+      return;
+    }
+    setCancelModal(false);
+    setPedido((prev: any) => ({ ...prev, status: "cancelado", cancelado_por: "cliente", motivo_cancelamento: motivoCancel }));
+  }
+
+  async function enviarReclamacao() {
+    if (!recTipo) return;
+    setEnviandoRec(true);
+    const { data, error } = await (supabase as any).rpc("abrir_reclamacao", {
+      p_pedido_id: pedidoId,
+      p_tipo: recTipo,
+      p_descricao: recDesc.trim() || null,
+    });
+    setEnviandoRec(false);
+    if (error || data?.error) {
+      Alert.alert("Erro", error?.message ?? data?.error);
+      return;
+    }
+    setRecModal(false);
+    setRecEnviada(true);
+    Alert.alert("Reclamação enviada", "A loja foi notificada e entrará em contato.");
+  }
 
   useEffect(() => {
     async function buscar() {
@@ -186,11 +231,85 @@ export default function RastreioScreen({ route, navigation }: any) {
           </View>
         )}
 
+        {/* Cancelar pedido — só se status permite */}
+        {PODE_CANCELAR.includes(pedido.status) && (
+          <TouchableOpacity style={s.botaoCancelar} onPress={() => setCancelModal(true)}>
+            <Text style={s.botaoCancelarTexto}>Cancelar pedido</Text>
+          </TouchableOpacity>
+        )}
+
+        {/* Tive um problema — só se finalizado */}
+        {pedido.status === "finalizado" && !recEnviada && (
+          <TouchableOpacity style={s.botaoProblema} onPress={() => setRecModal(true)}>
+            <Text style={s.botaoProblemaTexto}>⚠️ Tive um problema</Text>
+          </TouchableOpacity>
+        )}
+
         <TouchableOpacity style={s.botaoNovo} onPress={() => navigation.popToTop()}>
           <Text style={s.botaoNovoTexto}>Fazer novo pedido</Text>
         </TouchableOpacity>
         <View style={{ height: 24 }} />
       </ScrollView>
+
+      {/* Modal: cancelar */}
+      <Modal visible={cancelModal} transparent animationType="slide" onRequestClose={() => setCancelModal(false)}>
+        <View style={s.modalOverlay}>
+          <View style={s.modalCard}>
+            <Text style={s.modalTitulo}>Por que quer cancelar?</Text>
+            {["Me arrependi do pedido","Digitei o endereço errado","Demorou muito para confirmar","Vou buscar pessoalmente","Outro motivo"].map((op) => (
+              <TouchableOpacity key={op} style={[s.opcaoBtn, motivoCancel === op && s.opcaoBtnAtivo]} onPress={() => setMotivoCancel(op)}>
+                <Text style={[s.opcaoTexto, motivoCancel === op && s.opcaoTextoAtivo]}>{op}</Text>
+              </TouchableOpacity>
+            ))}
+            <View style={s.modalBtns}>
+              <TouchableOpacity style={s.btnVoltar} onPress={() => setCancelModal(false)}>
+                <Text style={s.btnVoltarTexto}>Voltar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[s.btnConfirmar, (!motivoCancel || cancelando) && s.btnDisabled]}
+                onPress={cancelarPedido}
+                disabled={!motivoCancel || cancelando}
+              >
+                <Text style={s.btnConfirmarTexto}>{cancelando ? "Cancelando…" : "Confirmar"}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal: reclamar */}
+      <Modal visible={recModal} transparent animationType="slide" onRequestClose={() => setRecModal(false)}>
+        <View style={s.modalOverlay}>
+          <View style={s.modalCard}>
+            <Text style={s.modalTitulo}>O que aconteceu?</Text>
+            {[{v:"pedido_errado",l:"Recebi o pedido errado"},{v:"item_faltando",l:"Faltou um item"},{v:"nao_chegou",l:"O pedido não chegou"},{v:"qualidade",l:"Qualidade ruim"},{v:"outro",l:"Outro problema"}].map(({v,l}) => (
+              <TouchableOpacity key={v} style={[s.opcaoBtn, recTipo === v && s.opcaoBtnAtivo]} onPress={() => setRecTipo(v)}>
+                <Text style={[s.opcaoTexto, recTipo === v && s.opcaoTextoAtivo]}>{l}</Text>
+              </TouchableOpacity>
+            ))}
+            <TextInput
+              value={recDesc}
+              onChangeText={setRecDesc}
+              placeholder="Descreva o problema (opcional)"
+              multiline
+              style={s.inputDesc}
+              placeholderTextColor="#a1a1aa"
+            />
+            <View style={s.modalBtns}>
+              <TouchableOpacity style={s.btnVoltar} onPress={() => setRecModal(false)}>
+                <Text style={s.btnVoltarTexto}>Voltar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[s.btnConfirmarRec, (!recTipo || enviandoRec) && s.btnDisabled]}
+                onPress={enviarReclamacao}
+                disabled={!recTipo || enviandoRec}
+              >
+                <Text style={s.btnConfirmarTexto}>{enviandoRec ? "Enviando…" : "Enviar"}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -237,4 +356,23 @@ const s = StyleSheet.create({
   etapaAtualSub: { fontSize: 12, color: "#f97316", marginTop: 2 },
   botaoNovo: { backgroundColor: "#f97316", borderRadius: 14, height: 52, justifyContent: "center", alignItems: "center" },
   botaoNovoTexto: { color: "#fff", fontSize: 16, fontWeight: "700" },
+  botaoCancelar: { borderRadius: 14, height: 48, justifyContent: "center", alignItems: "center", borderWidth: 1.5, borderColor: "#dc2626" },
+  botaoCancelarTexto: { color: "#dc2626", fontSize: 15, fontWeight: "700" },
+  botaoProblema: { borderRadius: 14, height: 48, justifyContent: "center", alignItems: "center", borderWidth: 1.5, borderColor: "#d97706", backgroundColor: "#fffbeb" },
+  botaoProblemaTexto: { color: "#d97706", fontSize: 15, fontWeight: "700" },
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" },
+  modalCard: { backgroundColor: "#fff", borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, paddingBottom: 32, gap: 10 },
+  modalTitulo: { fontSize: 17, fontWeight: "800", color: "#18181b", marginBottom: 4 },
+  opcaoBtn: { borderRadius: 10, borderWidth: 1.5, borderColor: "#e4e4e7", paddingVertical: 11, paddingHorizontal: 14 },
+  opcaoBtnAtivo: { borderColor: "#f97316", backgroundColor: "#fff7ed" },
+  opcaoTexto: { fontSize: 14, color: "#71717a", fontWeight: "500" },
+  opcaoTextoAtivo: { color: "#f97316", fontWeight: "700" },
+  inputDesc: { borderWidth: 1.5, borderColor: "#e4e4e7", borderRadius: 10, padding: 12, fontSize: 14, color: "#18181b", minHeight: 70, textAlignVertical: "top" },
+  modalBtns: { flexDirection: "row", gap: 10, marginTop: 4 },
+  btnVoltar: { flex: 1, height: 48, borderRadius: 12, borderWidth: 1.5, borderColor: "#e4e4e7", justifyContent: "center", alignItems: "center" },
+  btnVoltarTexto: { color: "#71717a", fontSize: 14, fontWeight: "700" },
+  btnConfirmar: { flex: 2, height: 48, borderRadius: 12, backgroundColor: "#dc2626", justifyContent: "center", alignItems: "center" },
+  btnConfirmarRec: { flex: 2, height: 48, borderRadius: 12, backgroundColor: "#f97316", justifyContent: "center", alignItems: "center" },
+  btnConfirmarTexto: { color: "#fff", fontSize: 14, fontWeight: "700" },
+  btnDisabled: { opacity: 0.45 },
 });

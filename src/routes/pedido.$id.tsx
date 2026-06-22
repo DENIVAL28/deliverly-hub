@@ -1,7 +1,7 @@
 import { createFileRoute, notFound, useNavigate } from "@tanstack/react-router";
 import { lazy, Suspense, useEffect, useState, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { CheckCircle2, Clock, ChefHat, Bike, XCircle, MapPin, MessageCircle, User, Copy, Navigation, ChevronLeft } from "lucide-react";
+import { CheckCircle2, Clock, ChefHat, Bike, XCircle, MapPin, MessageCircle, User, Copy, Navigation, ChevronLeft, AlertTriangle } from "lucide-react";
 import QRCode from "qrcode";
 import { copiarTexto, normalizeWA } from "@/lib/validacoes";
 import { toast } from "sonner";
@@ -109,6 +109,19 @@ function PedidoTracking() {
   const [comentario, setComentario] = useState("");
   const [avaliando, setAvaliando] = useState(false);
   const [avaliado, setAvaliado] = useState(false);
+
+  // Cancelamento pelo cliente
+  const [cancelModal, setCancelModal] = useState(false);
+  const [motivoCancel, setMotivoCancel] = useState("");
+  const [cancelando, setCancelando] = useState(false);
+
+  // Reclamação
+  const [recModal, setRecModal] = useState(false);
+  const [recTipo, setRecTipo] = useState("");
+  const [recDesc, setRecDesc] = useState("");
+  const [recReembolso, setRecReembolso] = useState(false);
+  const [enviandoRec, setEnviandoRec] = useState(false);
+  const [recEnviada, setRecEnviada] = useState(false);
   const [pixData, setPixData] = useState<{ payload: string; qrUrl: string; total: number } | null>(null);
   const [compartilhando, setCompartilhando] = useState(false);
   // Inicia como "já compartilhou" se o pedido já tem lat/lng do cliente no banco
@@ -344,6 +357,81 @@ function PedidoTracking() {
     setAvaliado(true);
   }
 
+  const PODE_CANCELAR = ["novo", "aguardando_confirmacao", "aguardando_pagamento"];
+  const TARDE_DEMAIS  = ["aceito", "preparo", "entrega", "finalizado"];
+
+  async function cancelarPedido() {
+    if (!motivoCancel.trim()) return;
+    setCancelando(true);
+    const { data, error } = await (supabase as any).rpc("cancelar_pedido_cliente", {
+      p_pedido_id: pedido.id,
+      p_motivo: motivoCancel,
+    });
+    setCancelando(false);
+    if (error || data?.error) {
+      toast.error(error?.message ?? data?.error);
+      return;
+    }
+    setCancelModal(false);
+    // Notifica lojista via Edge Function
+    try {
+      const edgeFn = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/push-pedido`;
+      await fetch(edgeFn, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "apikey": import.meta.env.VITE_SUPABASE_ANON_KEY },
+        body: JSON.stringify({
+          event_type: "cliente_cancelou",
+          empresa_id: pedido.empresa_id,
+          pedido_id: pedido.id,
+          numero: pedido.numero,
+          cliente_nome: pedido.cliente_nome,
+          motivo: motivoCancel,
+        }),
+      });
+    } catch (_) {}
+    await aplicarAtualizacao("cancelado", { cancelado_por: "cliente", motivo_cancelamento: motivoCancel });
+    toast.success("Pedido cancelado.");
+  }
+
+  async function enviarReclamacao() {
+    if (!recTipo) return;
+    setEnviandoRec(true);
+    const { data, error } = await (supabase as any).rpc("abrir_reclamacao", {
+      p_pedido_id: pedido.id,
+      p_tipo: recTipo,
+      p_descricao: recDesc.trim() || null,
+    });
+    if (error || data?.error) {
+      toast.error(error?.message ?? data?.error);
+      setEnviandoRec(false);
+      return;
+    }
+    // Notifica lojista via Edge Function
+    try {
+      const edgeFn = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/push-pedido`;
+      await fetch(edgeFn, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "apikey": import.meta.env.VITE_SUPABASE_ANON_KEY },
+        body: JSON.stringify({
+          event_type: "reclamacao",
+          empresa_id: pedido.empresa_id,
+          pedido_id: pedido.id,
+          numero: pedido.numero,
+          tipo: recTipo,
+        }),
+      });
+    } catch (_) {}
+    if (recReembolso) {
+      await (supabase as any).rpc("solicitar_reembolso", {
+        p_pedido_id: pedido.id,
+        p_motivo: recDesc.trim() || recTipo,
+      });
+    }
+    setEnviandoRec(false);
+    setRecModal(false);
+    setRecEnviada(true);
+  }
+
   const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
   const cancelado  = pedido.status === "cancelado";
   const finalizado   = pedido.status === "finalizado";
@@ -410,12 +498,36 @@ function PedidoTracking() {
 
         {/* Status cancelado */}
         {cancelado && (
-          <div className="bg-red-50 border border-red-200 rounded-2xl p-5 flex items-center gap-4">
-            <XCircle className="size-10 text-red-500 shrink-0" />
-            <div>
-              <div className="font-bold text-red-700 text-lg">Pedido cancelado</div>
-              <div className="text-sm text-red-500 mt-0.5">Entre em contato com o estabelecimento para mais informações.</div>
+          <div className="bg-red-50 border border-red-200 rounded-2xl p-5">
+            <div className="flex items-center gap-4">
+              <XCircle className="size-10 text-red-500 shrink-0" />
+              <div>
+                <div className="font-bold text-red-700 text-lg">Pedido cancelado</div>
+                {pedido.cancelado_por === "sistema" && (
+                  <div className="text-sm text-red-500 mt-0.5">Cancelado automaticamente — a loja não respondeu a tempo.</div>
+                )}
+                {pedido.cancelado_por === "lojista" && (
+                  <div className="text-sm text-red-500 mt-0.5">Cancelado pela loja.</div>
+                )}
+                {pedido.cancelado_por === "cliente" && (
+                  <div className="text-sm text-red-500 mt-0.5">Você cancelou este pedido.</div>
+                )}
+                {pedido.motivo_cancelamento && (
+                  <div className="text-sm font-semibold text-red-700 mt-1">Motivo: {pedido.motivo_cancelamento}</div>
+                )}
+              </div>
             </div>
+            {pedido.forma_pagamento === "PIX" && (
+              <div className="mt-3 text-xs text-red-700 bg-red-100 rounded-xl px-3 py-2">
+                💳 Se você pagou via PIX, entre em contato com a loja para o reembolso.
+                {empresa?.whatsapp && (
+                  <a href={`https://wa.me/${normalizeWA(empresa.whatsapp)}?text=${encodeURIComponent(`Olá! Paguei via PIX e gostaria do reembolso do pedido #${pedido.numero}`)}`}
+                    target="_blank" rel="noreferrer" className="block mt-1 font-semibold underline">
+                    Falar com a loja agora
+                  </a>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -654,6 +766,22 @@ function PedidoTracking() {
           </div>
         )}
 
+        {/* Cancelar pedido — só para pedidos que ainda podem ser cancelados pelo cliente */}
+        {PODE_CANCELAR.includes(pedido.status) && (
+          <button
+            onClick={() => setCancelModal(true)}
+            className="w-full flex items-center justify-center gap-2 border border-red-200 text-red-600 hover:bg-red-50 rounded-2xl h-11 font-semibold text-sm transition-colors">
+            <XCircle className="size-4" /> Cancelar pedido
+          </button>
+        )}
+
+        {/* Aviso quando não pode mais cancelar */}
+        {TARDE_DEMAIS.includes(pedido.status) && pedido.status !== "finalizado" && pedido.status !== "cancelado" && (
+          <div className="bg-zinc-50 border border-zinc-200 rounded-2xl px-4 py-3 text-sm text-zinc-500 text-center">
+            Pedido em preparo — para cancelar, fale com a loja pelo WhatsApp.
+          </div>
+        )}
+
         {/* Botão WhatsApp */}
         {empresa?.whatsapp && pedido.status !== "aguardando_pagamento" && (
           <a href={`https://wa.me/${normalizeWA(empresa.whatsapp)}?text=${encodeURIComponent(`Olá! Tenho uma dúvida sobre o pedido #${pedido.numero}`)}`}
@@ -661,6 +789,107 @@ function PedidoTracking() {
             className="flex items-center justify-center gap-2 w-full bg-green-500 hover:bg-green-600 text-white rounded-2xl h-12 font-semibold transition-colors">
             <MessageCircle className="size-5" /> Falar com o estabelecimento
           </a>
+        )}
+
+        {/* Tive um problema — para pedidos finalizados */}
+        {finalizado && !recEnviada && !pedido.reembolso_solicitado && (
+          <button
+            onClick={() => setRecModal(true)}
+            className="w-full flex items-center justify-center gap-2 border border-amber-200 text-amber-700 hover:bg-amber-50 rounded-2xl h-11 font-semibold text-sm transition-colors">
+            <AlertTriangle className="size-4" /> Tive um problema
+          </button>
+        )}
+        {recEnviada && (
+          <div className="bg-green-50 border border-green-200 rounded-2xl px-4 py-3 text-sm text-green-700 text-center font-medium">
+            ✅ Reclamação enviada! A loja foi notificada e entrará em contato.
+          </div>
+        )}
+
+        {/* Modal: cancelar pedido */}
+        {cancelModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+            <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl p-6">
+              <h3 className="text-lg font-bold text-zinc-900 mb-1">Cancelar pedido</h3>
+              <p className="text-sm text-zinc-500 mb-4">Por que você quer cancelar?</p>
+              <select
+                value={motivoCancel}
+                onChange={(e) => setMotivoCancel(e.target.value)}
+                className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-red-400/40"
+              >
+                <option value="">Selecione o motivo</option>
+                <option value="Me arrependi do pedido">Me arrependi do pedido</option>
+                <option value="Digitei o endereço errado">Digitei o endereço errado</option>
+                <option value="Demorou muito para confirmar">Demorou muito para confirmar</option>
+                <option value="Vou buscar pessoalmente">Vou buscar pessoalmente</option>
+                <option value="Outro motivo">Outro motivo</option>
+              </select>
+              {pedido.forma_pagamento === "PIX" && (
+                <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 mb-4">
+                  ⚠️ Se pagou via PIX, entre em contato com a loja após cancelar para solicitar o reembolso.
+                </div>
+              )}
+              <div className="flex gap-3">
+                <button onClick={() => setCancelModal(false)}
+                  className="flex-1 h-11 rounded-2xl border border-zinc-200 text-sm font-semibold text-zinc-600 hover:bg-zinc-50">
+                  Voltar
+                </button>
+                <button
+                  onClick={cancelarPedido}
+                  disabled={!motivoCancel || cancelando}
+                  className="flex-1 h-11 rounded-2xl bg-red-500 hover:bg-red-600 text-white text-sm font-semibold disabled:opacity-40 transition-colors">
+                  {cancelando ? "Cancelando…" : "Confirmar"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal: reportar problema */}
+        {recModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+            <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl p-6">
+              <h3 className="text-lg font-bold text-zinc-900 mb-1">O que aconteceu?</h3>
+              <p className="text-sm text-zinc-500 mb-4">Pedido #{pedido.numero}</p>
+              <select
+                value={recTipo}
+                onChange={(e) => setRecTipo(e.target.value)}
+                className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-amber-400/40"
+              >
+                <option value="">Selecione o problema</option>
+                <option value="pedido_errado">Recebi o pedido errado</option>
+                <option value="item_faltando">Faltou um item</option>
+                <option value="nao_chegou">O pedido não chegou</option>
+                <option value="qualidade">Qualidade ruim</option>
+                <option value="outro">Outro problema</option>
+              </select>
+              <textarea
+                value={recDesc}
+                onChange={(e) => setRecDesc(e.target.value)}
+                placeholder="Descreva o problema (opcional)..."
+                rows={2}
+                className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-amber-400/40 mb-3"
+              />
+              {(recTipo === "pedido_errado" || recTipo === "nao_chegou") && (
+                <label className="flex items-center gap-2 text-sm text-zinc-700 mb-4 cursor-pointer">
+                  <input type="checkbox" checked={recReembolso} onChange={(e) => setRecReembolso(e.target.checked)}
+                    className="size-4 rounded" />
+                  Solicitar reembolso
+                </label>
+              )}
+              <div className="flex gap-3">
+                <button onClick={() => setRecModal(false)}
+                  className="flex-1 h-11 rounded-2xl border border-zinc-200 text-sm font-semibold text-zinc-600 hover:bg-zinc-50">
+                  Voltar
+                </button>
+                <button
+                  onClick={enviarReclamacao}
+                  disabled={!recTipo || enviandoRec}
+                  className="flex-1 h-11 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold disabled:opacity-40 transition-colors">
+                  {enviandoRec ? "Enviando…" : "Enviar"}
+                </button>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* Avaliação */}

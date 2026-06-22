@@ -125,6 +125,33 @@ export default function HomeScreen() {
     return () => pararGPS();
   }, [userId]);
 
+  // Alerta o entregador em tempo real se um pedido ativo for cancelado
+  useEffect(() => {
+    if (!userId) return;
+    const ch = supabase
+      .channel(`entregador-cancel-${userId}`)
+      .on("postgres_changes", {
+        event: "UPDATE",
+        schema: "public",
+        table: "pedidos",
+        filter: `entregador_id=eq.${userId}`,
+      }, (payload: any) => {
+        if (payload.new.status === "cancelado") {
+          Alert.alert(
+            "⚠️ Pedido cancelado",
+            `O pedido #${payload.new.numero} foi cancelado. Retorne ao ponto de coleta.`,
+          );
+          setPedidos((prev) => prev.filter((p) => p.id !== payload.new.id));
+        } else {
+          setPedidos((prev) =>
+            prev.map((p) => p.id === payload.new.id ? { ...p, status: payload.new.status } : p)
+          );
+        }
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [userId]);
+
   async function mudarStatus(novoStatus: string) {
     setMudandoStatus(true);
     const { data } = await (supabase as any).rpc("entregador_atualizar_status_auth", { p_status: novoStatus });

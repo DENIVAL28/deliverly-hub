@@ -70,6 +70,7 @@ function ConfiguracoesPage() {
   const [empresaLng,     setEmpresaLng]     = useState("");
   const [tipoOperacaoEntrega, setTipoOperacaoEntrega] = useState<"plataforma" | "fixos">("plataforma");
   const [operationMode, setOperationMode] = useState<"full_delivery" | "simplified_delivery">("full_delivery");
+  const [timeoutAceite, setTimeoutAceite] = useState("30");
   const [detectandoLoc,  setDetectandoLoc]  = useState(false);
 
   // Conta
@@ -111,6 +112,7 @@ function ConfiguracoesPage() {
     setEmpresaLng(emp.empresa_lng != null ? String(emp.empresa_lng) : "");
     setTipoOperacaoEntrega((emp.tipo_operacao_entrega ?? "plataforma") as "plataforma" | "fixos");
     setOperationMode((emp.operation_mode ?? "full_delivery") as "full_delivery" | "simplified_delivery");
+    setTimeoutAceite(String(emp.timeout_aceite_minutos ?? 30));
     setSynced(true);
   }
 
@@ -215,6 +217,7 @@ function ConfiguracoesPage() {
       empresa_lng: empresaLng ? Number(empresaLng) : null,
       tipo_operacao_entrega: tipoOperacaoEntrega,
       operation_mode: operationMode,
+      timeout_aceite_minutos: Math.min(60, Math.max(10, Number(timeoutAceite) || 30)),
     };
 
     const logoFile   = logoRef.current?.files?.[0];
@@ -855,6 +858,29 @@ function ConfiguracoesPage() {
                 <p className="text-xs text-zinc-500">Cliente pede → loja analisa e pode aplicar desconto → loja confirma → PIX gerado.</p>
                 <p className="text-xs text-zinc-400 mt-1">Marmitarias, restaurantes, comércios que negociam valores…</p>
               </button>
+            </div>
+
+            {/* Timeout de aceite */}
+            <div className="border-t border-zinc-100 pt-4 space-y-2">
+              <Label htmlFor="timeout_aceite" className="flex items-center gap-1.5 text-sm">
+                ⏱ Tempo limite para aceitar pedido
+              </Label>
+              <div className="flex items-center gap-3">
+                <Input
+                  id="timeout_aceite"
+                  type="number"
+                  min={10}
+                  max={60}
+                  step={5}
+                  value={timeoutAceite}
+                  onChange={(e) => setTimeoutAceite(e.target.value)}
+                  className="h-10 rounded-xl w-28"
+                />
+                <span className="text-sm text-zinc-500">minutos</span>
+              </div>
+              <p className="text-xs text-zinc-400">
+                Se o pedido não for aceito dentro deste prazo, será cancelado automaticamente. Mínimo: 10 min · Máximo: 60 min.
+              </p>
             </div>
           </section>
 

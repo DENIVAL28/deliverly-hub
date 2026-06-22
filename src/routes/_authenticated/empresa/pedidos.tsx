@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/use-auth";
 import { PageHeader } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
-import { Bell, BellOff, Printer, Bike, MessageCircle, ChevronLeft, ChevronRight, Download, Pencil, X, AlertTriangle as AlertTriangleIcon } from "lucide-react";
+import { Bell, BellOff, Printer, Bike, MessageCircle, ChevronLeft, ChevronRight, Download, Pencil, X, AlertTriangle as AlertTriangleIcon, AlertCircle, RefreshCw } from "lucide-react";
 import { gerarCSV, baixarCSV, COLUNAS_PEDIDOS } from "@/lib/exportar";
 import { toast } from "sonner";
 import { LimiteBanner } from "@/components/UpgradeGuard";
@@ -49,10 +49,11 @@ const VEICULO_LABEL: Record<string, string> = {
 };
 
 const TABS = [
-  { id: "ativos",      label: "Ativos" },
-  { id: "todos",       label: "Todos" },
-  { id: "finalizados", label: "Finalizados" },
-  { id: "cancelados",  label: "Cancelados" },
+  { id: "ativos",       label: "Ativos" },
+  { id: "todos",        label: "Todos" },
+  { id: "finalizados",  label: "Finalizados" },
+  { id: "cancelados",   label: "Cancelados" },
+  { id: "reclamacoes",  label: "Reclamações" },
 ] as const;
 
 type Tab = typeof TABS[number]["id"];
@@ -77,8 +78,11 @@ const MSGS: Record<string, (p: any, nomeEmpresa: string) => string> = {
     `🛵 *Pedido #${p.numero} saiu para entrega!*\n\nOlá, *${p.cliente_nome}*! Seu pedido está a caminho.${p.entregador_nome ? `\nEntregador: *${p.entregador_nome}*` : ""}\n\nFique de olho, chega em breve! 📍\n\n_${e}_`,
   finalizado: (p, e) =>
     `🎉 *Pedido #${p.numero} entregue!*\n\nOlá, *${p.cliente_nome}*! Esperamos que tenha curtido. 😊\n\nAvalie sua experiência:\n${window.location.origin}/pedido/${p.id}\n\n_${e}_`,
-  cancelado: (p, e) =>
-    `❌ *Pedido #${p.numero} cancelado*\n\nOlá, *${p.cliente_nome}*. Infelizmente não foi possível processar seu pedido.\n\nEntre em contato para mais informações.\n\n_${e}_`,
+  cancelado: (p, e) => {
+    const motivo = p.motivo_cancelamento ? `\n\n*Motivo:* ${p.motivo_cancelamento}` : "";
+    const pix = p.forma_pagamento === "PIX" ? "\n\nSe você pagou via PIX, entre em contato com a loja para o reembolso." : "";
+    return `❌ *Pedido #${p.numero} cancelado*\n\nOlá, *${p.cliente_nome}*. Seu pedido foi cancelado pela loja.${motivo}${pix}\n\n_${e}_`;
+  },
 };
 
 async function notificarWhatsApp(p: any, empresa: any) {
@@ -195,6 +199,67 @@ function playBeep() {
     play(1108, 0.18, 0.15); // dó#
     play(1320, 0.36, 0.3);  // mi
   } catch (_) {}
+}
+
+/* ─── Modal: cancelar pedido com motivo obrigatório ─── */
+function CancelModal({ pedido, onClose, onConfirm }: {
+  pedido: any;
+  onClose: () => void;
+  onConfirm: (motivo: string) => Promise<void>;
+}) {
+  const [motivo, setMotivo] = useState("");
+  const [saving, setSaving] = useState(false);
+  const habilitado = motivo.trim().length >= 5;
+
+  async function confirmar() {
+    if (!habilitado) return;
+    setSaving(true);
+    await onConfirm(motivo.trim());
+    setSaving(false);
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div className="relative bg-white rounded-3xl w-full max-w-sm shadow-2xl flex flex-col">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-100">
+          <div>
+            <p className="font-bold text-zinc-900">Cancelar pedido #{pedido.numero}</p>
+            <p className="text-xs text-zinc-400 mt-0.5">O cliente será notificado pelo WhatsApp</p>
+          </div>
+          <button onClick={onClose} className="size-8 rounded-xl bg-zinc-100 flex items-center justify-center">
+            <X className="size-4 text-zinc-500" />
+          </button>
+        </div>
+        <div className="px-5 py-4">
+          <label className="block text-sm font-semibold text-zinc-700 mb-2">
+            Motivo do cancelamento <span className="text-red-500">*</span>
+          </label>
+          <textarea
+            autoFocus
+            value={motivo}
+            onChange={(e) => setMotivo(e.target.value)}
+            placeholder="Ex: Item em falta, problema no preparo, loja vai fechar..."
+            rows={3}
+            className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-red-400/40"
+          />
+          {motivo.length > 0 && motivo.trim().length < 5 && (
+            <p className="text-xs text-red-500 mt-1">Mínimo 5 caracteres</p>
+          )}
+        </div>
+        <div className="px-5 pb-5 flex gap-3">
+          <Button variant="outline" className="flex-1" onClick={onClose}>Voltar</Button>
+          <Button
+            disabled={!habilitado || saving}
+            onClick={confirmar}
+            className="flex-1 bg-red-500 hover:bg-red-600 text-white disabled:opacity-40"
+          >
+            {saving ? "Cancelando…" : "Cancelar pedido"}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 /* ─── Modal: editar itens do pedido ─── */
@@ -330,6 +395,7 @@ function PedidosPage() {
   const [page, setPage] = useState(0);
   const [exportando, setExportando] = useState(false);
   const [advancingId, setAdvancingId] = useState<string | null>(null);
+  const [cancelModal, setCancelModal] = useState<any | null>(null);
   const [dataSel, setDataSel] = useState<Date>(() => { const d = new Date(); d.setHours(0,0,0,0); return d; });
   const [notifPermissao, setNotifPermissao] = useState<NotificationPermission>(
     typeof Notification !== "undefined" ? Notification.permission : "denied"
@@ -542,6 +608,40 @@ function PedidosPage() {
     return m;
   }, [entregadoresPag]);
 
+  // Reclamações abertas
+  const { data: reclamacoes = [], refetch: refetchRec } = useQuery({
+    queryKey: ["reclamacoes", empresaId],
+    enabled: !!empresaId && tab === "reclamacoes",
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("reclamacoes")
+        .select("id, tipo, descricao, status, criado_em, pedidos(numero, cliente_nome, cliente_telefone)")
+        .eq("empresa_id", empresaId!)
+        .in("status", ["aberta", "em_analise"])
+        .order("criado_em", { ascending: false });
+      return data ?? [];
+    },
+  });
+
+  // Reembolsos pendentes
+  const { data: reembolsos = [], refetch: refetchReem } = useQuery({
+    queryKey: ["reembolsos-pendentes", empresaId],
+    enabled: !!empresaId && tab === "reclamacoes",
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("pedidos")
+        .select("id,numero,total,cliente_nome,cliente_telefone,forma_pagamento,reembolso_status")
+        .eq("empresa_id", empresaId!)
+        .eq("reembolso_solicitado", true)
+        .eq("reembolso_status", "pendente")
+        .order("created_at", { ascending: false });
+      return data ?? [];
+    },
+  });
+
+  // Total de itens urgentes para badge
+  const totalUrgente = (reclamacoes as any[]).length + (reembolsos as any[]).length;
+
   const filtered    = tab === "ativos" ? pedidosAtivos : (pedidosPag?.items ?? []);
   const totalAtivos = pedidosAtivos.length;
   const totalPages  = tab !== "ativos" ? Math.ceil((pedidosPag?.total ?? 0) / PAGE_SIZE) : 1;
@@ -615,12 +715,15 @@ function PedidosPage() {
     toast.success(`Pagamento do pedido #${p.numero} confirmado!`);
   }
 
-  async function cancel(id: string, numero: number) {
-    const motivo = window.prompt(`Cancelar pedido #${numero}\n\nMotivo do cancelamento (opcional):`);
-    if (motivo === null) return; // usuário clicou em "Cancelar" no prompt
-    const err = await rpcPedido(id, { status: "cancelado", motivo_cancelamento: motivo.trim() || null });
+  async function executarCancelamento(pedido: any, motivo: string) {
+    const err = await rpcPedido(pedido.id, { status: "cancelado", motivo_cancelamento: motivo });
+    setCancelModal(null);
     if (err) { toast.error(traduzirErro(err)); return; }
-    toast.success("Pedido cancelado");
+    // Notifica cliente via WhatsApp com o motivo incluído
+    if (pedido.cliente_telefone) {
+      await notificarWhatsApp({ ...pedido, status: "cancelado", motivo_cancelamento: motivo }, empresa);
+    }
+    toast.success("Pedido cancelado. Cliente notificado.");
     qc.invalidateQueries({ queryKey: ["pedidos-ativos", empresaId] });
     qc.invalidateQueries({ queryKey: ["pedidos-pag", empresaId] });
   }
@@ -637,6 +740,31 @@ function PedidosPage() {
     qc.invalidateQueries({ queryKey: ["pedidos-ativos", empresaId] });
     qc.invalidateQueries({ queryKey: ["pedidos-pag", empresaId] });
     toast.success(`Desconto de ${fmt(valor)} aplicado!`);
+  }
+
+  async function resolverReclamacao(reclamacaoId: string, resolucao: string) {
+    const { data, error } = await (supabase as any).rpc("empresa_resolver_reclamacao", {
+      p_reclamacao_id: reclamacaoId,
+      p_status: "resolvida",
+      p_resolucao: resolucao || null,
+    });
+    if (error || data?.error) { toast.error(error?.message ?? data?.error); return; }
+    toast.success("Reclamação marcada como resolvida.");
+    refetchRec();
+  }
+
+  async function resolverReembolso(pedidoId: string, status: "aprovado" | "negado") {
+    const { data, error } = await (supabase as any).rpc("empresa_resolver_reembolso", {
+      p_pedido_id: pedidoId,
+      p_status: status,
+    });
+    if (error || data?.error) { toast.error(error?.message ?? data?.error); return; }
+    if (status === "aprovado") {
+      toast.success("Reembolso aprovado! Lembre de enviar o PIX ao cliente.");
+    } else {
+      toast.success("Reembolso negado.");
+    }
+    refetchReem();
   }
 
   async function excluir(id: string) {
@@ -683,6 +811,13 @@ function PedidosPage() {
 
   return (
     <>
+      {cancelModal && (
+        <CancelModal
+          pedido={cancelModal}
+          onClose={() => setCancelModal(null)}
+          onConfirm={(motivo) => executarCancelamento(cancelModal, motivo)}
+        />
+      )}
       {editarPedido && (
         <EditarItensModal
           pedido={editarPedido}
@@ -776,6 +911,9 @@ function PedidosPage() {
               {t.id === "ativos" && totalAtivos > 0 && (
                 <span className="ml-1.5 px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-brand text-white">{totalAtivos}</span>
               )}
+              {t.id === "reclamacoes" && totalUrgente > 0 && (
+                <span className="ml-1.5 px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-red-500 text-white">{totalUrgente}</span>
+              )}
             </button>
           ))}
         </div>
@@ -828,7 +966,7 @@ function PedidosPage() {
         </div>
       )}
 
-      <div className="space-y-3">
+      <div className={tab === "reclamacoes" ? "hidden" : "space-y-3"}>
         {filtered.map((p: any) => {
           const tone = STATUS.find((s) => s.value === p.status);
           const isAtivo = ATIVOS.includes(p.status);
@@ -977,7 +1115,7 @@ function PedidosPage() {
                         Aplicar
                       </Button>
                     </div>
-                    <Button size="sm" variant="outline" onClick={() => cancel(p.id, p.numero)} className="text-red-500 hover:text-red-600 border-red-200 hover:bg-red-50">
+                    <Button size="sm" variant="outline" onClick={() => setCancelModal(p)} className="text-red-500 hover:text-red-600 border-red-200 hover:bg-red-50">
                       Cancelar
                     </Button>
                     {p.status === "aguardando_confirmacao" && (
@@ -1051,15 +1189,101 @@ function PedidosPage() {
           );
         })}
 
-        {filtered.length === 0 && (
+        {filtered.length === 0 && tab !== "reclamacoes" && (
           <div className="text-center text-sm text-zinc-500 py-16 rounded-xl ring-1 ring-black/5 bg-background">
             {tab === "ativos" ? "Nenhum pedido em aberto no momento." : "Nenhum pedido encontrado."}
           </div>
         )}
       </div>
 
+      {/* Aba Reclamações e Reembolsos */}
+      {tab === "reclamacoes" && (
+        <div className="space-y-6">
+          {/* Reembolsos pendentes */}
+          {(reembolsos as any[]).length > 0 && (
+            <div>
+              <h3 className="text-sm font-bold text-zinc-700 uppercase tracking-wide mb-3 flex items-center gap-2">
+                <RefreshCw className="size-4 text-amber-500" /> Reembolsos pendentes ({(reembolsos as any[]).length})
+              </h3>
+              <div className="space-y-2">
+                {(reembolsos as any[]).map((p: any) => (
+                  <div key={p.id} className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
+                      <div>
+                        <p className="font-bold text-zinc-900">Pedido #{p.numero}</p>
+                        <p className="text-sm text-zinc-600">{p.cliente_nome}</p>
+                        <p className="text-sm text-zinc-500">{p.forma_pagamento} · {fmt(Number(p.total))}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={() => resolverReembolso(p.id, "negado")}
+                          className="bg-zinc-100 hover:bg-zinc-200 text-zinc-700 border-zinc-200">
+                          Negar
+                        </Button>
+                        <Button size="sm" onClick={() => resolverReembolso(p.id, "aprovado")}
+                          className="bg-green-500 hover:bg-green-600 text-white">
+                          Aprovar
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="mt-2 text-xs text-amber-700 bg-amber-100 rounded-lg px-3 py-1.5">
+                      ⚠️ Reembolso via PIX é manual — lembre de enviar o valor ao cliente após aprovar
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Reclamações abertas */}
+          <div>
+            <h3 className="text-sm font-bold text-zinc-700 uppercase tracking-wide mb-3 flex items-center gap-2">
+              <AlertCircle className="size-4 text-red-500" /> Reclamações abertas ({(reclamacoes as any[]).length})
+            </h3>
+            {(reclamacoes as any[]).length === 0 ? (
+              <div className="text-center text-sm text-zinc-500 py-12 rounded-xl ring-1 ring-black/5 bg-background">
+                Nenhuma reclamação aberta. 🎉
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {(reclamacoes as any[]).map((r: any) => {
+                  const TIPO_LABEL: Record<string, string> = {
+                    pedido_errado: "Pedido errado", nao_chegou: "Não chegou",
+                    item_faltando: "Item faltando", qualidade: "Qualidade ruim", outro: "Outro",
+                  };
+                  return (
+                    <div key={r.id} className="bg-background rounded-xl ring-1 ring-black/5 p-4">
+                      <div className="flex items-start justify-between gap-3 flex-wrap">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-bold text-zinc-900">Pedido #{r.pedidos?.numero}</span>
+                            <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-red-100 text-red-700 uppercase">{TIPO_LABEL[r.tipo] ?? r.tipo}</span>
+                          </div>
+                          <p className="text-sm text-zinc-600 mt-0.5">{r.pedidos?.cliente_nome}</p>
+                          {r.descricao && <p className="text-xs text-zinc-500 italic mt-1">"{r.descricao}"</p>}
+                          <p className="text-xs text-zinc-400 mt-1">
+                            {new Date(r.criado_em).toLocaleString("pt-BR", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" })}
+                          </p>
+                        </div>
+                        <Button size="sm"
+                          onClick={() => {
+                            const res = window.prompt(`Resolução da reclamação (pedido #${r.pedidos?.numero}):\n\nDescreva o que foi feito (opcional):`);
+                            if (res !== null) resolverReclamacao(r.id, res);
+                          }}
+                          className="bg-green-500 hover:bg-green-600 text-white shrink-0">
+                          Resolver
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Paginação */}
-      {tab !== "ativos" && totalPages > 1 && (
+      {tab !== "ativos" && tab !== "reclamacoes" && totalPages > 1 && (
         <div className="flex items-center justify-between mt-4">
           <span className="text-sm text-zinc-500">
             {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, totalItems)} de {totalItems} pedidos
