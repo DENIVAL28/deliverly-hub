@@ -154,6 +154,7 @@ function PedidoTracking() {
   const [reclamacao, setReclamacao] = useState<any>(null);
   const [marcandoLida, setMarcandoLida] = useState(false);
   const [pixData, setPixData] = useState<{ payload: string; qrUrl: string; total: number } | null>(null);
+  const [notifLoja, setNotifLoja] = useState(false);
   const [compartilhando, setCompartilhando] = useState(false);
   // Inicia como "já compartilhou" se o pedido já tem lat/lng do cliente no banco
   const [localizacaoCompartilhada, setLocalizacaoCompartilhada] = useState(
@@ -672,13 +673,26 @@ function PedidoTracking() {
               </div>
             )}
 
-            {empresa?.whatsapp && (
-              <a href={`https://wa.me/${normalizeWA(empresa.whatsapp)}?text=${encodeURIComponent(`Olá! Realizei o pagamento do pedido #${pedido.numero}`)}`}
-                target="_blank" rel="noreferrer"
-                className="flex items-center justify-center gap-2 w-full bg-green-500 hover:bg-green-600 text-white rounded-xl h-10 text-sm font-semibold transition-colors mt-2">
-                <MessageCircle className="size-4" /> Avisar que paguei
-              </a>
-            )}
+            <button
+              onClick={async () => {
+                if (notifLoja) return;
+                setNotifLoja(true);
+                supabase.functions.invoke("push-pedido", {
+                  body: {
+                    event_type: "cliente_pagou_pix",
+                    empresa_id: pedido.empresa_id,
+                    numero: pedido.numero,
+                    pedido_id: pedido.id,
+                  },
+                }).catch(() => {});
+                toast.success("Loja notificada! Aguarde a confirmação do pagamento.");
+              }}
+              disabled={notifLoja}
+              className={`flex items-center justify-center gap-2 w-full rounded-xl h-10 text-sm font-semibold transition-colors mt-2 ${notifLoja ? "bg-zinc-100 text-zinc-400 cursor-default" : "bg-green-500 hover:bg-green-600 text-white"}`}
+            >
+              <CheckCircle2 className="size-4" />
+              {notifLoja ? "Loja notificada!" : "Já paguei — notificar loja"}
+            </button>
           </div>
         )}
 

@@ -109,6 +109,16 @@ async function sendFcm(token: string, title: string, body: string, data: Record<
 
 // ── Helpers de push para loja (WebPush + Expo) ──────────────────────────────
 
+async function desativarToken(
+  supabase: ReturnType<typeof createClient>,
+  table: "expo_push_tokens" | "pedido_push_tokens",
+  token: string,
+) {
+  await supabase
+    .from(table)
+    .update({ ativo: false, updated_at: new Date().toISOString() })
+    .eq("token", token);
+}
 async function pushParaLoja(
   supabase: ReturnType<typeof createClient>,
   empresaId: string,
@@ -148,25 +158,120 @@ async function pushParaLoja(
   const { data: expoTokens } = await supabase
     .from("expo_push_tokens")
     .select("token")
-    .eq("empresa_id", empresaId);
+    .eq("empresa_id", empresaId)
+    .eq("ativo", true);
 
   if (expoTokens?.length) {
     const tokens = [...new Set(expoTokens.map(({ token }: { token: string }) => token))];
+    let enviados = 0;
     for (const bloco of chunk(tokens, EXPO_CHUNK)) {
-      await fetch(EXPO_PUSH_URL, {
+      const res = await fetch(EXPO_PUSH_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json", "Accept": "application/json" },
         body: JSON.stringify(bloco.map((token) => ({
           to: token, title, body,
-          data: { pedidoId: pedidoId ?? "", screen: "Pedidos" },
+          data: { pedidoId: pedidoId ?? "", screen: "Pedidos", url: "/empresa/pedidos" },
           sound: "default", priority: "high", channelId: "pedidos",
         }))),
       });
+      const json = await res.json().catch(() => null);
+      if (Array.isArray(json?.data)) {
+        for (let i = 0; i < json.data.length; i++) {
+          const r = json.data[i];
+          if (r.status === "ok") enviados++;
+          if (
+            r.status === "error" &&
+            (r.details?.error === "DeviceNotRegistered" || r.details?.error === "InvalidCredentials")
+          ) {
+            await desativarToken(supabase, "expo_push_tokens", bloco[i]);
+            console.log(`[Loja] token Expo desativado: ${bloco[i]}`);
+          }
+        }
+      }
+      console.log(`[Loja] ExpoPush helper bloco: ${bloco.length} tokens, status ${res.status}`);
     }
-    console.log(`ExpoPush loja: ${tokens.length} tokens`);
+    console.log(`[Loja] ExpoPush helper: ${enviados}/${tokens.length}`);
   }
 }
 
+async function pushParaCliente(
+  supabase: ReturnType<typeof createClient>,
+  pedido: any,
+) {
+  const status = String(pedido.status ?? "");
+  const titles: Record<string, string> = {
+    novo: "Pedido recebido",
+    aguardando_pagamento: "Pedido confirmado",
+    aceito: "Pagamento confirmado",
+    preparo: "Pedido em preparo",
+    entrega: "Saiu para entrega",
+    finalizado: "Pedido finalizado",
+    cancelado: "Pedido cancelado",
+  };
+
+  if (!titles[status]) {
+    console.log(`[Cliente] status ignorado: ${status}`);
+    return;
+  }
+
+  const { data: rows } = await supabase
+    .from("pedido_push_tokens")
+    .select("token")
+    .eq("pedido_id", pedido.id)
+    .eq("ativo", true);
+
+  const tokens = [...new Set((rows ?? []).map((r: any) => r.token).filter(Boolean))];
+
+  if (tokens.length === 0) {
+    console.log(`[Cliente] nenhum token ativo para pedido ${pedido.id}`);
+    return;
+  }
+
+  const title = titles[status];
+  const body = `Pedido #${pedido.numero ?? ""}: ${title}`;
+  const url = `/pedido/${pedido.id}`;
+  let enviados = 0;
+
+  for (const bloco of chunk(tokens, EXPO_CHUNK)) {
+    const res = await fetch(EXPO_PUSH_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Accept": "application/json" },
+      body: JSON.stringify(bloco.map((token) => ({
+        to: token,
+        title,
+        body,
+        data: {
+          screen: "Pedido",
+          url,
+          pedidoId: String(pedido.id),
+        },
+        sound: "default",
+        priority: "high",
+        channelId: "pedidos",
+      }))),
+    });
+
+    const json = await res.json().catch(() => null);
+
+    if (Array.isArray(json?.data)) {
+      for (let i = 0; i < json.data.length; i++) {
+        const result = json.data[i];
+        if (result.status === "ok") enviados++;
+        if (
+          result.status === "error" &&
+          (result.details?.error === "DeviceNotRegistered" || result.details?.error === "InvalidCredentials")
+        ) {
+          await desativarToken(supabase, "pedido_push_tokens", bloco[i]);
+          console.log(`[Cliente] token desativado: ${bloco[i]}`);
+        }
+      }
+    }
+
+    console.log(`[Cliente] bloco ${bloco.length}, status ${res.status}`);
+  }
+
+  console.log(`[Cliente] total enviado: ${enviados}/${tokens.length}`);
+}
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
 
@@ -213,12 +318,27 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ ok: true }), { headers: { ...CORS, "Content-Type": "application/json" } });
     }
 
+    if (eventType === "cliente_pagou_pix") {
+      const { empresa_id, numero, pedido_id } = body;
+      if (empresa_id) {
+        await pushParaLoja(
+          supabase,
+          empresa_id,
+          `💰 Cliente pagou PIX — Pedido #${numero}`,
+          `Verifique o pagamento e confirme o pedido`,
+          pedido_id,
+        );
+      }
+      return new Response(JSON.stringify({ ok: true }), { headers: { ...CORS, "Content-Type": "application/json" } });
+    }
+
     if (!pedido?.empresa_id || !pedido?.numero) {
       return new Response("sem dados", { status: 400, headers: CORS });
     }
 
     const notificarLoja = body.notificar_loja ?? true;
     const notificarEntregador = body.notificar_entregador ?? false;
+    const notificarCliente = body.notificar_cliente ?? false;
     const logId: string | null = body.log_id ?? null;
 
     if (notificarLoja) {
@@ -265,13 +385,14 @@ Deno.serve(async (req) => {
           }),
         );
         const ok = results.filter((r) => r.status === "fulfilled").length;
-        console.log(`WebPush loja: ${ok}/${subs.length}`);
+        console.log(`[Loja] WebPush: ${ok}/${subs.length}`);
       }
 
       const { data: expoTokens } = await supabase
         .from("expo_push_tokens")
         .select("token")
-        .eq("empresa_id", pedido.empresa_id);
+        .eq("empresa_id", pedido.empresa_id)
+        .eq("ativo", true);
 
       if (expoTokens?.length) {
         const tokens = [...new Set(expoTokens.map(({ token }: { token: string }) => token))];
@@ -282,7 +403,7 @@ Deno.serve(async (req) => {
             to: token,
             title: notifTitle,
             body: notifBody,
-            data: { pedidoId: pedido.id, empresaId: pedido.empresa_id, screen: "Pedidos" },
+            data: { pedidoId: pedido.id, empresaId: pedido.empresa_id, screen: "Pedidos", url: "/empresa/pedidos" },
             sound: "default",
             priority: "high",
             channelId: "pedidos",
@@ -303,22 +424,22 @@ Deno.serve(async (req) => {
                 r.status === "error" &&
                 (r.details?.error === "DeviceNotRegistered" || r.details?.error === "InvalidCredentials")
               ) {
-                await supabase.from("expo_push_tokens").delete().eq("token", bloco[i]);
-                console.log(`ExpoPush loja token removido: ${bloco[i]}`);
+                await desativarToken(supabase, "expo_push_tokens", bloco[i]);
+                console.log(`[Loja] token Expo desativado: ${bloco[i]}`);
               }
             }
           }
 
-          console.log(`ExpoPush loja bloco: ${bloco.length} tokens, status ${res.status}`);
+          console.log(`[Loja] ExpoPush bloco: ${bloco.length} tokens, status ${res.status}`);
         }
 
-        console.log(`ExpoPush loja total: ${enviados}/${tokens.length}`);
+        console.log(`[Loja] ExpoPush total: ${enviados}/${tokens.length}`);
       }
     }
 
     if (notificarEntregador) {
       if (pedido.tipo !== "delivery" || pedido.entregador_id != null) {
-        console.log("Pedido nao elegivel para push entregador: tipo ou entregador_id");
+        console.log("[Entregador] pedido nao elegivel: tipo ou entregador_id");
       } else {
         const { data: empresa } = await supabase
           .from("empresas")
@@ -327,7 +448,7 @@ Deno.serve(async (req) => {
           .single();
 
         if (empresa?.tipo_operacao_entrega !== "plataforma" || empresa?.status !== "ativa") {
-          console.log("Empresa fora do modo plataforma ou inativa - sem push para entregadores");
+          console.log("[Entregador] empresa fora do modo plataforma ou inativa");
         } else {
           const { data: entregadores } = await supabase
             .from("entregadores")
@@ -361,7 +482,7 @@ Deno.serve(async (req) => {
                 fcmOk++;
               } else {
                 const status = result.json?.error?.status;
-                console.log(`FCM entregador erro ${result.status}: ${JSON.stringify(result.json)}`);
+                console.log(`[Entregador] FCM erro ${result.status}: ${JSON.stringify(result.json)}`);
                 if (status === "UNREGISTERED" || status === "INVALID_ARGUMENT") {
                   await supabase
                     .from("entregador_push_tokens")
@@ -370,7 +491,7 @@ Deno.serve(async (req) => {
                 }
               }
             }
-            if (fcmTokens.length > 0) console.log(`FCM entregadores: ${fcmOk}/${fcmTokens.length}`);
+            if (fcmTokens.length > 0) console.log(`[Entregador] FCM: ${fcmOk}/${fcmTokens.length}`);
 
             if (fcmTokens.length === 0 && expoTokens.length > 0) {
               for (const bloco of chunk(expoTokens, EXPO_CHUNK)) {
@@ -402,23 +523,27 @@ Deno.serve(async (req) => {
                         .from("entregador_push_tokens")
                         .update({ ativo: false, updated_at: new Date().toISOString() })
                         .eq("token", bloco[i]);
-                      console.log(`Token Expo invalido desativado: ${bloco[i]}`);
+                      console.log(`[Entregador] token Expo desativado: ${bloco[i]}`);
                     }
                   }
                 }
 
-                console.log(`ExpoPush entregadores fallback: ${bloco.length} tokens, status ${res.status}`);
+                console.log(`[Entregador] ExpoPush fallback: ${bloco.length} tokens, status ${res.status}`);
               }
             }
 
             if (fcmTokens.length === 0 && expoTokens.length === 0) {
-              console.log("Nenhum entregador de plataforma com token ativo");
+              console.log("[Entregador] nenhum token ativo");
             }
           } else {
-            console.log("Nenhum entregador de plataforma aprovado");
+            console.log("[Entregador] nenhum entregador de plataforma aprovado");
           }
         }
       }
+    }
+
+    if (notificarCliente) {
+      await pushParaCliente(supabase, pedido);
     }
 
     if (logId) {

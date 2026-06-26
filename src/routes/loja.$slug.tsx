@@ -1089,20 +1089,28 @@ function LojaPage() {
               </button>
             </div>
 
-            <p className="text-xs text-zinc-400 mb-4">Após o pagamento, confirme para notificar o estabelecimento via WhatsApp.</p>
+            <p className="text-xs text-zinc-400 mb-4">Após o pagamento, clique abaixo para notificar o estabelecimento.</p>
 
             <button
               onClick={() => {
-                const link = pixModal.waLink;
-                const num  = pixModal.pedidoNum;
+                const num = pixModal.pedidoNum;
+                const id  = pixModal.pedidoId;
+                supabase.functions.invoke("push-pedido", {
+                  body: {
+                    event_type: "cliente_pagou_pix",
+                    empresa_id: (empresa as any)?.id,
+                    numero: num,
+                    pedido_id: id,
+                  },
+                }).catch(() => {});
                 setPixModal(null);
                 setPedidoFeito(null);
-                toast.success(`Pedido #${num} confirmado!`);
-                if (link) window.open(link, "_blank");
+                toast.success(`Pedido #${num}: loja notificada!`);
+                irParaTracking(id);
               }}
               className="w-full h-12 rounded-2xl bg-green-500 hover:bg-green-600 text-white font-semibold text-base flex items-center justify-center gap-2 mb-3 transition-colors"
             >
-              <CheckCircle2 className="size-5" /> Já paguei — confirmar pedido
+              <CheckCircle2 className="size-5" /> Já paguei — notificar loja
             </button>
             <button onClick={() => irParaTracking(pixModal!.pedidoId)}
               className="text-sm text-zinc-400 hover:text-zinc-600 transition-colors">
