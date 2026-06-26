@@ -709,7 +709,9 @@ function PedidosPage() {
 
   async function confirmarPedido(p: any) {
     setAdvancingId(p.id);
-    const err = await rpcPedido(p.id, { status: "aguardando_pagamento" });
+    // PIX: aguarda pagamento antes de aceitar; Dinheiro/Cartão: aceita direto
+    const nextStatus = p.forma_pagamento === "PIX" ? "aguardando_pagamento" : "aceito";
+    const err = await rpcPedido(p.id, { status: nextStatus });
     setAdvancingId(null);
     if (err) { toast.error(traduzirErro(err)); return; }
     qc.invalidateQueries({ queryKey: ["pedidos-ativos", empresaId] });

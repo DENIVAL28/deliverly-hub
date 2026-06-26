@@ -25,6 +25,7 @@ export const Route = createFileRoute("/pedido/$id")({
   ),
 });
 
+// ── Delivery com preparo ──────────────────────────────────────────────────────
 const ETAPAS_AUTO = [
   { status: "novo",       label: "Pedido recebido",     icon: CheckCircle2, desc: "Aguardando confirmação do estabelecimento" },
   { status: "aceito",     label: "Confirmado",           icon: CheckCircle2, desc: "O estabelecimento confirmou seu pedido" },
@@ -34,6 +35,16 @@ const ETAPAS_AUTO = [
 ];
 const ORDEM_AUTO = ["novo","aceito","preparo","entrega","finalizado"];
 
+// ── Delivery sem preparo (bebidas, itens prontos) ─────────────────────────────
+const ETAPAS_SEM_PREPARO = [
+  { status: "novo",       label: "Pedido recebido",     icon: CheckCircle2, desc: "Aguardando confirmação do estabelecimento" },
+  { status: "aceito",     label: "Confirmado",           icon: CheckCircle2, desc: "O estabelecimento confirmou seu pedido" },
+  { status: "entrega",    label: "Saiu para entrega",    icon: Bike,         desc: "O entregador está a caminho" },
+  { status: "finalizado", label: "Entregue!",            icon: CheckCircle2, desc: "Pedido entregue. Bom apetite!" },
+];
+const ORDEM_SEM_PREPARO = ["novo","aceito","entrega","finalizado"];
+
+// ── Fluxo manual (aguarda confirmação do lojista) ─────────────────────────────
 const ETAPAS_MANUAL = [
   { status: "aguardando_confirmacao", label: "Pedido enviado",       icon: Clock,        desc: "Aguardando análise do estabelecimento" },
   { status: "aguardando_pagamento",   label: "Confirmado — pague",   icon: CheckCircle2, desc: "Estabelecimento confirmou. Realize o pagamento." },
@@ -44,6 +55,7 @@ const ETAPAS_MANUAL = [
 ];
 const ORDEM_MANUAL = ["aguardando_confirmacao","aguardando_pagamento","aceito","preparo","entrega","finalizado"];
 
+// ── Mesa com preparo ──────────────────────────────────────────────────────────
 const ETAPAS_LOCAL = [
   { status: "novo",       label: "Pedido recebido",  icon: CheckCircle2, desc: "Aguardando confirmação do estabelecimento" },
   { status: "aceito",     label: "Confirmado",        icon: CheckCircle2, desc: "O estabelecimento confirmou seu pedido" },
@@ -52,13 +64,30 @@ const ETAPAS_LOCAL = [
 ];
 const ORDEM_LOCAL = ["novo","aceito","preparo","finalizado"];
 
+// ── Mesa/Retirada sem preparo (bebidas prontas) ───────────────────────────────
+const ETAPAS_LOCAL_SEM_PREPARO = [
+  { status: "novo",       label: "Pedido recebido",  icon: CheckCircle2, desc: "Aguardando confirmação do estabelecimento" },
+  { status: "aceito",     label: "Confirmado",        icon: CheckCircle2, desc: "O estabelecimento confirmou seu pedido" },
+  { status: "finalizado", label: "Pronto!",           icon: CheckCircle2, desc: "Seu pedido está pronto. Bom apetite!" },
+];
+const ORDEM_LOCAL_SEM_PREPARO = ["novo","aceito","finalizado"];
+
+// ── Retirada com preparo ──────────────────────────────────────────────────────
 const ETAPAS_RETIRADA = [
-  { status: "novo",       label: "Pedido recebido",       icon: CheckCircle2, desc: "Aguardando confirmação do estabelecimento" },
-  { status: "aceito",     label: "Confirmado",             icon: CheckCircle2, desc: "O estabelecimento confirmou seu pedido" },
-  { status: "preparo",    label: "Em preparo",             icon: ChefHat,      desc: "Seu pedido está sendo preparado" },
-  { status: "finalizado", label: "Pronto para retirar! 🏪", icon: CheckCircle2, desc: "Venha buscar seu pedido no balcão. Bom apetite!" },
+  { status: "novo",       label: "Pedido recebido",         icon: CheckCircle2, desc: "Aguardando confirmação do estabelecimento" },
+  { status: "aceito",     label: "Confirmado",               icon: CheckCircle2, desc: "O estabelecimento confirmou seu pedido" },
+  { status: "preparo",    label: "Em preparo",               icon: ChefHat,      desc: "Seu pedido está sendo preparado" },
+  { status: "finalizado", label: "Pronto para retirar! 🏪",  icon: CheckCircle2, desc: "Venha buscar seu pedido no balcão. Bom apetite!" },
 ];
 const ORDEM_RETIRADA = ["novo","aceito","preparo","finalizado"];
+
+// ── PDV (balcão): sem entrega, sem preparo ────────────────────────────────────
+const ETAPAS_PDV = [
+  { status: "novo",       label: "Pedido registrado", icon: CheckCircle2, desc: "Pedido recebido no balcão" },
+  { status: "aceito",     label: "Confirmado",         icon: CheckCircle2, desc: "Pedido confirmado" },
+  { status: "finalizado", label: "Finalizado!",        icon: CheckCircle2, desc: "Pedido entregue. Bom apetite!" },
+];
+const ORDEM_PDV = ["novo","aceito","finalizado"];
 
 const MANUAL_STATUSES = ["aguardando_confirmacao", "aguardando_pagamento"];
 
@@ -122,6 +151,8 @@ function PedidoTracking() {
   const [recReembolso, setRecReembolso] = useState(false);
   const [enviandoRec, setEnviandoRec] = useState(false);
   const [recEnviada, setRecEnviada] = useState(false);
+  const [reclamacao, setReclamacao] = useState<any>(null);
+  const [marcandoLida, setMarcandoLida] = useState(false);
   const [pixData, setPixData] = useState<{ payload: string; qrUrl: string; total: number } | null>(null);
   const [compartilhando, setCompartilhando] = useState(false);
   // Inicia como "já compartilhou" se o pedido já tem lat/lng do cliente no banco
@@ -223,11 +254,16 @@ function PedidoTracking() {
     );
   }
 
-  // Gera PIX se já chegou com status aguardando_pagamento
+  // Gera PIX se: (a) status aguardando_pagamento OU (b) cliente veio do modal PIX na loja
+  // O modal salva dados no sessionStorage via irParaTracking antes de redirecionar
   useEffect(() => {
-    if (pedido.status === "aguardando_pagamento" && !pixData) {
-      gerarPix(pedido);
-    }
+    if (pixData) return;
+    const deveGerarPix =
+      pedido.status === "aguardando_pagamento" ||
+      (pedido.forma_pagamento === "PIX" &&
+       !["finalizado","cancelado"].includes(pedido.status) &&
+       !!sessionStorage.getItem(`pix_empresa_${pedido.id}`));
+    if (deveGerarPix) gerarPix(pedido);
   }, []);
 
   // Realtime — caminho rápido (pode não funcionar para usuários anônimos por RLS)
@@ -335,6 +371,39 @@ function PedidoTracking() {
     return () => clearInterval(interval);
   }, [pedido.status, pedido.id]);
 
+  // Busca reclamação do pedido quando finalizado ou após envio
+  useEffect(() => {
+    if (pedido.status !== "finalizado" && pedido.status !== "cancelado") return;
+    async function fetchRec() {
+      const { data } = await (supabase as any)
+        .from("reclamacoes")
+        .select("id, tipo, status, resposta, respondido_em, lida_pelo_cliente")
+        .eq("pedido_id", pedido.id)
+        .maybeSingle();
+      if (data) setReclamacao(data);
+    }
+    fetchRec();
+  }, [pedido.status, pedido.id, recEnviada]);
+
+  // Realtime: atualiza quando a loja responde
+  useEffect(() => {
+    if (!reclamacao?.id || reclamacao.resposta) return;
+    const ch = supabase
+      .channel(`rec-${reclamacao.id}`)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "reclamacoes", filter: `id=eq.${reclamacao.id}` },
+        (payload) => setReclamacao((prev: any) => prev ? { ...prev, ...(payload.new as any) } : prev))
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [reclamacao?.id, reclamacao?.resposta]);
+
+  async function marcarReclamacaoLida() {
+    if (!reclamacao?.id) return;
+    setMarcandoLida(true);
+    await (supabase as any).rpc("cliente_marcar_reclamacao_lida", { p_reclamacao_id: reclamacao.id });
+    setMarcandoLida(false);
+    setReclamacao((prev: any) => prev ? { ...prev, lida_pelo_cliente: true } : prev);
+  }
+
   async function enviarAvaliacao() {
     if (!notaSel) return;
     setAvaliando(true);
@@ -437,12 +506,30 @@ function PedidoTracking() {
   const finalizado   = pedido.status === "finalizado";
   const isLocal      = !!pedido.mesa;
   const isRetirada   = pedido.tipo === "retirada";
+  const isPdv        = pedido.tipo === "pdv";
+  const temPreparo   = pedido.tem_preparo !== false; // false só se todos itens forem sem-preparo
 
   // fluxo_pedido="manual" salvo no banco — não depende do status atual
   const fluxoManual = pedido.fluxo_pedido === "manual" || MANUAL_STATUSES.includes(pedido.status);
 
-  const etapas = isRetirada ? ETAPAS_RETIRADA : isLocal ? ETAPAS_LOCAL : fluxoManual ? ETAPAS_MANUAL : ETAPAS_AUTO;
-  const ordem  = isRetirada ? ORDEM_RETIRADA  : isLocal ? ORDEM_LOCAL  : fluxoManual ? ORDEM_MANUAL  : ORDEM_AUTO;
+  const etapas = isPdv
+    ? ETAPAS_PDV
+    : isRetirada
+      ? (temPreparo ? ETAPAS_RETIRADA        : ETAPAS_LOCAL_SEM_PREPARO)
+      : isLocal
+        ? (temPreparo ? ETAPAS_LOCAL          : ETAPAS_LOCAL_SEM_PREPARO)
+        : fluxoManual
+          ? ETAPAS_MANUAL
+          : (temPreparo ? ETAPAS_AUTO         : ETAPAS_SEM_PREPARO);
+  const ordem = isPdv
+    ? ORDEM_PDV
+    : isRetirada
+      ? (temPreparo ? ORDEM_RETIRADA         : ORDEM_LOCAL_SEM_PREPARO)
+      : isLocal
+        ? (temPreparo ? ORDEM_LOCAL           : ORDEM_LOCAL_SEM_PREPARO)
+        : fluxoManual
+          ? ORDEM_MANUAL
+          : (temPreparo ? ORDEM_AUTO          : ORDEM_SEM_PREPARO);
   const idxAtual = ordem.indexOf(pedido.status);
 
   const desconto = Number(pedido.desconto ?? 0);
@@ -526,6 +613,15 @@ function PedidoTracking() {
                     Falar com a loja agora
                   </a>
                 )}
+              </div>
+            )}
+            {pedido.cancelado_por === "lojista" && empresa?.whatsapp && pedido.forma_pagamento !== "PIX" && (
+              <div className="mt-3 text-xs text-red-700 bg-red-100 rounded-xl px-3 py-2">
+                Dúvidas sobre o cancelamento?{" "}
+                <a href={`https://wa.me/${normalizeWA(empresa.whatsapp)}?text=${encodeURIComponent(`Olá! Tenho uma dúvida sobre o cancelamento do pedido #${pedido.numero}`)}`}
+                  target="_blank" rel="noreferrer" className="font-semibold underline">
+                  Fale com a loja
+                </a>
               </div>
             )}
           </div>
@@ -791,17 +887,47 @@ function PedidoTracking() {
           </a>
         )}
 
-        {/* Tive um problema — para pedidos finalizados */}
-        {finalizado && !recEnviada && !pedido.reembolso_solicitado && (
+        {/* Tive um problema — para pedidos finalizados sem reclamação */}
+        {finalizado && !recEnviada && !reclamacao && !pedido.reembolso_solicitado && (
           <button
             onClick={() => setRecModal(true)}
             className="w-full flex items-center justify-center gap-2 border border-amber-200 text-amber-700 hover:bg-amber-50 rounded-2xl h-11 font-semibold text-sm transition-colors">
             <AlertTriangle className="size-4" /> Tive um problema
           </button>
         )}
-        {recEnviada && (
-          <div className="bg-green-50 border border-green-200 rounded-2xl px-4 py-3 text-sm text-green-700 text-center font-medium">
-            ✅ Reclamação enviada! A loja foi notificada e entrará em contato.
+
+        {/* Bloco de reclamação e resposta da loja */}
+        {(recEnviada || reclamacao) && (
+          <div className="bg-zinc-50 border border-zinc-200 rounded-2xl p-4 space-y-3">
+            <div className="flex items-center gap-2 text-sm font-semibold text-zinc-600">
+              <AlertTriangle className="size-4 text-amber-500" /> Sua reclamação
+            </div>
+            {!reclamacao?.resposta ? (
+              <p className="text-sm text-zinc-500">Reclamação enviada. Aguardando resposta da loja.</p>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-green-700 uppercase tracking-wide">A loja respondeu:</p>
+                <div className={`bg-white border rounded-xl px-4 py-3 ${!reclamacao.lida_pelo_cliente ? "border-green-300 ring-2 ring-green-200" : "border-zinc-200"}`}>
+                  {!reclamacao.lida_pelo_cliente && (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-green-700 bg-green-100 px-2 py-0.5 rounded-full mb-2">
+                      <span className="size-1.5 rounded-full bg-green-500 animate-pulse" /> Nova resposta
+                    </span>
+                  )}
+                  <p className="text-sm text-zinc-900 font-medium leading-relaxed">{reclamacao.resposta}</p>
+                  <p className="text-xs text-zinc-400 mt-1.5">
+                    {new Date(reclamacao.respondido_em).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                  </p>
+                </div>
+                {!reclamacao.lida_pelo_cliente && (
+                  <button
+                    onClick={marcarReclamacaoLida}
+                    disabled={marcandoLida}
+                    className="w-full h-10 text-sm font-semibold text-green-700 border border-green-300 rounded-xl hover:bg-green-50 transition-colors disabled:opacity-50">
+                    {marcandoLida ? "…" : "Entendido ✓"}
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         )}
 

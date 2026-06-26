@@ -1104,9 +1104,9 @@ function LojaPage() {
             >
               <CheckCircle2 className="size-5" /> Já paguei — confirmar pedido
             </button>
-            <button onClick={() => setPixModal(null)}
+            <button onClick={() => irParaTracking(pixModal!.pedidoId)}
               className="text-sm text-zinc-400 hover:text-zinc-600 transition-colors">
-              Fechar
+              Fechar — ver pedido
             </button>
           </div>
         </div>
