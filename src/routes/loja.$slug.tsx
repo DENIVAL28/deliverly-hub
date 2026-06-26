@@ -17,8 +17,8 @@ import { trackEvento } from "@/lib/analytics";
 export const Route = createFileRoute("/loja/$slug")({
   ssr: false,
   loader: async ({ params }) => {
-    const { data: empresa } = await supabase
-      .from("empresas")
+    const { data: empresa } = await (supabase as any)
+      .from("empresas_publico")
       .select("id,nome_fantasia,slug,whatsapp,cor_primaria,taxa_entrega,status,aberto,logo_url,banner_url,tempo_entrega,pedido_minimo,horario_abertura,horario_fechamento,dias_semana,chave_pix,tipo_chave_pix,nome_recebedor,cidade_recebedor,retirada_ativa,taxa_entrega_tipo,taxa_entrega_por_km,taxa_entrega_base,empresa_lat,empresa_lng,fluxo_pedido")
       .eq("slug", params.slug)
       .maybeSingle();
@@ -80,6 +80,15 @@ function LojaPage() {
   const checkoutKeyRef = useRef<string>(crypto.randomUUID());
   const [cepCarregando, setCepCarregando] = useState(false);
   const [whatsappEnviado, setWhatsappEnviado] = useState(false);
+  const [dadosSalvos, setDadosSalvos] = useState<{ nome: string; telefone: string; endereco: string } | null>(null);
+
+  // Carrega dados do cliente salvos em pedidos anteriores
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("deliverly_cliente_dados");
+      if (saved) setDadosSalvos(JSON.parse(saved));
+    } catch {}
+  }, []);
 
   // Sessão anônima autenticada — necessário para realtime e RLS em pedidos
   useEffect(() => {
@@ -131,6 +140,37 @@ function LojaPage() {
     window.location.href = `/pedido/${pedidoId}`;
   }
 
+
+  async function salvarPushClientePedido(pedidoId: string) {
+    const native = (window as any).ReactNativeWebView;
+    if (!native?.postMessage) return;
+
+    return new Promise<void>((resolve) => {
+      const timeout = window.setTimeout(resolve, 20_000);
+
+      const handler = async (event: Event) => {
+        const detail = (event as CustomEvent<{ token?: string; platform?: string }>).detail;
+        window.clearTimeout(timeout);
+        window.removeEventListener("devhub:nativePushToken", handler);
+
+        if (detail?.token) {
+          await (supabase as any).rpc("cliente_salvar_push_token", {
+            p_pedido_id: pedidoId,
+            p_token: detail.token,
+            p_platform: detail.platform ?? "android",
+          });
+        }
+        resolve();
+      };
+
+      window.addEventListener("devhub:nativePushToken", handler, { once: true });
+
+      native.postMessage(JSON.stringify({
+        type: "DEVHUB_CLIENTE_PEDIDO_CONTEXT",
+        pedidoId,
+      }));
+    });
+  }
   // Realtime: fluxo manual — detecta confirmação (caminho rápido, pode não funcionar por RLS)
   useEffect(() => {
     if (!aguardandoConfirmacao?.pedidoId) return;
@@ -184,6 +224,7 @@ function LojaPage() {
   const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
   const taxaEntrega = useMemo(() => {
+    if (mesa) return 0;
     if (tipoEntrega === "retirada") return 0;
     const emp = empresa as any;
     if (emp.taxa_entrega_tipo === "km" && emp.empresa_lat && emp.empresa_lng && clienteLat && clienteLng) {
@@ -348,7 +389,16 @@ function LojaPage() {
       }
 
       trackEvento(empresa.id, "pedido_finalizado");
+      // Salva dados do cliente para pré-preenchimento no próximo pedido
+      if (!mesa) {
+        try {
+          const novos = { nome: cliente_nome, telefone: cliente_telefone || "", endereco: isRetirada ? "" : cliente_endereco };
+          localStorage.setItem("deliverly_cliente_dados", JSON.stringify(novos));
+          setDadosSalvos(novos);
+        } catch {}
+      }
       const pedido = pedidoJson as { id: string; numero: number; subtotal: number | string; taxa_entrega: number | string; desconto: number | string; total: number | string; status: string; fluxo_pedido: string };
+      await salvarPushClientePedido(pedido.id);
       const subtotal = Number(pedido.subtotal ?? 0);
       const taxa     = Number(pedido.taxa_entrega ?? 0);
       const desconto = Number(pedido.desconto ?? 0);
@@ -359,9 +409,11 @@ function LojaPage() {
         : isRetirada
           ? `🏪 *RETIRADA NO BALCÃO*\n👤 Cliente: ${cliente_nome}\n📞 Telefone: ${cliente_telefone}\n`
           : `🛵 *DELIVERY*\n👤 Cliente: ${cliente_nome}\n📞 Telefone: ${cliente_telefone}\n📍 Endereço: ${cliente_endereco}\n`;
-      const linhaEntrega = isRetirada
-        ? `🏃 Retirada: _grátis_`
-        : `🛵 Entrega: ${fmt(taxa)}`;
+      const linhaEntrega = mesa
+        ? `🪑 Pedido na mesa — sem taxa`
+        : isRetirada
+          ? `🏃 Retirada: _grátis_`
+          : `🛵 Entrega: ${fmt(taxa)}`;
       const msg = encodeURIComponent(
         `🔔 *Novo Pedido #${pedido.numero}*\n${separador}\n\n` +
         cabecalho +
@@ -388,6 +440,13 @@ function LojaPage() {
       if (pedido.status === "aguardando_confirmacao") {
         limparCheckout();
         setAguardandoConfirmacao({ pedidoId: pedido.id, numero: pedido.numero });
+        return;
+      }
+
+      // Pedido de mesa: vai direto para acompanhamento (cliente está no local, sem WA necessário)
+      if (mesa) {
+        limparCheckout();
+        window.location.href = `/pedido/${pedido.id}`;
         return;
       }
 
@@ -1189,7 +1248,7 @@ function LojaPage() {
                   )}
                   <div className="flex justify-between text-sm">
                     <span className="text-zinc-500">Taxa de entrega</span>
-                    {tipoEntrega === "retirada" ? (
+                    {mesa || tipoEntrega === "retirada" ? (
                       <span className="text-green-600 font-semibold">Grátis</span>
                     ) : (empresa as any).taxa_entrega_tipo === "km" && !clienteLat ? (
                       <span className="text-amber-500 text-xs">Informe o endereço</span>
@@ -1199,15 +1258,24 @@ function LojaPage() {
                   </div>
                   <div className="flex justify-between font-bold text-base pt-1.5 border-t border-zinc-200">
                     <span>Total</span>
-                    {tipoEntrega !== "retirada" && (empresa as any).taxa_entrega_tipo === "km" && !clienteLat ? (
+                    {!mesa && tipoEntrega !== "retirada" && (empresa as any).taxa_entrega_tipo === "km" && !clienteLat ? (
                       <span className="text-amber-500 text-sm font-semibold">{fmt(Math.max(0, totalPrice - desconto))} + taxa</span>
                     ) : (
                       <span>{fmt(Math.max(0, totalPrice - desconto + taxaEntrega))}</span>
                     )}
                   </div>
                 </div>
-                <FormField name="nome" label="Seu nome" required />
-                {!mesa && <TelField />}
+                {dadosSalvos && !mesa && (
+                  <div className="bg-green-50 border border-green-200 rounded-xl px-3 py-2.5 flex items-center justify-between text-xs text-green-700">
+                    <span>✓ Seus dados foram preenchidos automaticamente</span>
+                    <button type="button" onClick={() => {
+                      setDadosSalvos(null);
+                      try { localStorage.removeItem("deliverly_cliente_dados"); } catch {}
+                    }} className="underline ml-2 shrink-0">Não sou eu</button>
+                  </div>
+                )}
+                <FormField name="nome" label="Seu nome" required defaultValue={dadosSalvos?.nome} />
+                {!mesa && <TelField initialValue={dadosSalvos?.telefone} />}
                 {!mesa && tipoEntrega === "delivery" && (
                   <CepField
                     cep={clienteCep}
@@ -1221,6 +1289,7 @@ function LojaPage() {
                   <AddressField
                     brandColor={brandColor}
                     onCapture={(lat, lng) => { setClienteLat(lat); setClienteLng(lng); }}
+                    defaultValue={dadosSalvos?.endereco}
                   />
                 )}
                 {!mesa && tipoEntrega === "retirada" && (
@@ -1265,6 +1334,9 @@ function LojaPage() {
                     ⚠️ {checkoutErro}
                   </div>
                 )}
+                <p className="text-[11px] text-zinc-400 leading-relaxed text-center px-1">
+                  Ao finalizar, seus dados (nome, telefone, endereço) serão compartilhados com a loja e o entregador para entrega do pedido. CPF, se informado, será usado apenas para nota fiscal.
+                </p>
                 <Button type="submit" disabled={checkoutLoading || cepCarregando}
                   className="w-full b-btn h-14 rounded-xl gap-2 text-base font-bold mt-2 text-white disabled:opacity-60">
                   {checkoutLoading
@@ -1563,19 +1635,17 @@ function ProductModal({ product: p, cartQty, fmt, onClose, onAdd }: {
 
 
 /* ─── Helper ─── */
-function FormField({ name, label, required }: { name: string; label: string; required?: boolean }) {
+function FormField({ name, label, required, defaultValue }: { name: string; label: string; required?: boolean; defaultValue?: string }) {
   return (
     <div className="space-y-1.5">
       <Label htmlFor={name}>{label}</Label>
-      <Input id={name} name={name} required={required} className="rounded-xl h-12 text-base" />
+      <Input id={name} name={name} required={required} defaultValue={defaultValue} className="rounded-xl h-12 text-base" />
     </div>
   );
 }
 
 /* ─── Campo telefone com auto-formatação ─── */
-function TelField() {
-  const [value, setValue] = useState("");
-
+function TelField({ initialValue }: { initialValue?: string }) {
   function format(v: string) {
     const d = v.replace(/\D/g, "").slice(0, 11);
     if (d.length <= 2) return d;
@@ -1583,6 +1653,8 @@ function TelField() {
     if (d.length <= 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
     return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
   }
+
+  const [value, setValue] = useState(initialValue ? format(initialValue) : "");
 
   return (
     <div className="space-y-1.5">
@@ -1707,7 +1779,7 @@ function CpfField({ value, onChange }: { value: string; onChange: (v: string) =>
 
   return (
     <div className="space-y-1.5">
-      <Label>CPF <span className="text-zinc-400 font-normal">(opcional — para nota fiscal)</span></Label>
+      <Label>CPF <span className="text-zinc-400 font-normal">(opcional)</span></Label>
       <input
         type="text"
         inputMode="numeric"
@@ -1718,20 +1790,28 @@ function CpfField({ value, onChange }: { value: string; onChange: (v: string) =>
           !valido ? "border-red-300" : "border-zinc-200"
         }`}
       />
-      {!valido && <p className="text-xs text-red-500">CPF incompleto.</p>}
+      {!valido
+        ? <p className="text-xs text-red-500">CPF incompleto.</p>
+        : <p className="text-xs text-zinc-400">Informe seu CPF para incluir na nota fiscal do pedido.</p>
+      }
     </div>
   );
 }
 
 /* ─── Campo de endereço com captura de GPS ─── */
-function AddressField({ brandColor, onCapture }: {
+function AddressField({ brandColor, onCapture, defaultValue }: {
   brandColor: string;
   onCapture: (lat: number, lng: number) => void;
+  defaultValue?: string;
 }) {
   const [loading, setLoading] = useState(false);
   const [erro, setErro]       = useState("");
   const [capturado, setCapturado] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (defaultValue && inputRef.current) inputRef.current.value = defaultValue;
+  }, []);
 
   async function usarGps() {
     if (!navigator.geolocation) { setErro("GPS não disponível neste dispositivo."); return; }

@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/use-auth";
 import { PageHeader } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Bell, BellOff, Printer, Bike, MessageCircle, ChevronLeft, ChevronRight, Download, Pencil, X, AlertTriangle as AlertTriangleIcon, AlertCircle, RefreshCw } from "lucide-react";
+import { RealtimeBadge } from "@/components/RealtimeBadge";
 import { gerarCSV, baixarCSV, COLUNAS_PEDIDOS } from "@/lib/exportar";
 import { toast } from "sonner";
 import { LimiteBanner } from "@/components/UpgradeGuard";
@@ -388,6 +389,8 @@ function PedidosPage() {
       (await supabase.from("empresas").select("nome_fantasia,zapi_instance,zapi_token,zapi_client_token,tipo_operacao_entrega").eq("id", empresaId!).single()).data,
   });
   const [tab, setTab] = useState<Tab>("ativos");
+  const [rtRevision, setRtRevision] = useState(0);
+  const [rtOffline,  setRtOffline]  = useState(false);
   const [somAtivo, setSomAtivo] = useState(true);
   const [editarPedido, setEditarPedido] = useState<any | null>(null);
   const [entregadorSel, setEntregadorSel] = useState<Record<string, string>>({});
@@ -472,11 +475,11 @@ function PedidosPage() {
   // Reset página ao trocar tab ou data
   useEffect(() => { setPage(0); }, [tab, dataSel]);
 
-  // Supabase Realtime — novos pedidos + atualizações
+  // Supabase Realtime — novos pedidos + atualizações (com reconexão automática em caso de erro)
   useEffect(() => {
     if (!empresaId) return;
     const channel = supabase
-      .channel(`pedidos-realtime-${empresaId}`)
+      .channel(`pedidos-realtime-${empresaId}-${rtRevision}`)
       .on("postgres_changes",
         { event: "INSERT", schema: "public", table: "pedidos", filter: `empresa_id=eq.${empresaId}` },
         (payload) => {
@@ -504,9 +507,15 @@ function PedidosPage() {
           qc.invalidateQueries({ queryKey: ["pedidos-pag", empresaId] });
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") setRtOffline(false);
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+          setRtOffline(true);
+          setTimeout(() => setRtRevision((r) => r + 1), 5000);
+        }
+      });
     return () => { supabase.removeChannel(channel); };
-  }, [empresaId, qc]);
+  }, [empresaId, qc, rtRevision]);
 
   // Query 1 — Ativos (tempo real, sem limite)
   // Usa RPC SECURITY DEFINER para contornar qualquer complexidade de RLS
@@ -615,13 +624,16 @@ function PedidosPage() {
     queryFn: async () => {
       const { data } = await (supabase as any)
         .from("reclamacoes")
-        .select("id, tipo, descricao, status, criado_em, pedidos(numero, cliente_nome, cliente_telefone)")
+        .select("id, tipo, descricao, status, criado_em, resposta, respondido_em, lida_pelo_cliente, pedidos(numero, cliente_nome, cliente_telefone)")
         .eq("empresa_id", empresaId!)
         .in("status", ["aberta", "em_analise"])
         .order("criado_em", { ascending: false });
       return data ?? [];
     },
   });
+
+  const [replyTexts,  setReplyTexts]  = useState<Record<string, string>>({});
+  const [replying,    setReplying]    = useState<Record<string, boolean>>({});
 
   // Reembolsos pendentes
   const { data: reembolsos = [], refetch: refetchReem } = useQuery({
@@ -673,7 +685,7 @@ function PedidosPage() {
       ? NEXT_PDV
       : p.tipo === "retirada"
         ? (comPreparo ? NEXT_RETIRADA : NEXT_RETIRADA_SEM_PREPARO)
-        : p.mesa
+        : (p.mesa || p.tipo === "mesa")
           ? (comPreparo ? NEXT_MESA : NEXT_MESA_SEM_PREPARO)
           : (comPreparo ? NEXT : NEXT_SEM_PREPARO);
     const next = nextMap[p.status];
@@ -723,7 +735,7 @@ function PedidosPage() {
     if (pedido.cliente_telefone) {
       await notificarWhatsApp({ ...pedido, status: "cancelado", motivo_cancelamento: motivo }, empresa);
     }
-    toast.success("Pedido cancelado. Cliente notificado.");
+    toast.success(`✅ Pedido #${pedido.numero} cancelado. Cliente foi avisado do cancelamento.`, { duration: 3000 });
     qc.invalidateQueries({ queryKey: ["pedidos-ativos", empresaId] });
     qc.invalidateQueries({ queryKey: ["pedidos-pag", empresaId] });
   }
@@ -750,6 +762,43 @@ function PedidosPage() {
     });
     if (error || data?.error) { toast.error(error?.message ?? data?.error); return; }
     toast.success("Reclamação marcada como resolvida.");
+    refetchRec();
+  }
+
+  async function responderReclamacao(r: any, resposta: string) {
+    if (!resposta.trim()) return;
+    setReplying((prev) => ({ ...prev, [r.id]: true }));
+    const { data, error } = await (supabase as any).rpc("empresa_responder_reclamacao", {
+      p_reclamacao_id: r.id,
+      p_resposta: resposta.trim(),
+    });
+    setReplying((prev) => ({ ...prev, [r.id]: false }));
+    if (error || (data as any)?.error) {
+      toast.error((data as any)?.error ?? error?.message ?? "Erro ao enviar resposta");
+      return;
+    }
+    const d = data as any;
+    if (d.cliente_telefone) {
+      const nomeEmp = d.empresa_nome ?? empresa?.nome_fantasia ?? "Loja";
+      const msg = `💬 *Resposta sobre o pedido #${d.numero_pedido}*\n\nOlá! A ${nomeEmp} respondeu sua reclamação:\n\n"${resposta.trim()}"\n\n_${nomeEmp}_`;
+      const waNum = normalizeWA(d.cliente_telefone);
+      const { zapi_instance, zapi_token, zapi_client_token } = (empresa as any) ?? {};
+      let enviado = false;
+      if (zapi_instance && zapi_token) {
+        try {
+          const headers: Record<string, string> = { "Content-Type": "application/json" };
+          if (zapi_client_token) headers["Client-Token"] = zapi_client_token;
+          const res = await fetch(
+            `https://api.z-api.io/instances/${zapi_instance}/token/${zapi_token}/send-text`,
+            { method: "POST", headers, body: JSON.stringify({ phone: waNum, message: msg }) }
+          );
+          enviado = res.ok;
+        } catch (_) {}
+      }
+      if (!enviado) window.open(`https://wa.me/${waNum}?text=${encodeURIComponent(msg)}`, "_blank");
+    }
+    toast.success("Resposta enviada. Cliente notificado pelo WhatsApp.");
+    setReplyTexts((prev) => ({ ...prev, [r.id]: "" }));
     refetchRec();
   }
 
@@ -834,6 +883,7 @@ function PedidosPage() {
         subtitle="Acompanhe e atualize os pedidos em tempo real"
         action={
           <div className="flex items-center gap-2">
+            <RealtimeBadge forceOffline={rtOffline} />
             <Button size="sm" variant="outline" onClick={exportarCSV} disabled={exportando} className="gap-1.5 text-zinc-600">
               <Download className="size-3.5" />
               {exportando ? "Exportando…" : "CSV"}
@@ -1029,7 +1079,11 @@ function PedidosPage() {
               {(p.cliente_cep || p.cliente_cidade) && (
                 <div className="text-xs text-zinc-400">{[p.cliente_cep, p.cliente_cidade].filter(Boolean).join(" — ")}</div>
               )}
-              {p.cliente_cpf && <div className="text-xs text-zinc-400">CPF: {p.cliente_cpf}</div>}
+              {p.cliente_cpf && (
+                <div className="text-xs text-zinc-400">
+                  CPF: ***.***.***-{p.cliente_cpf.replace(/\D/g, "").slice(9, 11) || "**"}
+                </div>
+              )}
 
               {/* 6. Cliente + entregador + total */}
               <div className="flex items-end justify-between gap-3 mt-2">
@@ -1068,6 +1122,26 @@ function PedidosPage() {
                   )}
                 </div>
               </div>
+
+              {/* Info de cancelamento */}
+              {p.status === "cancelado" && (
+                <div className="mt-2 pt-2 border-t border-zinc-100 text-xs text-zinc-500 space-y-0.5">
+                  <div className="font-semibold text-zinc-600">
+                    Cancelado por:{" "}
+                    {p.cancelado_por === "lojista" ? "Lojista" :
+                     p.cancelado_por === "cliente" ? "Cliente" :
+                     p.cancelado_por === "sistema" ? "Sistema (timeout)" : (p.cancelado_por ?? "—")}
+                  </div>
+                  {p.motivo_cancelamento && (
+                    <div>Motivo: <span className="italic text-zinc-600">{p.motivo_cancelamento}</span></div>
+                  )}
+                  {p.cancelado_em && (
+                    <div className="text-zinc-400">
+                      {new Date(p.cancelado_em).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="mt-4 flex flex-wrap justify-end gap-2">
                 {/* Imprimir — sempre visível */}
@@ -1134,7 +1208,7 @@ function PedidosPage() {
                         ? NEXT_PDV
                         : p.tipo === "retirada"
                           ? (comPreparo ? NEXT_RETIRADA : NEXT_RETIRADA_SEM_PREPARO)
-                          : p.mesa
+                          : (p.mesa || p.tipo === "mesa")
                             ? (comPreparo ? NEXT_MESA : NEXT_MESA_SEM_PREPARO)
                             : (comPreparo ? NEXT : NEXT_SEM_PREPARO);
                       const nextStatus = nextMap[p.status];
@@ -1153,7 +1227,7 @@ function PedidosPage() {
                       return (
                         <div className="flex items-center gap-2">
                           {/* Seletor de entregador — só para delivery com múltiplos fixos */}
-                          {!p.mesa && p.tipo !== "pdv" && p.tipo !== "retirada" && NEXT[p.status] === "entrega" && entregadores.length > 1 && (
+                          {!p.mesa && p.tipo !== "pdv" && p.tipo !== "retirada" && p.tipo !== "mesa" && NEXT[p.status] === "entrega" && entregadores.length > 1 && (
                             <select
                               value={entregadorSel[p.id] ?? ""}
                               onChange={(e) => setEntregadorSel((s) => ({ ...s, [p.id]: e.target.value }))}
@@ -1165,7 +1239,7 @@ function PedidosPage() {
                               ))}
                             </select>
                           )}
-                          {!p.mesa && p.tipo !== "pdv" && p.tipo !== "retirada" && NEXT[p.status] === "entrega" && entregadores.length === 1 && (
+                          {!p.mesa && p.tipo !== "pdv" && p.tipo !== "retirada" && p.tipo !== "mesa" && NEXT[p.status] === "entrega" && entregadores.length === 1 && (
                             <span className="text-xs text-zinc-500 bg-zinc-50 border border-zinc-200 px-3 py-2 rounded-xl">
                               🛵 {entregadores[0].nome} (auto)
                             </span>
@@ -1244,19 +1318,31 @@ function PedidosPage() {
                 Nenhuma reclamação aberta. 🎉
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {(reclamacoes as any[]).map((r: any) => {
                   const TIPO_LABEL: Record<string, string> = {
                     pedido_errado: "Pedido errado", nao_chegou: "Não chegou",
                     item_faltando: "Item faltando", qualidade: "Qualidade ruim", outro: "Outro",
                   };
+                  const idadeMin = Math.floor((Date.now() - new Date(r.criado_em).getTime()) / 60000);
+                  const respondida = !!r.resposta;
+                  const urgente = !respondida && idadeMin >= 60;
+
                   return (
-                    <div key={r.id} className="bg-background rounded-xl ring-1 ring-black/5 p-4">
+                    <div key={r.id} className="bg-background rounded-xl ring-1 ring-black/5 p-4 space-y-3">
+                      {/* Cabeçalho */}
                       <div className="flex items-start justify-between gap-3 flex-wrap">
                         <div className="min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="font-bold text-zinc-900">Pedido #{r.pedidos?.numero}</span>
                             <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-red-100 text-red-700 uppercase">{TIPO_LABEL[r.tipo] ?? r.tipo}</span>
+                            {respondida ? (
+                              <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-green-100 text-green-700">Respondida</span>
+                            ) : urgente ? (
+                              <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-red-100 text-red-700 animate-pulse">Urgente</span>
+                            ) : (
+                              <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-amber-100 text-amber-700">Aguardando resposta</span>
+                            )}
                           </div>
                           <p className="text-sm text-zinc-600 mt-0.5">{r.pedidos?.cliente_nome}</p>
                           {r.descricao && <p className="text-xs text-zinc-500 italic mt-1">"{r.descricao}"</p>}
@@ -1264,15 +1350,48 @@ function PedidosPage() {
                             {new Date(r.criado_em).toLocaleString("pt-BR", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" })}
                           </p>
                         </div>
-                        <Button size="sm"
-                          onClick={() => {
-                            const res = window.prompt(`Resolução da reclamação (pedido #${r.pedidos?.numero}):\n\nDescreva o que foi feito (opcional):`);
-                            if (res !== null) resolverReclamacao(r.id, res);
-                          }}
-                          className="bg-green-500 hover:bg-green-600 text-white shrink-0">
-                          Resolver
-                        </Button>
+                        {respondida && (
+                          <Button size="sm"
+                            onClick={() => {
+                              const res = window.prompt(`Marcar como resolvida (pedido #${r.pedidos?.numero}):\n\nDescreva o que foi feito (opcional):`);
+                              if (res !== null) resolverReclamacao(r.id, res);
+                            }}
+                            className="bg-green-500 hover:bg-green-600 text-white shrink-0">
+                            Marcar como resolvida
+                          </Button>
+                        )}
                       </div>
+
+                      {/* Resposta já enviada */}
+                      {respondida && (
+                        <div className="bg-zinc-50 border border-zinc-200 rounded-lg px-3 py-2.5">
+                          <p className="text-[10px] text-zinc-400 mb-1 font-medium uppercase tracking-wide">Sua resposta</p>
+                          <p className="text-sm text-zinc-700">{r.resposta}</p>
+                          <p className="text-[10px] text-zinc-400 mt-1">
+                            Respondido em {new Date(r.respondido_em).toLocaleString("pt-BR", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" })}
+                            {r.lida_pelo_cliente ? " · lida pelo cliente ✓" : ""}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Campo de resposta */}
+                      {!respondida && (
+                        <div className="space-y-2">
+                          <textarea
+                            value={replyTexts[r.id] ?? ""}
+                            onChange={(e) => setReplyTexts((prev) => ({ ...prev, [r.id]: e.target.value }))}
+                            placeholder="Digite sua resposta para o cliente..."
+                            rows={2}
+                            className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-brand/30"
+                          />
+                          <Button size="sm"
+                            onClick={() => responderReclamacao(r, replyTexts[r.id] ?? "")}
+                            disabled={!(replyTexts[r.id] ?? "").trim() || replying[r.id]}
+                            className="bg-brand hover:bg-brand/90 text-white">
+                            {replying[r.id] ? "Enviando…" : "Enviar resposta"}
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   );
                 })}

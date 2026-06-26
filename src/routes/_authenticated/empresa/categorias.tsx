@@ -65,10 +65,14 @@ function CategoriasPage() {
   }
 
   async function togglePreparo(id: string, atual: boolean) {
-    await supabase.from("categorias").update({ requer_preparo: !atual } as any).eq("id", id);
+    const novoValor = !atual;
+    await supabase.from("categorias").update({ requer_preparo: novoValor } as any).eq("id", id);
+    // Propaga para todos os produtos da categoria para refletir no fluxo de pedidos
+    await (supabase as any).from("produtos").update({ requer_preparo: novoValor }).eq("categoria_id", id);
     qc.setQueryData(["categorias-page", empresaId], (old: any[]) =>
-      (old ?? []).map((c: any) => c.id === id ? { ...c, requer_preparo: !atual } : c)
+      (old ?? []).map((c: any) => c.id === id ? { ...c, requer_preparo: novoValor } : c)
     );
+    toast.success(novoValor ? "Categoria marcada como requer preparo." : "Categoria marcada como sem preparo. Produtos atualizados.");
   }
 
   function startEdit(c: any) {
